@@ -18,6 +18,7 @@ public class AStarSample : MonoBehaviour
 
     //actor id, obj
     private Dictionary<string, GameObject> mMappingTable = new Dictionary<string, GameObject>();    
+    private Dictionary<string, GameObject> mActorUI = new Dictionary<string, GameObject>();
     private Battle mBattle;
     // Start is called before the first frame update
     void Start()
@@ -99,7 +100,7 @@ public class AStarSample : MonoBehaviour
 
             new Vector2Int(5, 5),
             new Vector2Int(3, 5),
-            new Vector2Int(3, 3)
+            new Vector2Int(3, 4)
         };
         BattleActorAbility[] abilities = {
             abilityForward,
@@ -128,6 +129,7 @@ public class AStarSample : MonoBehaviour
             dest = new Vector3(dest.x + 0.5f, dest.y, dest.z + 0.5f);
             GameObject obj = Instantiate<GameObject>(prefab, dest, Quaternion.identity);
             obj.name = actorName;
+            Debug.Log(string.Format("{0} {1} {2}", actorName, dest.x, dest.z));
 
             var actor = ActorHandler.Instance.GetActor(actorName);
             if(actor == null) {
@@ -139,6 +141,15 @@ public class AStarSample : MonoBehaviour
             }
 
             mMappingTable.Add(actorName, obj);
+
+            //ui
+            GameObject ui = GameObject.Find("ActorUI_" + actorName.ToUpper());
+            if(ui == null) {
+                break;
+            }            
+            ActorUI p = ui.GetComponent<ActorUI>();
+            p.SetName(actorName);
+            mActorUI.Add(actorName, ui);
         }
 
         if(!mBattle.Validate()) {
@@ -197,12 +208,11 @@ public class AStarSample : MonoBehaviour
                 animator.SetBool("IsIdle", false);
                 animator.SetBool("IsWalk", true);
                 animator.SetBool("IsAttack", false);
-
-
                 break;
+
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
                 GameObject actorTarget = mMappingTable[action.TargetActorId];
-                float damage = mBattle.Attack(actorName, action);     
+                float remain = mBattle.Attack(actorName, action);     
                 float hpRatio = mBattle.GetHPRatio(action.TargetActorId);
                 float currHP = mBattle.GetHP(action.TargetActorId);
 
@@ -211,16 +221,15 @@ public class AStarSample : MonoBehaviour
                 animator.SetBool("IsWalk", false);
                 animator.SetBool("IsAttack", true);
 
-                GameObject hp = GameObject.Find("HP_" + action.TargetActorId.ToUpper());
-                if(hp == null) {
-                    break;
-                }
                 
-                hp.GetComponent<HPBar>().SetValue(hpRatio);
                 if(currHP <= 0) {
                     //삭제                    
                     actorTarget.SetActive(false);
-                    hp.SetActive(false);
+                    mActorUI[action.TargetActorId].SetActive(false);
+                } else {
+                    ActorUI actorUI = mActorUI[action.TargetActorId].GetComponent<ActorUI>();
+                    actorUI.SetHP(hpRatio);
+                    actorUI.SetMessage(string.Format("-{0}", action.AttackAmount));
                 }
                 //Debug.Log(string.Format("Attack {0} > {1} {2}({3})", actorName, action.TargetActorId, damage, hpRatio));
                 break;
