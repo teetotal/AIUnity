@@ -55,13 +55,23 @@ public class AStarSample : MonoBehaviour
         }
         //recources경로로 복사해서 써야함. assets에서는 접근이 안됨
         BattleActorAbility abilityForward = new BattleActorAbility();
+        abilityForward.HP = 9;
+        abilityForward.AttackStyle = BattleActorAbility.ATTACK_STYLE.MOVING;
+        abilityForward.AttackPower = 1;
+        abilityForward.AttackDistance = 1;        
+        abilityForward.AttackAccuracy = 1;
         abilityForward.Sight = 1;        
         abilityForward.Speed = 1;
-        abilityForward.MoveForward = 1.5f;
+        abilityForward.MoveForward = 3f;
         abilityForward.MoveBack = 0;
         abilityForward.MoveSide = 0;
 
         BattleActorAbility abilityBack = new BattleActorAbility();
+        abilityBack.HP = 9;
+        abilityBack.AttackStyle = BattleActorAbility.ATTACK_STYLE.MOVING;
+        abilityBack.AttackPower = 1;
+        abilityBack.AttackDistance = 1;   
+        abilityBack.AttackAccuracy = 1;     
         abilityBack.Sight = 1;        
         abilityBack.Speed = 1;
         abilityBack.MoveForward = 0;
@@ -69,6 +79,11 @@ public class AStarSample : MonoBehaviour
         abilityBack.MoveSide = 0;
 
         BattleActorAbility abilitySide = new BattleActorAbility();
+        abilitySide.HP = 9;
+        abilitySide.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
+        abilitySide.AttackPower = 1;
+        abilitySide.AttackDistance = 1;      
+        abilitySide.AttackAccuracy = 1;  
         abilitySide.Sight = 1;        
         abilitySide.Speed = 1;
         abilitySide.MoveForward = 0;
@@ -129,58 +144,88 @@ public class AStarSample : MonoBehaviour
         if(!mBattle.Validate()) {
             Debug.Log("Invalid");
             return;
-        }
-
-           
+        }  
     }
-
+    float delta = 0;
+    private void FixedUpdate() {
+        delta += Time.deltaTime;
+        if(delta > 1) {
+            Next();
+            delta = 0;
+        }        
+    }
     // Update is called once per frame
     void Update()
     {
         foreach(var p in mMappingTable) {
+            if(p.Value.activeSelf == false) continue;
             string actorName = p.Key;
             GameObject obj = p.Value;
             var agent = obj.GetComponent<NavMeshAgent>();
             var animator = obj.GetComponent<Animator>();
 
-            if(agent != null && agent.remainingDistance < 0.3f) {                    
-                if(!animator.GetBool("IsIdle")) {
-                    animator.SetBool("IsIdle", true);
-                    animator.SetBool("IsWalk", false);                        
-                }   
+            if(agent != null && agent.remainingDistance < 0.3f) {
                 agent.destination = obj.transform.position;
                 mBattle.Occupy(actorName);
-                Next();
-
-            } else {
-                if(animator.GetBool("IsIdle")) {
-                    animator.SetBool("IsIdle", false);
-                    animator.SetBool("IsWalk", true);
-                }
-            }
+            } 
         }
-        return;            
-
-    }    
-
+        return;
+    }
     void Next() {
-        Dictionary<string, string[]> next = mBattle.Next();
+        Dictionary<string, BattleActorAction> next = mBattle.Next();
         foreach(var p in next) {
             string actorName = p.Key;
-            string from = p.Value[0];
-            string to = p.Value[1];
-            Debug.Log("Move " + actorName + " " + from + "->" + to);
-
+            BattleActorAction action = p.Value;
             GameObject actor = mMappingTable[actorName];
-            var agent = actor.GetComponent<NavMeshAgent>();
-            int[] position = mBattle.mMap.GetPositionInt(to);
             var animator = actor.GetComponent<Animator>();
-            
-            Vector3 toVec3 = mTilesY[position[1]].X[position[0]].transform.position;
-            Vector3 dest = new Vector3(toVec3.x + 0.5f, 0, toVec3.z + 0.5f);            
-            agent.destination = dest;
-        }
 
+            switch(action.Type) {
+                case BATTLE_ACTOR_ACTION_TYPE.NONE:
+                animator.SetBool("IsIdle", true);
+                animator.SetBool("IsWalk", false);
+                animator.SetBool("IsAttack", false);
+
+                break;
+                case BATTLE_ACTOR_ACTION_TYPE.MOVING:
+                
+                var agent = actor.GetComponent<NavMeshAgent>();
+                int[] position = mBattle.mMap.GetPositionInt(action.TargetPosition);
+                
+                Vector3 toVec3 = mTilesY[position[1]].X[position[0]].transform.position;
+                Vector3 dest = new Vector3(toVec3.x + 0.5f, 0, toVec3.z + 0.5f);            
+                agent.destination = dest;
+                animator.SetBool("IsIdle", false);
+                animator.SetBool("IsWalk", true);
+                animator.SetBool("IsAttack", false);
+
+
+                break;
+                case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
+                GameObject actorTarget = mMappingTable[action.TargetActorId];
+                float damage = mBattle.Attack(actorName, action);     
+                float hpRatio = mBattle.GetHPRatio(action.TargetActorId);
+                float currHP = mBattle.GetHP(action.TargetActorId);
+
+                actor.transform.LookAt(actorTarget.transform);
+                animator.SetBool("IsIdle", false);
+                animator.SetBool("IsWalk", false);
+                animator.SetBool("IsAttack", true);
+
+                GameObject hp = GameObject.Find("HP_" + action.TargetActorId.ToUpper());
+                if(hp == null) {
+                    break;
+                }
+                
+                hp.GetComponent<HPBar>().SetValue(hpRatio);
+                if(currHP <= 0) {
+                    //삭제                    
+                    actorTarget.SetActive(false);
+                    hp.SetActive(false);
+                }
+                //Debug.Log(string.Format("Attack {0} > {1} {2}({3})", actorName, action.TargetActorId, damage, hpRatio));
+                break;
+            }
+        }
     }
     bool Load() {
         var pLoader = new Loader();
