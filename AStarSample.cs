@@ -12,10 +12,6 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 public class AStarSample : MonoBehaviour
 {
     public TileX[] mTilesY;    
-    public GameObject[] PrefabHome;
-    public GameObject[] PrefabAway;
-    public GameObject Prefab;
-
     //actor id, obj
     private Dictionary<string, GameObject> mMappingTable = new Dictionary<string, GameObject>();    
     private Dictionary<string, GameObject> mActorUI = new Dictionary<string, GameObject>();
@@ -28,26 +24,26 @@ public class AStarSample : MonoBehaviour
         }
 
         //map
-        int[,] map =
-        {
-            {0,      0,      0,      0,      0,    0},
-            {1,      0,      0,      0,      0,    1},
-            {2,      0,      0,      0,      0,    2},
-            {2,      0,      0,      0,      0,    2},
-            {1,      0,      0,      0,      0,    1},
-            {0,      0,      0,      0,      0,    0}
-        };
         /*
         int[,] map =
         {
-            {0,     -1,      0,       0,      0,    0},
-            {0,     -1,      0,      -1,      0,    0},
-            {0,     -1,      0,      -1,      0,    0},
-            {0,     -1,      0,      -1,      0,    0},
-            {0,      0,      0,      0,       0,    0},
-            {0,      0,      0,      -1,      0,    0}
+            {0,      0,      0,      0,      0},
+            {1,      0,      0,      0,      1},
+            {2,      0,      0,      0,      2},
+            {2,      0,      0,      0,      2},
+            {1,      0,      0,      0,      1},
+            {0,      0,      0,      0,      0}
         };
         */
+        int[,] map =
+        {
+            {0,      0,      0,      0,      0},
+            {0,      0,      0,      0,      0},
+            {0,      0,      0,      0,      0},
+            {0,      0,      0,      0,      0},
+            {0,      0,      0,      0,      0},
+            {0,      0,      0,      0,      0}
+        };
 
         mBattle = new Battle(mTilesY[0].X.Length, mTilesY.Length);
         if(!mBattle.Init(map, map)) {            
@@ -57,7 +53,7 @@ public class AStarSample : MonoBehaviour
         //recources경로로 복사해서 써야함. assets에서는 접근이 안됨
         BattleActorAbility abilityForward = new BattleActorAbility();
         abilityForward.HP = 9;
-        abilityForward.AttackStyle = BattleActorAbility.ATTACK_STYLE.MOVING;
+        abilityForward.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
         abilityForward.AttackPower = 1;
         abilityForward.AttackDistance = 1;        
         abilityForward.AttackAccuracy = 1;
@@ -69,7 +65,7 @@ public class AStarSample : MonoBehaviour
 
         BattleActorAbility abilityBack = new BattleActorAbility();
         abilityBack.HP = 9;
-        abilityBack.AttackStyle = BattleActorAbility.ATTACK_STYLE.MOVING;
+        abilityBack.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
         abilityBack.AttackPower = 1;
         abilityBack.AttackDistance = 1;   
         abilityBack.AttackAccuracy = 1;     
@@ -94,13 +90,13 @@ public class AStarSample : MonoBehaviour
         //GaemObject랑 연결
         string[] names = {"hf", "hb", "hs", "af", "ab", "as"};
         Vector2Int[] positions = {
-            new Vector2Int(0, 0),
-            new Vector2Int(2, 0),
-            new Vector2Int(2, 2),
+            new Vector2Int(1, 1),
+            new Vector2Int(2, 1),
+            new Vector2Int(3, 1),
 
-            new Vector2Int(5, 5),
-            new Vector2Int(3, 5),
-            new Vector2Int(3, 4)
+            new Vector2Int(4, 3),
+            new Vector2Int(3, 3),
+            new Vector2Int(2, 3)
         };
         BattleActorAbility[] abilities = {
             abilityForward,
@@ -160,7 +156,7 @@ public class AStarSample : MonoBehaviour
     float delta = 0;
     private void FixedUpdate() {
         delta += Time.deltaTime;
-        if(delta > 1) {
+        if(delta > 2) {
             Next();
             delta = 0;
         }        
@@ -188,14 +184,11 @@ public class AStarSample : MonoBehaviour
             string actorName = p.Key;
             BattleActorAction action = p.Value;
             GameObject actor = mMappingTable[actorName];
-            var animator = actor.GetComponent<Animator>();
+            var actorController = actor.GetComponent<ActorController>();
 
             switch(action.Type) {
                 case BATTLE_ACTOR_ACTION_TYPE.NONE:
-                animator.SetBool("IsIdle", true);
-                animator.SetBool("IsWalk", false);
-                animator.SetBool("IsAttack", false);
-
+                actorController.SetIdle();
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.MOVING:
                 
@@ -205,9 +198,7 @@ public class AStarSample : MonoBehaviour
                 Vector3 toVec3 = mTilesY[position[1]].X[position[0]].transform.position;
                 Vector3 dest = new Vector3(toVec3.x + 0.5f, 0, toVec3.z + 0.5f);            
                 agent.destination = dest;
-                animator.SetBool("IsIdle", false);
-                animator.SetBool("IsWalk", true);
-                animator.SetBool("IsAttack", false);
+                actorController.SetWalk();
                 break;
 
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
@@ -217,14 +208,11 @@ public class AStarSample : MonoBehaviour
                 float currHP = mBattle.GetHP(action.TargetActorId);
 
                 actor.transform.LookAt(actorTarget.transform);
-                animator.SetBool("IsIdle", false);
-                animator.SetBool("IsWalk", false);
-                animator.SetBool("IsAttack", true);
-
+                actorController.SetAttack();
                 
                 if(currHP <= 0) {
                     //삭제                    
-                    actorTarget.SetActive(false);
+                    actorTarget.GetComponent<ActorController>().SetDie();                    
                     mActorUI[action.TargetActorId].SetActive(false);
                 } else {
                     ActorUI actorUI = mActorUI[action.TargetActorId].GetComponent<ActorUI>();
