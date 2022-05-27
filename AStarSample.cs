@@ -53,11 +53,11 @@ public class AStarSample : MonoBehaviour
         //recources경로로 복사해서 써야함. assets에서는 접근이 안됨
         BattleActorAbility abilityForward = new BattleActorAbility();
         abilityForward.HP = 9;
-        abilityForward.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
+        abilityForward.AttackStyle = BattleActorAbility.ATTACK_STYLE.ATTACKER;
         abilityForward.AttackPower = 1;
         abilityForward.AttackDistance = 1;        
         abilityForward.AttackAccuracy = 1;
-        abilityForward.Sight = 1;        
+        abilityForward.Sight = 3;        
         abilityForward.Speed = 1;
         abilityForward.MoveForward = 3f;
         abilityForward.MoveBack = 0;
@@ -65,11 +65,11 @@ public class AStarSample : MonoBehaviour
 
         BattleActorAbility abilityBack = new BattleActorAbility();
         abilityBack.HP = 9;
-        abilityBack.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
+        abilityBack.AttackStyle = BattleActorAbility.ATTACK_STYLE.ATTACKER;
         abilityBack.AttackPower = 1;
         abilityBack.AttackDistance = 1;   
         abilityBack.AttackAccuracy = 1;     
-        abilityBack.Sight = 1;        
+        abilityBack.Sight = 3;        
         abilityBack.Speed = 1;
         abilityBack.MoveForward = 0;
         abilityBack.MoveBack = 1.5f;
@@ -77,11 +77,11 @@ public class AStarSample : MonoBehaviour
 
         BattleActorAbility abilitySide = new BattleActorAbility();
         abilitySide.HP = 9;
-        abilitySide.AttackStyle = BattleActorAbility.ATTACK_STYLE.DEFENSE;
+        abilitySide.AttackStyle = BattleActorAbility.ATTACK_STYLE.ATTACKER;
         abilitySide.AttackPower = 1;
         abilitySide.AttackDistance = 1;      
         abilitySide.AttackAccuracy = 1;  
-        abilitySide.Sight = 1;        
+        abilitySide.Sight = 3;        
         abilitySide.Speed = 1;
         abilitySide.MoveForward = 0;
         abilitySide.MoveBack = 0;
@@ -132,7 +132,7 @@ public class AStarSample : MonoBehaviour
                 Debug.Log("Actor loading failure");
                 return;
             }
-            if(!mBattle.AppendActor(pos.x, pos.y, actor, i < 3 ? BATTLE_SIDE.HOME: BATTLE_SIDE.AWAY, abilities[i])) {
+            if(!mBattle.AppendActor(pos.x, pos.y, actor, actorName[0] == 'h' ? BATTLE_SIDE.HOME: BATTLE_SIDE.AWAY, abilities[i])) {
                 Debug.Log("Fail Append Actor " + actorName);
             }
 
@@ -157,12 +157,13 @@ public class AStarSample : MonoBehaviour
     private void FixedUpdate() {
         delta += Time.deltaTime;
         if(delta > 2) {
-            Next();
+            Occupy();
+            Next();            
             delta = 0;
         }        
     }
     // Update is called once per frame
-    void Update()
+    void Occupy()
     {
         foreach(var p in mMappingTable) {
             if(p.Value.activeSelf == false) continue;
@@ -171,7 +172,7 @@ public class AStarSample : MonoBehaviour
             var agent = obj.GetComponent<NavMeshAgent>();
             var animator = obj.GetComponent<Animator>();
 
-            if(agent != null && agent.remainingDistance < 0.3f) {
+            if(agent != null && agent.remainingDistance < 0.1f) {
                 agent.destination = obj.transform.position;
                 mBattle.Occupy(actorName);
             } 
@@ -184,15 +185,15 @@ public class AStarSample : MonoBehaviour
             string actorName = p.Key;
             BattleActorAction action = p.Value;
             GameObject actor = mMappingTable[actorName];
+            GameObject actorTarget;
             var actorController = actor.GetComponent<ActorController>();
+            var agent = actor.GetComponent<NavMeshAgent>();
 
             switch(action.Type) {
                 case BATTLE_ACTOR_ACTION_TYPE.NONE:
                 actorController.SetIdle();
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.MOVING:
-                
-                var agent = actor.GetComponent<NavMeshAgent>();
                 int[] position = mBattle.mMap.GetPositionInt(action.TargetPosition);
                 
                 Vector3 toVec3 = mTilesY[position[1]].X[position[0]].transform.position;
@@ -200,13 +201,16 @@ public class AStarSample : MonoBehaviour
                 agent.destination = dest;
                 actorController.SetWalk();
                 break;
-
+                case BATTLE_ACTOR_ACTION_TYPE.ATTACKED:
+                actorController.SetAttacked();
+                break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
-                GameObject actorTarget = mMappingTable[action.TargetActorId];
+                actorTarget = mMappingTable[action.TargetActorId];
                 float remain = mBattle.Attack(actorName, action);     
                 float hpRatio = mBattle.GetHPRatio(action.TargetActorId);
                 float currHP = mBattle.GetHP(action.TargetActorId);
-
+                
+                actor.transform.position = agent.destination;
                 actor.transform.LookAt(actorTarget.transform);
                 actorController.SetAttack();
                 
@@ -219,7 +223,7 @@ public class AStarSample : MonoBehaviour
                     actorUI.SetHP(hpRatio);
                     actorUI.SetMessage(string.Format("-{0}", action.AttackAmount));
                 }
-                //Debug.Log(string.Format("Attack {0} > {1} {2}({3})", actorName, action.TargetActorId, damage, hpRatio));
+                Debug.Log(string.Format("Attack {0}({1}) > {2}({3})", actorName, action.FromPosition, action.TargetActorId, action.TargetPosition));
                 break;
             }
         }
