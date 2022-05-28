@@ -88,6 +88,7 @@ public class AStarSample : MonoBehaviour
         abilitySide.MoveSide = 1.5f;
 
         //GaemObject랑 연결
+        
         string[] names = {"hf", "hb", "hs", "af", "ab", "as"};
         Vector2Int[] positions = {
             new Vector2Int(1, 1),
@@ -106,13 +107,25 @@ public class AStarSample : MonoBehaviour
             abilityBack,
             abilitySide
         };
+        
+        /*
+        string[] names = {"hf", "af"};
+        Vector2Int[] positions = {
+            new Vector2Int(2, 2),
+            new Vector2Int(3, 2)            
+        };
+        BattleActorAbility[] abilities = {
+            abilityForward,            
+            abilityForward
+        };
+        */
 
         for(int i=0; i < names.Length; i++) {
             string actorName = names[i];
             Vector2Int pos = positions[i];
 
             GameObject prefab;
-            if(i < 3)
+            if(actorName[0] == 'h')
                 prefab = Resources.Load<GameObject>("Characters/Character_Dummy_Female_01");
             else 
                 prefab = Resources.Load<GameObject>("Characters/Character_Dummy_Male_01");
@@ -156,7 +169,7 @@ public class AStarSample : MonoBehaviour
     float delta = 0;
     private void FixedUpdate() {
         delta += Time.deltaTime;
-        if(delta > 2) {
+        if(delta > 3) {
             Occupy();
             Next();            
             delta = 0;
@@ -182,9 +195,9 @@ public class AStarSample : MonoBehaviour
     void Next() {
         Dictionary<string, BattleActorAction> next = mBattle.Next();
         foreach(var p in next) {
-            string actorName = p.Key;
+            string actorId = p.Key;
             BattleActorAction action = p.Value;
-            GameObject actor = mMappingTable[actorName];
+            GameObject actor = mMappingTable[actorId];
             GameObject actorTarget;
             var actorController = actor.GetComponent<ActorController>();
             var agent = actor.GetComponent<NavMeshAgent>();
@@ -202,31 +215,40 @@ public class AStarSample : MonoBehaviour
                 actorController.SetWalk();
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKED:
-                actorController.SetAttacked();
-                break;
-                case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
-                actorTarget = mMappingTable[action.TargetActorId];
-                float remain = mBattle.Attack(actorName, action);     
-                float hpRatio = mBattle.GetHPRatio(action.TargetActorId);
-                float currHP = mBattle.GetHP(action.TargetActorId);
+                float remain = mBattle.Attacked(actorId, action);     
+                float hpRatio = mBattle.GetHPRatio(actorId);
+                float currHP = mBattle.GetHP(actorId);
                 
-                actor.transform.position = agent.destination;
-                actor.transform.LookAt(actorTarget.transform);
-                actorController.SetAttack();
+                //actor.transform.position = agent.destination;               
                 
                 if(currHP <= 0) {
                     //삭제                    
-                    actorTarget.GetComponent<ActorController>().SetDie();                    
-                    mActorUI[action.TargetActorId].SetActive(false);
+                    actorController.SetDie();                    
+                    mActorUI[actorId].SetActive(false);
                 } else {
-                    ActorUI actorUI = mActorUI[action.TargetActorId].GetComponent<ActorUI>();
-                    actorUI.SetHP(hpRatio);
-                    actorUI.SetMessage(string.Format("-{0}", action.AttackAmount));
+                    actorController.SetAttacked();                    
+                    SetHP(actorId, hpRatio);
+                    SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
                 }
-                Debug.Log(string.Format("Attack {0}({1}) > {2}({3})", actorName, action.FromPosition, action.TargetActorId, action.TargetPosition));
+                Debug.Log(string.Format("{0} Attacked {1}({2}) > {3}({4})",action.Counter, action.TargetActorId, action.FromPosition, actorId, action.TargetPosition));
+                break;
+                case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
+                actorTarget = mMappingTable[action.TargetActorId];
+                actor.transform.LookAt(actorTarget.transform);                
+                SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
+                actorController.SetAttack();
+                Debug.Log(string.Format("{0} Attacking {1} > {2}", action.Counter, actorId, action.TargetActorId));
                 break;
             }
         }
+    }
+    void SetHP(string actorId, float amount) {
+        ActorUI actorUI = mActorUI[actorId].GetComponent<ActorUI>();
+        actorUI.SetHP(amount);
+    }
+    void SetMessage(string actorId, string message) {
+        ActorUI actorUI = mActorUI[actorId].GetComponent<ActorUI>();
+        actorUI.SetMessage(message);
     }
     bool Load() {
         var pLoader = new Loader();
