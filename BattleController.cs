@@ -9,7 +9,7 @@ using ENGINE.GAMEPLAY.MOTIVATION;
  {
      public Transform[] X;
  }
-public class AStarSample : MonoBehaviour
+public class BattleController : MonoBehaviour
 {
     public TileX[] mTilesY;    
     //actor id, obj
@@ -35,15 +35,7 @@ public class AStarSample : MonoBehaviour
             {0,      0,      0,      0,      0}
         };
         */
-        int[,] map =
-        {
-            {0,      0,      0,      0,      0},
-            {0,      0,      0,      0,      0},
-            {0,      0,      0,      0,      0},
-            {0,      0,      0,      0,      0},
-            {0,      0,      0,      0,      0},
-            {0,      0,      0,      0,      0}
-        };
+        int[,] map = new int[mTilesY.Length, mTilesY[0].X.Length];        
 
         mBattle = new Battle(mTilesY[0].X.Length, mTilesY.Length);
         if(!mBattle.Init(map, map)) {            
@@ -58,7 +50,7 @@ public class AStarSample : MonoBehaviour
         abilityForward.AttackDistance = 1;        
         abilityForward.AttackAccuracy = 1;
         abilityForward.Sight = 3;        
-        abilityForward.Speed = 1;
+        abilityForward.Speed = 3;
         abilityForward.MoveForward = 3f;
         abilityForward.MoveBack = 0;
         abilityForward.MoveSide = 0;
@@ -91,13 +83,13 @@ public class AStarSample : MonoBehaviour
         
         string[] names = {"hf", "hb", "hs", "af", "ab", "as"};
         Vector2Int[] positions = {
-            new Vector2Int(1, 1),
-            new Vector2Int(2, 1),
-            new Vector2Int(3, 1),
+            new Vector2Int(0, 0),
+            new Vector2Int(0, 1),
+            new Vector2Int(0, 2),
 
-            new Vector2Int(4, 3),
-            new Vector2Int(3, 3),
-            new Vector2Int(2, 3)
+            new Vector2Int(2, 3),
+            new Vector2Int(2, 2),
+            new Vector2Int(2, 1)
         };
         BattleActorAbility[] abilities = {
             abilityForward,
@@ -135,7 +127,8 @@ public class AStarSample : MonoBehaviour
                 return;
             }
             Vector3 dest = mTilesY[pos.y].X[pos.x].transform.position;
-            dest = new Vector3(dest.x + 0.5f, dest.y, dest.z + 0.5f);
+            dest = new Vector3(dest.x - 2.5f, dest.y, dest.z - 2.5f);
+            
             GameObject obj = Instantiate<GameObject>(prefab, dest, Quaternion.identity);
             obj.name = actorName;
             Debug.Log(string.Format("{0} {1} {2}", actorName, dest.x, dest.z));
@@ -169,13 +162,16 @@ public class AStarSample : MonoBehaviour
     float delta = 0;
     private void FixedUpdate() {
         delta += Time.deltaTime;
-        if(delta > 3) {
-            Occupy();
+        if(delta > 2) {
+            //Occupy();
             Next();            
             delta = 0;
         }        
     }
-    // Update is called once per frame
+    public void Occupy(string actorId) {
+        mBattle.Occupy(actorId);
+    }
+    /*
     void Occupy()
     {
         foreach(var p in mMappingTable) {
@@ -192,27 +188,36 @@ public class AStarSample : MonoBehaviour
         }
         return;
     }
+    */
     void Next() {
         Dictionary<string, BattleActorAction> next = mBattle.Next();
         foreach(var p in next) {
-            string actorId = p.Key;
+            string actorId = p.Key;            
+            var battleActor = mBattle.GetBattleActor(actorId);            
             BattleActorAction action = p.Value;
             GameObject actor = mMappingTable[actorId];
+            if(battleActor == null || actor == null) {
+                continue;
+            }
             GameObject actorTarget;
             var actorController = actor.GetComponent<ActorController>();
             var agent = actor.GetComponent<NavMeshAgent>();
+            
 
             switch(action.Type) {
                 case BATTLE_ACTOR_ACTION_TYPE.NONE:
+                case BATTLE_ACTOR_ACTION_TYPE.READY_ATTACKING:
+                case BATTLE_ACTOR_ACTION_TYPE.READY_ATTACKED:
                 actorController.SetIdle();
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.MOVING:
                 int[] position = mBattle.mMap.GetPositionInt(action.TargetPosition);
                 
                 Vector3 toVec3 = mTilesY[position[1]].X[position[0]].transform.position;
-                Vector3 dest = new Vector3(toVec3.x + 0.5f, 0, toVec3.z + 0.5f);            
-                agent.destination = dest;
-                actorController.SetWalk();
+                Vector3 dest = new Vector3(toVec3.x - 2.5f, toVec3.y, toVec3.z - 2.5f);            
+                //agent.destination = dest;
+                actorController.SetWalk(dest, battleActor.mAbility.Speed);
+                Debug.Log(string.Format("{0} Moving {1} > {2}", action.Counter, actorId, dest));
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKED:
                 float remain = mBattle.Attacked(actorId, action);     
@@ -230,14 +235,14 @@ public class AStarSample : MonoBehaviour
                     SetHP(actorId, hpRatio);
                     SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
                 }
-                Debug.Log(string.Format("{0} Attacked {1}({2}) > {3}({4})",action.Counter, action.TargetActorId, action.FromPosition, actorId, action.TargetPosition));
+                //Debug.Log(string.Format("{0} Attacked {1}({2}) > {3}({4})",action.Counter, action.TargetActorId, action.FromPosition, actorId, action.TargetPosition));
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
                 actorTarget = mMappingTable[action.TargetActorId];
                 actor.transform.LookAt(actorTarget.transform);                
                 SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
                 actorController.SetAttack();
-                Debug.Log(string.Format("{0} Attacking {1} > {2}", action.Counter, actorId, action.TargetActorId));
+                //Debug.Log(string.Format("{0} Attacking {1} > {2}", action.Counter, actorId, action.TargetActorId));
                 break;
             }
         }
