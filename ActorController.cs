@@ -10,6 +10,7 @@ public class ActorController : MonoBehaviour
     Vector3 mMovingFrom;
     Quaternion mRotationFrom, mRotationTo;
     Vector3 mMovingTo;
+    float mMovingTime;
     float mSpeed;
     BATTLE_ACTOR_ACTION_TYPE mCurrActionType;
     BattleController mBattleController;
@@ -35,8 +36,7 @@ public class ActorController : MonoBehaviour
             break;            
             case BATTLE_ACTOR_ACTION_TYPE.MOVING:
             {   
-                float distance = Vector3.Distance(gameObject.transform.position, mMovingTo);      
-                if(distance < 0.1f) {
+                if(mMovingTime <= mAccCounter) {
                     mBattleController.Occupy(this.name);
                     SetIdle();
                 } else {                    
@@ -65,7 +65,9 @@ public class ActorController : MonoBehaviour
     public void SetWalk(Vector3 to, float speed) {
         mMovingFrom = new Vector3(gameObject.transform.position.x, gameObject.transform.position.y, gameObject.transform.position.z);
         mMovingTo = to;
-        mSpeed =speed / Vector3.Distance(mMovingFrom, mMovingTo); //cost를 줄이기 위해 미리 계산
+        mSpeed = speed / Vector3.Distance(mMovingFrom, mMovingTo); //cost를 줄이기 위해 미리 계산
+        mMovingTime = Vector3.Distance(mMovingFrom, mMovingTo) / speed; //이동까지 걸릴 시간
+
         mRotationFrom = this.transform.rotation;        
         mRotationTo = Quaternion.LookRotation(mMovingTo - this.transform.position);
         SetActionType(BATTLE_ACTOR_ACTION_TYPE.MOVING);

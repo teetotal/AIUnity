@@ -11,6 +11,7 @@ using ENGINE.GAMEPLAY.MOTIVATION;
  }
 public class BattleController : MonoBehaviour
 {
+    public float Interval;
     public TileX[] mTilesY;    
     //actor id, obj
     private Dictionary<string, GameObject> mMappingTable = new Dictionary<string, GameObject>();    
@@ -162,7 +163,7 @@ public class BattleController : MonoBehaviour
     float delta = 0;
     private void FixedUpdate() {
         delta += Time.deltaTime;
-        if(delta > 2) {
+        if(delta > Interval) {
             //Occupy();
             Next();            
             delta = 0;
