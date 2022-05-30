@@ -15,7 +15,7 @@ public class BattleController : MonoBehaviour
     public TileX[] mTilesY;    
     //actor id, obj
     private Dictionary<string, GameObject> mMappingTable = new Dictionary<string, GameObject>();    
-    private Dictionary<string, GameObject> mActorUI = new Dictionary<string, GameObject>();
+    //private Dictionary<string, GameObject> mActorUI = new Dictionary<string, GameObject>();
     private Battle mBattle;
     // Start is called before the first frame update
     void Start()
@@ -82,23 +82,27 @@ public class BattleController : MonoBehaviour
 
         //GaemObject랑 연결
         
-        string[] names = {"hf", "hb", "hs", "af", "ab", "as"};
+        string[] names = {"hf", "hb", "hs", "h1", "a1", "af", "ab", "as"};
         Vector2Int[] positions = {
             new Vector2Int(0, 0),
             new Vector2Int(0, 1),
             new Vector2Int(0, 2),
+            new Vector2Int(0, 3),
 
             new Vector2Int(2, 3),
             new Vector2Int(2, 2),
-            new Vector2Int(2, 1)
+            new Vector2Int(2, 1),
+            new Vector2Int(2, 0)
         };
         BattleActorAbility[] abilities = {
             abilityForward,
             abilityBack,
             abilitySide,
             abilityForward,
+            abilityForward,
             abilityBack,
-            abilitySide
+            abilitySide,
+            abilityForward
         };
         
         /*
@@ -143,16 +147,7 @@ public class BattleController : MonoBehaviour
                 Debug.Log("Fail Append Actor " + actorName);
             }
 
-            mMappingTable.Add(actorName, obj);
-
-            //ui
-            GameObject ui = GameObject.Find("ActorUI_" + actorName.ToUpper());
-            if(ui == null) {
-                break;
-            }            
-            ActorUI p = ui.GetComponent<ActorUI>();
-            p.SetName(actorName);
-            mActorUI.Add(actorName, ui);
+            mMappingTable.Add(actorName, obj);            
         }
 
         if(!mBattle.Validate()) {
@@ -164,32 +159,13 @@ public class BattleController : MonoBehaviour
     private void FixedUpdate() {
         delta += Time.deltaTime;
         if(delta > Interval) {
-            //Occupy();
             Next();            
             delta = 0;
         }        
     }
     public void Occupy(string actorId) {
         mBattle.Occupy(actorId);
-    }
-    /*
-    void Occupy()
-    {
-        foreach(var p in mMappingTable) {
-            if(p.Value.activeSelf == false) continue;
-            string actorName = p.Key;
-            GameObject obj = p.Value;
-            var agent = obj.GetComponent<NavMeshAgent>();
-            var animator = obj.GetComponent<Animator>();
-
-            if(agent != null && agent.remainingDistance < 0.1f) {
-                agent.destination = obj.transform.position;
-                mBattle.Occupy(actorName);
-            } 
-        }
-        return;
-    }
-    */
+    }    
     void Next() {
         Dictionary<string, BattleActorAction> next = mBattle.Next();
         foreach(var p in next) {
@@ -221,41 +197,32 @@ public class BattleController : MonoBehaviour
                 Debug.Log(string.Format("{0} Moving {1} > {2}", action.Counter, actorId, dest));
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKED:
-                float remain = mBattle.Attacked(actorId, action);     
-                float hpRatio = mBattle.GetHPRatio(actorId);
-                float currHP = mBattle.GetHP(actorId);
-                
-                //actor.transform.position = agent.destination;               
-                
-                if(currHP <= 0) {
-                    //삭제                    
-                    actorController.SetDie();                    
-                    mActorUI[actorId].SetActive(false);
-                } else {
-                    actorController.SetAttacked();                    
-                    SetHP(actorId, hpRatio);
-                    SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
-                }
-                //Debug.Log(string.Format("{0} Attacked {1}({2}) > {3}({4})",action.Counter, action.TargetActorId, action.FromPosition, actorId, action.TargetPosition));
+                {
+                    float remain = mBattle.Attacked(actorId, action);     
+                    float hpRatio = mBattle.GetHPRatio(actorId);
+                    float currHP = mBattle.GetHP(actorId);
+
+                    if(currHP <= 0) {
+                        //삭제                    
+                        actorController.SetDie();                                        
+                    } else {
+                        actorController.SetAttacked(hpRatio, action);                                        
+                    }
+                }                
                 break;
                 case BATTLE_ACTOR_ACTION_TYPE.ATTACKING:
-                actorTarget = mMappingTable[action.TargetActorId];
-                actor.transform.LookAt(actorTarget.transform);                
-                SetMessage(actorId, string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
-                actorController.SetAttack();
-                //Debug.Log(string.Format("{0} Attacking {1} > {2}", action.Counter, actorId, action.TargetActorId));
+                {
+                    actorTarget = mMappingTable[action.TargetActorId];
+                    actor.transform.LookAt(actorTarget.transform);                
+                    
+                    float hpRatio = mBattle.GetHPRatio(actorId);
+                    actorController.SetAttack(hpRatio, action);
+                }
+                
                 break;
             }
         }
-    }
-    void SetHP(string actorId, float amount) {
-        ActorUI actorUI = mActorUI[actorId].GetComponent<ActorUI>();
-        actorUI.SetHP(amount);
-    }
-    void SetMessage(string actorId, string message) {
-        ActorUI actorUI = mActorUI[actorId].GetComponent<ActorUI>();
-        actorUI.SetMessage(message);
-    }
+    }    
     bool Load() {
         var pLoader = new Loader();
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");

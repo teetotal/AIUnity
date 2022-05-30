@@ -5,6 +5,9 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 
 public class ActorController : MonoBehaviour
 {
+    public string UIPrefab;
+    private GameObject mUIObject;
+    private ActorUI mUI;
     Animator mAnimator;    
     float mAccCounter = 0;
     Vector3 mMovingFrom;
@@ -14,11 +17,24 @@ public class ActorController : MonoBehaviour
     float mSpeed;
     BATTLE_ACTOR_ACTION_TYPE mCurrActionType;
     BattleController mBattleController;
+    
     // Start is called before the first frame update
     void Start()
     {
         mBattleController = GameObject.Find("BattleHandler").GetComponent<BattleController>();
         mAnimator = gameObject.GetComponent<Animator>();
+        //UI 
+        var prefab = Resources.Load<GameObject>(UIPrefab);
+        var canvas = GameObject.Find("Canvas");
+        if(prefab != null && canvas != null) {
+            mUIObject = Instantiate<GameObject>(prefab, Vector3.zero, Quaternion.identity);
+            mUIObject.name = "ActorUI_" + name;
+            mUIObject.transform.SetParent(canvas.transform);
+            mUI = mUIObject.GetComponent<ActorUI>();
+            mUI.targetName = name;
+            mUI.SetName(name);
+        }
+
     }
 
     // Update is called once per frame
@@ -30,7 +46,7 @@ public class ActorController : MonoBehaviour
             case BATTLE_ACTOR_ACTION_TYPE.DYING:
             {                
                 if(mAccCounter > 5) {
-                    this.gameObject.SetActive(false);
+                    this.gameObject.SetActive(false);                    
                 }
             }            
             break;            
@@ -48,6 +64,12 @@ public class ActorController : MonoBehaviour
             break;
         }        
     }
+    void SetHP(float amount) {        
+        mUI.SetHP(amount);
+    }
+    void SetMessage(string message) {        
+        mUI.SetMessage(message);
+    }
     void SetActionType(BATTLE_ACTOR_ACTION_TYPE type) {
         mCurrActionType = type;
         mAccCounter = 0;
@@ -60,6 +82,9 @@ public class ActorController : MonoBehaviour
         mAnimator.SetBool("IsWalk", false);
         mAnimator.SetBool("IsAttack", false);        
         mAnimator.SetBool("IsAttacked", false);
+
+        SetHP(0);
+        mUIObject.SetActive(false);
         
     }
     public void SetWalk(Vector3 to, float speed) {
@@ -78,7 +103,7 @@ public class ActorController : MonoBehaviour
         mAnimator.SetBool("IsDie", false);
         mAnimator.SetBool("IsAttacked", false);
     }
-    public void SetAttack() {
+    public void SetAttack(float hpRatio, BattleActorAction action) {
         SetActionType(BATTLE_ACTOR_ACTION_TYPE.ATTACKING);
 
         mAnimator.SetBool("IsIdle", false);
@@ -86,14 +111,17 @@ public class ActorController : MonoBehaviour
         mAnimator.SetBool("IsAttack", true);
         mAnimator.SetBool("IsDie", false);
         mAnimator.SetBool("IsAttacked", false);
+        //SetMessage(string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
     }
-    public void SetAttacked() {
+    public void SetAttacked(float hpRatio, BattleActorAction action) {
         SetActionType(BATTLE_ACTOR_ACTION_TYPE.ATTACKED);
         mAnimator.SetBool("IsIdle", false);
         mAnimator.SetBool("IsWalk", false);
         mAnimator.SetBool("IsAttack", false);
         mAnimator.SetBool("IsDie", false);
         mAnimator.SetBool("IsAttacked", true);
+        SetHP(hpRatio);
+        SetMessage(string.Format("{0} {1}({2})", action.Counter, action.TargetActorId, action.AttackAmount));
     }
     public void SetIdle() {
         SetActionType(BATTLE_ACTOR_ACTION_TYPE.READY_ATTACKING);
