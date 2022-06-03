@@ -1,17 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 public class RenderObj {
     public Shader originalShader;
-    public MeshRenderer originalRenderer;
+    public MeshRenderer originalRenderer; //shader만 저장해서 다시 설정 했더니 안되서 meshRenderer도 저장
 }
 
 public class TransparentObject : MonoBehaviour
 {
-    public GameObject TargetObject;
-    public string TargetLayer;    
-    public Color colorTransparent;
-    private int mLayerMask;
+    public GameObject TargetObject; //대상 
+    public string TargetLayer; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
+    public Color ColorTransparent;
+    public float RecoveryTime = 5; //원래 shader로 복구 시간
+    private int mLayerMask; 
     private Shader mTransparentShader;
     private Dictionary<string, RenderObj> mDictShader = new Dictionary<string, RenderObj>();
     private float mCounter = 0;
@@ -44,7 +46,7 @@ public class TransparentObject : MonoBehaviour
 
                 mDictShader.Add(obj.name, renderObj);
                 render.material.shader = mTransparentShader;
-                render.material.SetColor("_Color", colorTransparent);
+                render.material.SetColor("_Color", ColorTransparent);
                 //Debug.Log(string.Format("Transparent {0} {1} > {2}", obj.name, mDictShader[obj.name].originalShader.name, render.material.shader.name));
             }            
         }
