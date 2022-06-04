@@ -21,7 +21,10 @@ public class ActorController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        mBattleController = GameObject.Find("BattleHandler").GetComponent<BattleController>();
+        var p = GameObject.Find("BattleHandler");
+        if(p != null)
+            mBattleController = p.GetComponent<BattleController>();
+            
         mAnimator = gameObject.GetComponent<Animator>();
         //UI 
         var prefab = Resources.Load<GameObject>(UIPrefab);
@@ -53,7 +56,7 @@ public class ActorController : MonoBehaviour
             case BATTLE_ACTOR_ACTION_TYPE.MOVING:
             {   
                 if(mMovingTime <= mAccCounter) {
-                    mBattleController.Occupy(this.name);
+                    if(mBattleController != null) mBattleController.Occupy(this.name);
                     SetIdle();
                 } else {                    
 			        gameObject.transform.rotation = Quaternion.Lerp(mRotationFrom, mRotationTo, mAccCounter * 4);
