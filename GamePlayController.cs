@@ -8,7 +8,7 @@ public class GamePlayController : MonoBehaviour
 {
     public float Interval = 3;
     private float mTimer = 0;
-    private Dictionary<string, Actor> mActors;
+    private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();
     private Dictionary<string, FnTask?> mActorTask = new Dictionary<string, FnTask?>();
     // Start is called before the first frame update
@@ -20,6 +20,10 @@ public class GamePlayController : MonoBehaviour
         }
         //Actor생성
         mActors = ActorHandler.Instance.GetActors(1);
+        if(mActors == null) {
+            Debug.Log("Loading Actor Failure");
+            return;
+        }
         if(!CreateActors()) {
             Debug.Log("Creating Actors Failure");
             return;
@@ -53,15 +57,15 @@ public class GamePlayController : MonoBehaviour
         }
     }
     private bool CreateActors() {        
-        GameObject prefab = Resources.Load<GameObject>("Actors/actor1");
-        if(prefab == null) 
-            return false;
-
         int nCount = 0;
         foreach(var p in mActors) {
             string actorName = p.Key;
+            Actor actor = p.Value;
             //95,0,135 - 10,0,135
             Vector3 position = new Vector3(90 - (5 * nCount), 0, 132.5f);
+            GameObject prefab = Resources.Load<GameObject>(actor.prefab);
+            if(prefab == null) 
+                continue;
             GameObject obj = Instantiate(prefab, position, Quaternion.identity);
             obj.name = actorName;
             mActorObjects.Add(actorName, obj);
