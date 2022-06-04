@@ -42,7 +42,7 @@ public class GamePlayController : MonoBehaviour
     private void Next() {
         long counter = CounterHandler.Instance.Next();
         foreach(var p in mActors) {
-            if(mActorTask[p.Key] == null) {
+            if(mActorTask.ContainsKey(p.Key) && mActorTask[p.Key] == null) {
                 Actor actor = mActors[p.Key];
                 string? taskid = actor.GetTaskId();
                 if(taskid == null) 
