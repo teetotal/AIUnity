@@ -94,7 +94,7 @@ public class GamePlayController : MonoBehaviour
             string actorName = p.Key;
             Actor actor = p.Value;
             //95,0,135 - 10,0,135
-            Vector3 position = new Vector3(90 - (5 * nCount), 0, 132.5f);
+            Vector3 position = new Vector3(-20 - (5 * nCount), 0, -122.5f);
             GameObject prefab = Resources.Load<GameObject>(actor.prefab);
             if(prefab == null) 
                 continue;
