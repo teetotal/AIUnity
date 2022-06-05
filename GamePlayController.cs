@@ -44,17 +44,45 @@ public class GamePlayController : MonoBehaviour
         foreach(var p in mActors) {
             if(mActorTask.ContainsKey(p.Key) && mActorTask[p.Key] == null) {
                 Actor actor = mActors[p.Key];
-                string? taskid = actor.GetTaskId();
-                if(taskid == null) 
-                    continue;             
-                var task = TaskHandler.Instance.GetTask(taskid);
+                
+                var actorObject = mActorObjects[p.Key];
+                ActorController actorController = actorObject.GetComponent<ActorController>();
+            
+                var task = TaskHandler.Instance.GetTask(actor.GetTaskId());
                 if(task == null) 
-                    continue;   
-                mActorTask[p.Key] = task;
+                    continue;                   
+                //target object
+                string targetObject = task.GetTargetObject(actor);
+                if(targetObject.Length == 0) {
+                    //바로 실행
+                    if(task.DoTask(actor)) {
+                        //animation                        
+                        actorController.SetAnimation(task.GetAnimation());                        
+                    }
+                } else {
+                    mActorTask[p.Key] = task;
+                    //쫒아가기
+                    actorController.MoveTo(targetObject);
+                }
                 Debug.Log(string.Format("{0}, {1}", p.Key, task.mTaskTitle));
-                //task.DoTask(actor);
             }
         }
+    }
+    public bool DoTask(string actorId) {
+        if(mActors.ContainsKey(actorId) == false || mActorTask.ContainsKey(actorId) == false || mActorTask[actorId] == null) {
+            return false;
+        }
+        var task = mActorTask[actorId];
+        var actorObject = mActorObjects[actorId];
+        ActorController actorController = actorObject.GetComponent<ActorController>();
+        actorController.SetAnimation(task.GetAnimation());
+
+        if(!task.DoTask(mActors[actorId])) 
+            return false;
+        
+        //UI update
+        
+        return true;
     }
     private bool CreateActors() {        
         int nCount = 0;

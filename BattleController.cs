@@ -177,7 +177,7 @@ public class BattleController : MonoBehaviour
                 continue;
             }
             GameObject actorTarget;
-            var actorController = actor.GetComponent<ActorController>();
+            var actorController = actor.GetComponent<BattleActorController>();
             var agent = actor.GetComponent<NavMeshAgent>();
             
 

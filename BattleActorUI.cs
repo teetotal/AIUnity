@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ActorUI : MonoBehaviour
+public class BattleActorUI : MonoBehaviour
 {	
     public string targetName;
 	private Transform target;
