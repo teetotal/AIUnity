@@ -68,14 +68,18 @@ public class GamePlayController : MonoBehaviour
             }
         }
     }
+    public FnTask? GetTask(string actorId) {
+        if(mActorTask.ContainsKey(actorId) == false) {
+            return null;
+        }
+        return mActorTask[actorId];
+    }
     public bool DoTask(string actorId) {
         if(mActors.ContainsKey(actorId) == false || mActorTask.ContainsKey(actorId) == false || mActorTask[actorId] == null) {
             return false;
         }
         var task = mActorTask[actorId];
-        var actorObject = mActorObjects[actorId];
-        ActorController actorController = actorObject.GetComponent<ActorController>();
-        actorController.SetAnimation(task.GetAnimation());
+        mActorTask[actorId] = null;
 
         if(!task.DoTask(mActors[actorId])) 
             return false;

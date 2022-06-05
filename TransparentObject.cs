@@ -9,7 +9,8 @@ public class RenderObj {
 
 public class TransparentObject : MonoBehaviour
 {
-    public GameObject TargetObject; //대상 
+    public string TargetObject;
+    private GameObject mTargetObject; //대상 
     public string TargetLayer; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
     public Color ColorTransparent;
     public float RecoveryTime = 5; //원래 shader로 복구 시간
@@ -17,20 +18,40 @@ public class TransparentObject : MonoBehaviour
     private Shader mTransparentShader;
     private Dictionary<string, RenderObj> mDictShader = new Dictionary<string, RenderObj>();
     private float mCounter = 0;
+    private float mSmoothRotation = 1.0f;
+    private float mHeight = 5.0f;
+    private float mDistance = 10.0f;
+    private Transform mTransform;
+    private bool mIsTargeted = false;
     // Start is called before the first frame update
     void Start()
     {
+        mTransform = GetComponent<Transform>();        
         mTransparentShader = Shader.Find("Legacy Shaders/Transparent/Diffuse");
-        mLayerMask = 1 << LayerMask.NameToLayer(TargetLayer);
-    }    
+        mLayerMask = 1 << LayerMask.NameToLayer(TargetLayer);        
+        SetTargetObject();
+    }  
+    bool SetTargetObject() {        
+        mTargetObject = GameObject.Find(TargetObject);
+        if(mTargetObject == null) {
+            Debug.Log("Invalid Target Object " + TargetObject);
+            mIsTargeted = false;
+            return false;
+        }
+        mIsTargeted = true;
+        return true;
+    }
 
     // Update is called once per frame
     void Update()
     {
+        if(!mIsTargeted) {
+            SetTargetObject();
+        }
         Recovery();
 
         Vector3 from = gameObject.transform.position;
-        Vector3 to = TargetObject.transform.position;
+        Vector3 to = mTargetObject.transform.position;
         float distance = Vector3.Distance(from, to);
         Vector3 direction = (to - from).normalized;
         RaycastHit[] hits = Physics.RaycastAll(from, direction, distance, mLayerMask);
@@ -50,6 +71,14 @@ public class TransparentObject : MonoBehaviour
                 //Debug.Log(string.Format("Transparent {0} {1} > {2}", obj.name, mDictShader[obj.name].originalShader.name, render.material.shader.name));
             }            
         }
+    }
+    void LateUpdate()
+    {
+        
+        float currYAngle = Mathf.LerpAngle(mTransform.eulerAngles.y, mTargetObject.transform.eulerAngles.y, mSmoothRotation * Time.deltaTime);
+        Quaternion rot = Quaternion.Euler(0, currYAngle, 0 );
+        mTransform.position = mTargetObject.transform.position - (rot * Vector3.forward * mDistance) + (Vector3.up *  mHeight);
+        mTransform.LookAt(mTargetObject.transform);
     }
     void Recovery() {
         mCounter += Time.deltaTime;        
