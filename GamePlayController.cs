@@ -39,13 +39,21 @@ public class GamePlayController : MonoBehaviour
             mTimer = 0;
         }        
     }
+    public void Ack(string AckActorId, string fromActorId, FnTask task) {
+        if(AckActorId == "김밥이") {
+            int i = 0;
+            i++;
+        }
+        mActorObjects[AckActorId].GetComponent<ActorController>().Ack(task, fromActorId);
+    }
     private void Next() {
         long counter = CounterHandler.Instance.Next();
         foreach(var p in mActors) {
             if(mActorTask.ContainsKey(p.Key) && mActorTask[p.Key] == null) {
                 Actor actor = mActors[p.Key];
                 //Reserved상태면 대기
-                if(actor.mIsReserved) continue;
+                if(actor.GetReserve()) 
+                    continue;
                 
                 var actorObject = mActorObjects[p.Key];
                 ActorController actorController = actorObject.GetComponent<ActorController>();            

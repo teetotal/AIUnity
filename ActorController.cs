@@ -94,7 +94,7 @@ public class ActorController : MonoBehaviour
     public void LookAtMe(Transform tr) {
         transform.LookAt(tr);
     }
-    public void Ack(FnTask task, string from) {
+    public void Ack(FnTask task, string from) {        
         mUI.SetMessage(ScriptHandler.Instance.GetScriptAck(task.mTaskId, name, from));
         SetAnimation(task.mInfo.animationAck);
         mState = STATE.ACK;
@@ -107,7 +107,7 @@ public class ActorController : MonoBehaviour
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
 
         switch(mState) {
-            case STATE.IDLE:
+            case STATE.IDLE:            
             mTimer = 0;
             break;
             case STATE.ACK:
@@ -119,7 +119,6 @@ public class ActorController : MonoBehaviour
             break;
             case STATE.READY_MOVING:
             {
-                mActor.SetState(Actor.STATE.MOVING);
                 mTimer += Time.deltaTime;
                 if(mTimer > 1) {
                     mAgent.ResetPath();                    
@@ -131,7 +130,6 @@ public class ActorController : MonoBehaviour
             break;
             case STATE.MOVING:
             {
-                mActor.SetState(Actor.STATE.MOVING);                
                 if(GetDistance() < ApprochRange) {                    
                     mState = STATE.APPROCHING;
                     mApprochingContext = new ActorControllerApproching(transform.position, GetDestination(), 2, transform.rotation);
@@ -143,7 +141,6 @@ public class ActorController : MonoBehaviour
             }
             break;
             case STATE.APPROCHING: {
-                mActor.SetState(Actor.STATE.MOVING);
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
                 transform.position = Vector3.Lerp(mApprochingContext.from, mApprochingContext.to, rate);
                 transform.rotation = Quaternion.Lerp(mApprochingContext.fromQuaternion, mApprochingContext.toQuaternion, rate * 4);
@@ -155,7 +152,6 @@ public class ActorController : MonoBehaviour
             }
             break;
             case STATE.START_TASK: {
-                mActor.SetState(Actor.STATE.TASKING);
                 mTimer = 0;
                 mCurrTask = mGamePlayController.GetTask(name);
                 SetAnimation(mCurrTask.GetAnimation());                
@@ -175,7 +171,6 @@ public class ActorController : MonoBehaviour
             }
             break;
             case STATE.TASK: {
-                mActor.SetState(Actor.STATE.TASKING);
                 mTimer += Time.deltaTime;
                 if(mCurrTask.mInfo.time < mTimer) {                                        
                     SetAnimation(StopAnimation);
@@ -184,10 +179,12 @@ public class ActorController : MonoBehaviour
                     
                     //ack                    
                     if(mActor.mTaskTarget.Item1) {
+                        mGamePlayController.Ack(mActor.mTaskTarget.Item2, name, mCurrTask);
+                        /*
                         GameObject? obj = mGamePlayController.GetActorObject(mActor.mTaskTarget.Item2);
                         if(obj != null) {                            
                             obj.GetComponent<ActorController>().Ack(mCurrTask, name);
-                        }
+                        }*/
                     }
                 }
             }
