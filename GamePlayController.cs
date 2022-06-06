@@ -44,25 +44,29 @@ public class GamePlayController : MonoBehaviour
         foreach(var p in mActors) {
             if(mActorTask.ContainsKey(p.Key) && mActorTask[p.Key] == null) {
                 Actor actor = mActors[p.Key];
+                //Reserved상태면 대기
+                if(actor.mIsReserved) continue;
                 
                 var actorObject = mActorObjects[p.Key];
-                ActorController actorController = actorObject.GetComponent<ActorController>();
-            
-                var task = TaskHandler.Instance.GetTask(actor.GetTaskId());
-                if(task == null) 
-                    continue;                   
-                //target object
-                string targetObject = task.GetTargetObject(actor);
-                if(targetObject.Length == 0) {
+                ActorController actorController = actorObject.GetComponent<ActorController>();            
+                
+                if(actor.TakeTask() == false || actor.mTaskTarget == null || actor.mCurrentTask == null) {
+                    Debug.Log(actor.mUniqueId + " Taking task failure");
+                    continue;            
+                }
+                    
+                FnTask task = actor.mCurrentTask;       
+                //target object                
+                if(actor.mTaskTarget.Item2.Length == 0) {
                     //바로 실행
-                    if(task.DoTask(actor)) {
+                    if(actor.DoTask()) {
                         //animation                        
                         actorController.SetAnimation(task.GetAnimation());                        
                     }
                 } else {
                     mActorTask[p.Key] = task;
                     //쫒아가기
-                    actorController.MoveTo(targetObject);
+                    actorController.MoveTo(actor.mTaskTarget.Item2);
                 }
                 Debug.Log(string.Format("{0}, {1}", p.Key, task.mTaskTitle));
             }
@@ -74,14 +78,19 @@ public class GamePlayController : MonoBehaviour
         }
         return mActorTask[actorId];
     }
+    public GameObject? GetActorObject(string actorId) {
+        if(mActorObjects.ContainsKey(actorId)) {
+            return mActorObjects[actorId];
+        }
+        return null;
+    }
     public bool DoTask(string actorId) {
         if(mActors.ContainsKey(actorId) == false || mActorTask.ContainsKey(actorId) == false || mActorTask[actorId] == null) {
             return false;
-        }
-        var task = mActorTask[actorId];
+        }        
         mActorTask[actorId] = null;
 
-        if(!task.DoTask(mActors[actorId])) 
+        if(!mActors[actorId].DoTask()) 
             return false;
         
         //UI update
