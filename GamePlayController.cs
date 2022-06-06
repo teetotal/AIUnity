@@ -89,20 +89,19 @@ public class GamePlayController : MonoBehaviour
         return true;
     }
     private bool CreateActors() {        
-        int nCount = 0;
         foreach(var p in mActors) {
             string actorName = p.Key;
             Actor actor = p.Value;
-            //95,0,135 - 10,0,135
-            Vector3 position = new Vector3(-20 - (5 * nCount), 0, -122.5f);
-            GameObject prefab = Resources.Load<GameObject>(actor.prefab);
-            if(prefab == null) 
-                continue;
-            GameObject obj = Instantiate(prefab, position, Quaternion.identity);
-            obj.name = actorName;
-            mActorObjects.Add(actorName, obj);
-            mActorTask.Add(actorName, null);
-            nCount ++;
+            if(actor.position != null) {
+                Vector3 position = new Vector3(actor.position.x, actor.position.y, actor.position.z);
+                GameObject prefab = Resources.Load<GameObject>(actor.prefab);
+                if(prefab == null) 
+                    continue;
+                GameObject obj = Instantiate(prefab, position, Quaternion.identity);
+                obj.name = actorName;
+                mActorObjects.Add(actorName, obj);
+                mActorTask.Add(actorName, null);
+            }            
         }
         return true;
     }

@@ -45,7 +45,7 @@ public class ActorController : MonoBehaviour
         TASK,
         FINISH_TASK
     };
-    public float RandomRange = 1;
+    public float ApprochRange = 2;
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string GameController = "GamePlay";
@@ -82,7 +82,7 @@ public class ActorController : MonoBehaviour
             break;
             case STATE.MOVING:
             {
-                if(GetDistance() < RandomRange * 2) {                    
+                if(GetDistance() < ApprochRange) {                    
                     mState = STATE.APPROCHING;
                     mApprochingContext = new ActorControllerApproching(transform.position, GetDestination(), 2, transform.rotation);
                     mTargetTransform = null;
@@ -97,8 +97,7 @@ public class ActorController : MonoBehaviour
                 transform.position = Vector3.Lerp(mApprochingContext.from, mApprochingContext.to, rate);
                 transform.rotation = Quaternion.Lerp(mApprochingContext.fromQuaternion, mApprochingContext.toQuaternion, rate * 4);
                 if(rate >= 1) {
-                    //Debug.Log(name + " APPROCHED");
-                    mApprochingContext = null;
+                    //Debug.Log(name + " APPROCHED");                    
                     mState = STATE.START_TASK;                    
                     SetAnimation(StopAnimation);                                        
                 }
@@ -109,6 +108,7 @@ public class ActorController : MonoBehaviour
                 mCurrTask = mGamePlayController.GetTask(name);
                 SetAnimation(mCurrTask.GetAnimation());
                 mState = STATE.TASK;
+                mApprochingContext = null;
             }
             break;
             case STATE.TASK: {
@@ -135,9 +135,10 @@ public class ActorController : MonoBehaviour
         float distance = Vector3.Distance(transform.position, mTargetTransform.position);
         return distance;        
     }
+    //position값과 보이는 위치의 차이 보정
     private Vector3 GetDestination() {
         Vector3 position = mTargetTransform.position;        
-        return new Vector3(position.x + Random.Range(-RandomRange, RandomRange), position.y, position.z + Random.Range(-RandomRange, RandomRange));
+        return new Vector3(position.x -2.5f, position.y, position.z - 2.5f);
     }
     public void SetAnimation(string animation) {
         //Debug.Log(name + "SetAnimation " + animation);
@@ -152,7 +153,7 @@ public class ActorController : MonoBehaviour
             mTargetTransform = target.transform;            
             mAgent.ResetPath();
             mAgent.destination = GetDestination();                        
-            Debug.Log(name + " MoveTo " + targetObject + mAgent.destination.ToString());
+            //Debug.Log(name + " MoveTo " + targetObject + mAgent.destination.ToString());
             mState = STATE.MOVING;
             SetAnimation("Walk");
         }
