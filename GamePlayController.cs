@@ -39,11 +39,7 @@ public class GamePlayController : MonoBehaviour
             mTimer = 0;
         }        
     }
-    public void Ack(string AckActorId, string fromActorId, FnTask task) {
-        if(AckActorId == "김밥이") {
-            int i = 0;
-            i++;
-        }
+    public void Ack(string AckActorId, string fromActorId, FnTask task) {        
         mActorObjects[AckActorId].GetComponent<ActorController>().Ack(task, fromActorId);
     }
     private void Next() {
@@ -53,6 +49,9 @@ public class GamePlayController : MonoBehaviour
                 Actor actor = mActors[p.Key];
                 //Reserved상태면 대기
                 if(actor.GetReserve()) 
+                    continue;
+                //Ready상태가 아니면 대기
+                if(actor.GetState() != Actor.STATE.READY)
                     continue;
                 
                 var actorObject = mActorObjects[p.Key];
@@ -76,7 +75,7 @@ public class GamePlayController : MonoBehaviour
                     //쫒아가기
                     actorController.MoveTo(actor.mTaskTarget.Item2);
                 }
-                Debug.Log(string.Format("{0}, {1}", p.Key, task.mTaskTitle));
+                //Debug.Log(string.Format("{0}, {1}", p.Key, task.mTaskTitle));
             }
         }
     }
@@ -85,6 +84,12 @@ public class GamePlayController : MonoBehaviour
             return null;
         }
         return mActorTask[actorId];
+    }
+    public Actor? GetActor(string actorId) {
+        if(mActors.ContainsKey(actorId)) {
+            return mActors[actorId];
+        }
+        return null;
     }
     public GameObject? GetActorObject(string actorId) {
         if(mActorObjects.ContainsKey(actorId)) {

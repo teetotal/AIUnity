@@ -5,20 +5,21 @@ using UnityEngine.AI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 public class ActorControllerApproching {
     public float timer { get; set; }
-    public Vector3 to { get; set; }
-    public Vector3 from { get; set; }
-    public Quaternion toQuaternion { get; set; }
+    public Transform to { get; set; }
+    public Vector3 fromPosition { get; set; }
+    //public Quaternion toQuaternion { get; set; }
     public Quaternion fromQuaternion { get; set; }
     public float distance { get; set; }
     public float time { get; set; }
     public float speed { get; set; }    
-    public ActorControllerApproching(Vector3 from, Vector3 to, float speed, Quaternion fromQ) {
-        this.from = from;
+    public ActorControllerApproching(Transform from, Transform to, float speed) {
+        this.fromPosition = new Vector3(from.position.x, from.position.y, from.position.z);        
+        this.fromQuaternion = from.rotation;
         this.to = to;
         this.speed = speed;
         this.timer = 0;
-        this.fromQuaternion = fromQ;        
-        this.toQuaternion = Quaternion.LookRotation(to - from);
+        //this.fromQuaternion = fromQ;        
+        //this.toQuaternion = Quaternion.LookRotation(to - from);
         SetDistance();
         SetTime();
     }
@@ -27,7 +28,7 @@ public class ActorControllerApproching {
         return Mathf.Min(1, timer/time);
     }
     private void SetDistance() {
-        distance = Vector3.Distance(from, to);
+        distance = Vector3.Distance(fromPosition, to.position);
     }
     private void SetTime() {
         //시간 = 거리 / 속력
@@ -42,22 +43,23 @@ public class ActorController : MonoBehaviour
         ACK,
         READY_MOVING,
         MOVING,
-        APPROCHING,
+        //APPROCHING,
         START_TASK,
         TASK,
-        FINISH_TASK
+        FINISH_TASK,
+        LEVELUP,
     };
     public string UIPrefab = "ActorUI";
     private GameObject mUIObject;
     private BattleActorUI mUI;
-    public float ApprochRange = 2;
+    public float ApprochRange = 3f;
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string GameController = "GamePlay";
     private GamePlayController mGamePlayController;
     private Transform mTargetTransform;
     private NavMeshAgent mAgent;
-    private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging"};
+    private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup"};
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();
     private Animator mAnimator;
     private STATE mState = STATE.IDLE;
@@ -65,8 +67,10 @@ public class ActorController : MonoBehaviour
     private FnTask? mCurrTask = null;
     private ActorControllerApproching? mApprochingContext;
     private Actor mActor;
+    private float mDefaultWaitTime = 3.2f; 
+    private float mDefaultWaitTimeMin = 0.8f;
     void Start()
-    {
+    {        
         mActor = ActorHandler.Instance.GetActor(name);
         for(int i =0; i < mAnimationIds.Length; i++ ) {
             mDicAnimation.Add(mAnimationIds[i], i);
@@ -94,7 +98,8 @@ public class ActorController : MonoBehaviour
     public void LookAtMe(Transform tr) {
         transform.LookAt(tr);
     }
-    public void Ack(FnTask task, string from) {        
+    public void Ack(FnTask task, string from) {      
+        mActor.SetState(Actor.STATE.TASKED);
         mUI.SetMessage(ScriptHandler.Instance.GetScriptAck(task.mTaskId, name, from));
         SetAnimation(task.mInfo.animationAck);
         mState = STATE.ACK;
@@ -112,7 +117,9 @@ public class ActorController : MonoBehaviour
             break;
             case STATE.ACK:
             mTimer += Time.deltaTime;
-            if(mTimer > 1) {
+            if(mTimer > mDefaultWaitTime) {
+                //Debug.Log(name + " ACK");
+                mActor.SetState(Actor.STATE.READY);
                 mState = STATE.IDLE;
                 SetAnimation(StopAnimation);
             }
@@ -121,6 +128,7 @@ public class ActorController : MonoBehaviour
             {
                 mTimer += Time.deltaTime;
                 if(mTimer > 1) {
+                    //Debug.Log(name + " READY_MOVING");
                     mAgent.ResetPath();                    
                     mState = STATE.MOVING;
                     SetAnimation("Walk");
@@ -131,48 +139,60 @@ public class ActorController : MonoBehaviour
             case STATE.MOVING:
             {
                 if(GetDistance() < ApprochRange) {                    
-                    mState = STATE.APPROCHING;
-                    mApprochingContext = new ActorControllerApproching(transform.position, GetDestination(), 2, transform.rotation);
+                    //mState = STATE.APPROCHING;
+                    //mApprochingContext = new ActorControllerApproching(transform, GetDestination(), 2);
                     mTargetTransform = null;
                     mAgent.isStopped = true;
+
+                    mState = STATE.START_TASK;   
+                    SetAnimation(StopAnimation);  
                 } else {
                     mAgent.destination = mTargetTransform.position;
                 }            
             }
             break;
+            /*
             case STATE.APPROCHING: {
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
-                transform.position = Vector3.Lerp(mApprochingContext.from, mApprochingContext.to, rate);
-                transform.rotation = Quaternion.Lerp(mApprochingContext.fromQuaternion, mApprochingContext.toQuaternion, rate * 4);
+                transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.to.position, rate);
+                //transform.LookAt(mApprochingContext.to);
+                transform.rotation = Quaternion.Lerp(mApprochingContext.fromQuaternion, mApprochingContext.to.rotation, rate);
                 if(rate >= 1) {
                     //Debug.Log(name + " APPROCHED");                    
                     mState = STATE.START_TASK;                    
-                    SetAnimation(StopAnimation);                                        
+                    SetAnimation(StopAnimation);    
                 }
             }
             break;
+            */
             case STATE.START_TASK: {
-                mTimer = 0;
-                mCurrTask = mGamePlayController.GetTask(name);
-                SetAnimation(mCurrTask.GetAnimation());                
-                mState = STATE.TASK;
-                mApprochingContext = null;
-                //상대가 있는 경우 바라본다.
-                if(mActor.mTaskTarget.Item1) {
-                    GameObject? obj = mGamePlayController.GetActorObject(mActor.mTaskTarget.Item2);
-                    if(obj != null) {
-                        transform.LookAt(obj.transform);
-                        //나를 바라보게 한다.
-                        obj.GetComponent<ActorController>().LookAtMe(transform);                        
-                        //대사
-                        mUI.SetMessage(ScriptHandler.Instance.GetScript(mCurrTask.mTaskId, name, mActor.mTaskTarget.Item2) );
-                    }
-                }
+                mTimer += Time.deltaTime;                
+
+                if(mTimer > mDefaultWaitTimeMin) {
+                    //Debug.Log(name + " START_TASK");
+                    mTimer = 0;
+                    mCurrTask = mGamePlayController.GetTask(name);
+                    SetAnimation(mCurrTask.GetAnimation());                
+                    mState = STATE.TASK;
+                    mApprochingContext = null;       
+                    //상대가 있는 경우 바라본다.
+                    if(mActor.mTaskTarget.Item1) {
+                        GameObject? obj = mGamePlayController.GetActorObject(mActor.mTaskTarget.Item2);
+                        if(obj != null) {
+                            transform.LookAt(obj.transform);
+                            //나를 바라보게 한다.
+                            obj.GetComponent<ActorController>().LookAtMe(transform);                        
+                            //대사
+                            mUI.SetMessage(ScriptHandler.Instance.GetScript(mCurrTask.mTaskId, name, mActor.mTaskTarget.Item2) );
+                        }
+                    }            
+                }                
             }
             break;
             case STATE.TASK: {
                 mTimer += Time.deltaTime;
-                if(mCurrTask.mInfo.time < mTimer) {                                        
+                if(mCurrTask.mInfo.time < mTimer) {      
+                    //Debug.Log(name + " TASK");                                  
                     SetAnimation(StopAnimation);
                     mState = STATE.FINISH_TASK;
                     mTimer = 0;
@@ -186,18 +206,47 @@ public class ActorController : MonoBehaviour
                             obj.GetComponent<ActorController>().Ack(mCurrTask, name);
                         }*/
                     }
+                    SetAnimation(StopAnimation); 
                 }
             }
             break;
             case STATE.FINISH_TASK:
             mTimer += Time.deltaTime;
-            if(mTimer > 1.5)  {
+            if(mTimer > mDefaultWaitTime)  {
+                Debug.Log(name + " FINISH_TASK");
+                mTimer = 0;
                 mCurrTask = null;
-                mGamePlayController.DoTask(name);
-                mState = STATE.IDLE;      
-                SetAnimation(StopAnimation);          
+
+                if(!mGamePlayController.DoTask(name)) {
+                    Debug.Log(name + " DoTask Failure");
+                }
+                if(mActor.checkLevelUp()) {
+                    var reward = LevelHandler.Instance.Get(mActor.mType, mActor.mLevel);
+                    if(!mActor.LevelUp(reward.next.rewards)) {
+                        Debug.Log(name + " LevelUp Failure");
+                    }
+                    mState = STATE.LEVELUP;
+                    SetAnimation("Levelup");      
+                    mUI.SetMessage("LEVEL UP! lv." + mActor.mLevel.ToString());              
+
+                } else {
+                    mState = STATE.IDLE;
+                    mActor.SetState(Actor.STATE.READY);
+                    SetAnimation(StopAnimation); 
+                }
             }            
             break;
+            case STATE.LEVELUP: {
+                mTimer += Time.deltaTime;                
+                if(mTimer > mDefaultWaitTime)  {                    
+                    Debug.Log(name + " LEVEL UP. lv" + mActor.mLevel.ToString());
+                    mTimer = 0;                    
+                    SetAnimation(StopAnimation); 
+                    mState = STATE.IDLE;
+                    mActor.SetState(Actor.STATE.READY);
+                }
+            }
+            break;            
         }        
     }
     
@@ -206,12 +255,15 @@ public class ActorController : MonoBehaviour
         return distance;        
     }
     //position값과 보이는 위치의 차이 보정
-    private Vector3 GetDestination() {
+    private Transform GetDestination() {
+        return mTargetTransform;
+        /*
         Vector3 position = mTargetTransform.position;    
         if(mActor.mTaskTarget.Item1)    
             return new Vector3(position.x - 2.5f, position.y, position.z - 2.5f);
         else
             return new Vector3(position.x, position.y, position.z);
+        */
     }
     public void SetAnimation(string animation) {
         //Debug.Log(name + "SetAnimation " + animation);
@@ -221,6 +273,9 @@ public class ActorController : MonoBehaviour
         }
     }
     public void MoveTo(string targetObject) {        
+        if(mState != STATE.IDLE) {
+            Debug.Log(name + " STATE ERROR! " + mState.ToString());
+        }
         GameObject target = GameObject.Find(targetObject);
         if(target != null) {            
             mTargetTransform = target.transform;            

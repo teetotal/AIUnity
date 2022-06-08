@@ -34,7 +34,7 @@ public class BattleActorUI : MonoBehaviour
     }
     private void Update() {
         timer += Time.deltaTime;
-        if(timer > 2) {
+        if(timer > 4) {
             _Message.text = "";
         }
         if(target == null) {
