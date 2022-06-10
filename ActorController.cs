@@ -104,13 +104,14 @@ public class ActorController : MonoBehaviour
         }
     }
     public void Callback(Actor.CALLBACK_TYPE type) {
-        Debug.Log(name + " " + type.ToString());
-        switch(type) {
-            case Actor.CALLBACK_TYPE.SET_READY:
-            break;
+        //Debug.Log(name + " " + type.ToString());
+        switch(type) {            
             case Actor.CALLBACK_TYPE.TAKE_TASK:
+            case Actor.CALLBACK_TYPE.ASKED:
             mCallbackQueue.Enqueue(type);
             Stop();
+            break;
+            case Actor.CALLBACK_TYPE.SET_READY:
             break;
             case Actor.CALLBACK_TYPE.DO_TASK:
             break;
@@ -119,10 +120,6 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.RESERVED:
             break;
             case Actor.CALLBACK_TYPE.ASK:
-            break;
-            case Actor.CALLBACK_TYPE.ASKED:
-            mCallbackQueue.Enqueue(type);
-            Stop();
             break;
             case Actor.CALLBACK_TYPE.INTERRUPT:
             break;
