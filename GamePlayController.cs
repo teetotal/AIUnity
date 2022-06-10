@@ -9,8 +9,7 @@ public class GamePlayController : MonoBehaviour
     public float Interval = 3;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
-    private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();
-    private Dictionary<string, FnTask?> mActorTask = new Dictionary<string, FnTask?>();
+    private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();    
     // Start is called before the first frame update
     void Start()
     {
@@ -38,77 +37,21 @@ public class GamePlayController : MonoBehaviour
             Next();            
             mTimer = 0;
         }        
-    }
-    public void Ack(string AckActorId, string fromActorId, FnTask task) {        
-        mActorObjects[AckActorId].GetComponent<ActorController>().Ack(task, fromActorId);
-    }
+    }    
     private void Next() {
         long counter = CounterHandler.Instance.Next();
         foreach(var p in mActors) {
-            if(mActorTask.ContainsKey(p.Key) && mActorTask[p.Key] == null) {
-                Actor actor = mActors[p.Key];
-                //Reserved상태면 대기
-                if(actor.GetReserve()) 
-                    continue;
-                //Ready상태가 아니면 대기
-                if(actor.GetState() != Actor.STATE.READY)
-                    continue;
-                
-                var actorObject = mActorObjects[p.Key];
-                ActorController actorController = actorObject.GetComponent<ActorController>();            
-                
-                if(actor.TakeTask() == false || actor.mTaskTarget == null || actor.mCurrentTask == null) {
-                    Debug.Log(actor.mUniqueId + " Taking task failure");
-                    continue;            
-                }
-                    
-                FnTask task = actor.mCurrentTask;       
-                //target object                
-                if(actor.mTaskTarget.Item2.Length == 0) {
-                    //바로 실행
-                    if(actor.DoTask()) {
-                        //animation                        
-                        actorController.SetAnimation(task.GetAnimation());                        
-                    }
-                } else {
-                    mActorTask[p.Key] = task;
-                    //쫒아가기
-                    actorController.MoveTo(actor.mTaskTarget.Item2);
-                }
-                //Debug.Log(string.Format("{0}, {1}", p.Key, task.mTaskTitle));
+            Actor actor = mActors[p.Key];
+            if(actor.TakeTask() == false) {                    
+                continue;            
             }
         }
-    }
-    public FnTask? GetTask(string actorId) {
-        if(mActorTask.ContainsKey(actorId) == false) {
-            return null;
-        }
-        return mActorTask[actorId];
-    }
-    public Actor? GetActor(string actorId) {
-        if(mActors.ContainsKey(actorId)) {
-            return mActors[actorId];
-        }
-        return null;
     }
     public GameObject? GetActorObject(string actorId) {
         if(mActorObjects.ContainsKey(actorId)) {
             return mActorObjects[actorId];
         }
         return null;
-    }
-    public bool DoTask(string actorId) {
-        if(mActors.ContainsKey(actorId) == false || mActorTask.ContainsKey(actorId) == false || mActorTask[actorId] == null) {
-            return false;
-        }        
-        mActorTask[actorId] = null;
-
-        if(!mActors[actorId].DoTask()) 
-            return false;
-        
-        //UI update
-        
-        return true;
     }
     private bool CreateActors() {        
         foreach(var p in mActors) {
@@ -121,8 +64,8 @@ public class GamePlayController : MonoBehaviour
                     continue;
                 GameObject obj = Instantiate(prefab, position, Quaternion.identity);
                 obj.name = actorName;
+                actor.SetCallback(obj.GetComponent<ActorController>().Callback);
                 mActorObjects.Add(actorName, obj);
-                mActorTask.Add(actorName, null);
             }            
         }
         return true;
