@@ -38,20 +38,58 @@ public class ActorControllerApproching {
     }
 }
 */
+public class AnimationContext {
+    public string name = "";
+    public int count = 0;
+    public int targetCount;
+    public ActorController.STATE_ANIMATION_CALLBACK callbackState;
+    private ActorController mActorController;
+    private DateTime lastTime;
+    public void Init(ActorController p) {
+        mActorController = p;
+    }
+    public void Reset() {
+        name = "";
+        count = 0;
+    }
+    public bool Set(string animationName, int targetCount, ActorController.STATE_ANIMATION_CALLBACK callbackState) {
+        if(name.Length > 0)
+            return false;
+        this.name = animationName;
+        this.targetCount = targetCount;
+        this.callbackState = callbackState;
+        mActorController.SetAnimation(this.name);
+        lastTime = DateTime.Now;
+        return true;
+    }
+    public bool Increase() {
+        TimeSpan span = DateTime.Now - lastTime;
+        if(span.TotalMilliseconds < 900)
+            return false;
+        count ++;
+        lastTime = DateTime.Now;
+        if(count >= targetCount) {
+            return true;
+        }
+        return false;
+    }
+}
 public class ActorController : MonoBehaviour
 {    
     enum STATE {
         INVALID,
         IDLE,
-        ACK,
         READY_MOVING,
         MOVING,
+    };
+    public enum STATE_ANIMATION_CALLBACK {
+        ACK,
         LOOK_AT_CALLER,
         START_TASK,
         TASK,
         FINISH_TASK,
         LEVELUP,
-    };
+    }
     //config
     public string UIPrefab = "ActorUI";    
     public float ApprochRange = 3f;
@@ -59,14 +97,15 @@ public class ActorController : MonoBehaviour
     public string StopAnimation = "Idle";
     public string GameController = "GamePlay";
     private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup"};
-    private float mDefaultWaitTime = 2.5f; 
-    private float mDefaultWaitTimeMin = 0.5f;
+    //private float mDefaultWaitTime = 2.5f; 
+    private float mDefaultWaitTimeMin = 0.3f;
 
     //unity objects
     private GameObject mUIObject;
     private BattleActorUI mUI;
     private GamePlayController mGamePlayController;
     private Transform mTargetTransform;
+    private float mTargetPositionRandom = 0;
     private NavMeshAgent mAgent;
     private Animator mAnimator;
     
@@ -74,11 +113,13 @@ public class ActorController : MonoBehaviour
     private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     private STATE mState = STATE.INVALID;
+    private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
     private Actor mActor;
     
     void Start()
     {        
+        mAnimationContext.Init(this);
         mActor = ActorHandler.Instance.GetActor(name);
         for(int i =0; i < mAnimationIds.Length; i++ ) {
             mDicAnimation.Add(mAnimationIds[i], i);
@@ -128,44 +169,95 @@ public class ActorController : MonoBehaviour
         }
     }
     private void Dequeue() {
-        while(mCallbackQueue.Count > 0) {
-            Actor.CALLBACK_TYPE type = mCallbackQueue.Dequeue();
-            switch(type) {
-                case Actor.CALLBACK_TYPE.SET_READY:
-                return;
-                case Actor.CALLBACK_TYPE.TAKE_TASK:
-                {
-                    var p = mActor.GetTaskContext().target;
-                    if(p == null) continue;
-                    GameObject target = GameObject.Find(p.Item2);
-                    if(target != null) {            
-                        mTargetTransform = target.transform;            
-                        mState = STATE.READY_MOVING;
-                    }
+        if(mCallbackQueue.Count == 0)
+            return;
+        Actor.CALLBACK_TYPE type = mCallbackQueue.Dequeue();
+        switch(type) {
+            case Actor.CALLBACK_TYPE.SET_READY:
+            return;
+            case Actor.CALLBACK_TYPE.TAKE_TASK:
+            {
+                var p = mActor.GetTaskContext().target;
+                if(p == null) return;
+                GameObject target = GameObject.Find(p.Item2);
+                if(target != null) {          
+                    mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 1.5f);  
+                    mTargetTransform = target.transform;            
+                    mState = STATE.READY_MOVING;
                 }
-                return;
-                case Actor.CALLBACK_TYPE.DO_TASK:
-                return;
-                case Actor.CALLBACK_TYPE.RESERVE:
-                return;
-                case Actor.CALLBACK_TYPE.RESERVED:
-                return;
-                case Actor.CALLBACK_TYPE.ASK:
-                return;
-                case Actor.CALLBACK_TYPE.ASKED:
-                mState = STATE.LOOK_AT_CALLER;
-                return;
-                case Actor.CALLBACK_TYPE.INTERRUPT:
-                break;
-                case Actor.CALLBACK_TYPE.INTERRUPTED:
-                return;
             }
+            return;
+            case Actor.CALLBACK_TYPE.DO_TASK:
+            return;
+            case Actor.CALLBACK_TYPE.RESERVE:
+            return;
+            case Actor.CALLBACK_TYPE.RESERVED:
+            return;
+            case Actor.CALLBACK_TYPE.ASK:
+            return;
+            case Actor.CALLBACK_TYPE.ASKED: {
+            //mState = STATE.LOOK_AT_CALLER;
+            string from = mActor.GetTaskContext().interactionFromActor.mUniqueId;
+            var fromObj = mGamePlayController.GetActorObject(from);
+            if(fromObj != null) {
+                transform.LookAt(fromObj.transform);
+            }
+            Stop();
+            }
+            return;
+            case Actor.CALLBACK_TYPE.INTERRUPT:
+            break;
+            case Actor.CALLBACK_TYPE.INTERRUPTED:
+            return;
         }
     }    
+    void CallbackAnimationFinish(STATE_ANIMATION_CALLBACK state) {
+        //Debug.Log("CallbackAnimationFinish " + state.ToString());
+        switch(state) {
+            case STATE_ANIMATION_CALLBACK.START_TASK:
+            mAnimationContext.Set(mActor.GetCurrentTask().GetAnimation(), mActor.GetCurrentTask().mInfo.time, STATE_ANIMATION_CALLBACK.TASK);
+            var target = mActor.GetTaskContext().target;
+            if(target.Item1) {
+                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, name, target.Item2) );
+            }
+            mActor.DoTaskBefore();
+            break;
+            case STATE_ANIMATION_CALLBACK.TASK:
+            mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);
+            break;
+            case STATE_ANIMATION_CALLBACK.FINISH_TASK:
+            Tuple<bool, bool> ret = mActor.DoTask();
+            if(!ret.Item1) {
+                Debug.Log(name + " DoTask Failure");                    
+            } else {
+                if(ret.Item2) {              
+                    mAnimationContext.Set("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
+                    mUI.SetMessage("LEVEL UP! lv." + mActor.mLevel.ToString());
+                    break;
+                }
+            }
+            Stop();
+            break;
+        }
+    }
     // Update is called once per frame
     void Update()
     {
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
+
+        if(mAnimationContext.name.Length > 0) {
+            if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.name) && 
+                mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
+            {
+                //Debug.Log(mAnimationContext.name + " Done " + mAnimationContext.count.ToString() + " / " + mAnimationContext.targetCount.ToString());
+                if(mAnimationContext.Increase()) {
+                    STATE_ANIMATION_CALLBACK state = mAnimationContext.callbackState;
+                    mAnimationContext.Reset();
+                    CallbackAnimationFinish(state);
+                }
+            }
+            return;
+        } 
 
         switch(mState) {
             case STATE.INVALID:
@@ -175,13 +267,6 @@ public class ActorController : MonoBehaviour
             if(mTimer > mDefaultWaitTimeMin) {
                 //Do something
                 Dequeue();
-            }
-            break;
-            case STATE.ACK:
-            mTimer += Time.deltaTime;
-            if(mTimer > mDefaultWaitTime) {                
-                mState = STATE.IDLE;
-                SetAnimation(StopAnimation);
             }
             break;
             case STATE.READY_MOVING:
@@ -197,17 +282,28 @@ public class ActorController : MonoBehaviour
             break;
             case STATE.MOVING:
             {
-                if(GetDistance() < ApprochRange) {
+                if(GetDistance() <  mTargetPositionRandom) {
+                    mTimer = 0;
                     mTargetTransform = null;
                     mAgent.isStopped = true;
-                    mState = STATE.START_TASK;   
-                    SetAnimation(StopAnimation);
-                    mTimer = 0;
+                    //SetAnimation(StopAnimation);
+                    //mState = STATE.START_TASK;   
+                    if(!mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.START_TASK))
+                        Debug.Log("Animation Conext Failure");
+                    mState = STATE.INVALID;   
                 } else {
                     mAgent.destination = mTargetTransform.position;
                 }            
             }
-            break;            
+            break;   
+            /*
+            case STATE.ACK:
+            mTimer += Time.deltaTime;
+            if(mTimer > mDefaultWaitTime) {                
+                mState = STATE.IDLE;
+                SetAnimation(StopAnimation);
+            }
+            break;         
             case STATE.LOOK_AT_CALLER: {
                 string from = mActor.GetTaskContext().interactionFromActor.mUniqueId;
                 var fromObj = mGamePlayController.GetActorObject(from);
@@ -229,7 +325,7 @@ public class ActorController : MonoBehaviour
                         mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, name, target.Item2) );
                     }
                     mActor.DoTaskBefore();
-                }                
+                }     
             }
             break;
             case STATE.TASK: {
@@ -267,7 +363,8 @@ public class ActorController : MonoBehaviour
                     Stop();
                 }
             }
-            break;            
+            break;     
+            */       
         }        
     }
     private void Stop() {
