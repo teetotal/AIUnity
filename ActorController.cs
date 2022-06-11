@@ -96,7 +96,7 @@ public class ActorController : MonoBehaviour
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string GameController = "GamePlay";
-    private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup"};
+    private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing"};
     //private float mDefaultWaitTime = 2.5f; 
     private float mDefaultWaitTimeMin = 0.3f;
 
@@ -179,12 +179,18 @@ public class ActorController : MonoBehaviour
             {
                 var p = mActor.GetTaskContext().target;
                 if(p == null) return;
-                GameObject target = GameObject.Find(p.Item2);
-                if(target != null) {          
-                    mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);  
-                    mTargetTransform = target.transform;            
-                    mState = STATE.READY_MOVING;
+                if(p.Item2 == string.Empty) {
+                    //제자리에서 
+                    StartTask();
+                } else {
+                    GameObject target = GameObject.Find(p.Item2);
+                    if(target != null) {          
+                        mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);  
+                        mTargetTransform = target.transform;            
+                        mState = STATE.READY_MOVING;
+                    }
                 }
+                
             }
             return;
             case Actor.CALLBACK_TYPE.DO_TASK:
@@ -230,7 +236,8 @@ public class ActorController : MonoBehaviour
             }
             break;
             case STATE_ANIMATION_CALLBACK.TASK:
-            mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);
+            mUI.SetMessage(mActor.GetTaskString());
+            mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);            
             break;
             case STATE_ANIMATION_CALLBACK.FINISH_TASK:
             Tuple<bool, bool> ret = mActor.DoTask();
@@ -295,9 +302,7 @@ public class ActorController : MonoBehaviour
                     mAgent.isStopped = true;
                     //SetAnimation(StopAnimation);
                     //mState = STATE.START_TASK;   
-                    if(!mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.START_TASK))
-                        Debug.Log("Animation Conext Failure");
-                    mState = STATE.INVALID;   
+                    StartTask(); 
                 } else {
                     mAgent.destination = mTargetTransform.position;
                 }            
@@ -373,6 +378,11 @@ public class ActorController : MonoBehaviour
             break;     
             */       
         }        
+    }
+    private void StartTask() {
+        if(!mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.START_TASK))
+            Debug.Log("Animation Conext Failure");
+        mState = STATE.INVALID;   
     }
     private void Stop() {
         SetAnimation(StopAnimation); 

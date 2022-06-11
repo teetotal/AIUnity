@@ -18,7 +18,7 @@ public class GamePlayController : MonoBehaviour
             return;
         }
         //Actor생성
-        mActors = ActorHandler.Instance.GetActors(1);
+        mActors = ActorHandler.Instance.GetActors();
         if(mActors == null) {
             Debug.Log("Loading Actor Failure");
             return;
@@ -40,7 +40,8 @@ public class GamePlayController : MonoBehaviour
         long counter = CounterHandler.Instance.Next();
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];
-            if(actor.TakeTask() == false) {                    
+            if(actor.GetState() == Actor.STATE.READY && actor.TakeTask() == false) {                    
+                Debug.Log(p.Key + " Take Task Failure");
                 continue;            
             }
         }
