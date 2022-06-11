@@ -28,10 +28,8 @@ public class GamePlayController : MonoBehaviour
             return;
         }
     }
-
-    // Update is called once per frame
-    
-    private void FixedUpdate() {
+   
+    private void Update() {
         mTimer += Time.deltaTime;
         if(mTimer > Interval) {
             Next();            
@@ -77,9 +75,9 @@ public class GamePlayController : MonoBehaviour
         TextAsset szItem = Resources.Load<TextAsset>("Config/item");
         TextAsset szLevel = Resources.Load<TextAsset>("Config/level");
         TextAsset szQuest = Resources.Load<TextAsset>("Config/quest");
-        
+        TextAsset szScript = Resources.Load<TextAsset>("Config/script");        
 
-        if(!pLoader.Load(szSatisfaction.text, szActor.text, szItem.text, szLevel.text, szQuest.text)) {
+        if(!pLoader.Load(szSatisfaction.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }

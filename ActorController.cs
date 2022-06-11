@@ -181,7 +181,7 @@ public class ActorController : MonoBehaviour
                 if(p == null) return;
                 GameObject target = GameObject.Find(p.Item2);
                 if(target != null) {          
-                    mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 1.5f);  
+                    mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);  
                     mTargetTransform = target.transform;            
                     mState = STATE.READY_MOVING;
                 }
@@ -218,9 +218,16 @@ public class ActorController : MonoBehaviour
             mAnimationContext.Set(mActor.GetCurrentTask().GetAnimation(), mActor.GetCurrentTask().mInfo.time, STATE_ANIMATION_CALLBACK.TASK);
             var target = mActor.GetTaskContext().target;
             if(target.Item1) {
-                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, name, target.Item2) );
+                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor, ActorHandler.Instance.GetActor(target.Item2)) );
+                //lookat
+                var to = mGamePlayController.GetActorObject(target.Item2);
+                if(to != null) {
+                    transform.LookAt(to.transform);
+                }
             }
-            mActor.DoTaskBefore();
+            if(!mActor.DoTaskBefore()) {
+                Debug.Log(string.Format("{0} DoTaskBefore Failure", name));                    
+            }
             break;
             case STATE_ANIMATION_CALLBACK.TASK:
             mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);
