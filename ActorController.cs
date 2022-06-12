@@ -177,6 +177,7 @@ public class ActorController : MonoBehaviour
             return;
             case Actor.CALLBACK_TYPE.TAKE_TASK:
             {
+                mUI.SetMessage(mActor.GetCurrentTask().mInfo.title);
                 var p = mActor.GetTaskContext().target;
                 if(p == null) return;
                 if(p.Item2 == string.Empty) {
@@ -230,6 +231,8 @@ public class ActorController : MonoBehaviour
                 if(to != null) {
                     transform.LookAt(to.transform);
                 }
+            } else {
+                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor) );
             }
             if(!mActor.DoTaskBefore()) {
                 Debug.Log(string.Format("{0} DoTaskBefore Failure", name));                    

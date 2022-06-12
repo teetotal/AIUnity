@@ -226,6 +226,7 @@ public class BattleController : MonoBehaviour
     bool Load() {
         var pLoader = new Loader();
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");
+        TextAsset szTask = Resources.Load<TextAsset>("Config/task");
         TextAsset szActor = Resources.Load<TextAsset>("Config/actors");
         TextAsset szItem = Resources.Load<TextAsset>("Config/item");
         TextAsset szLevel = Resources.Load<TextAsset>("Config/level");
@@ -233,7 +234,7 @@ public class BattleController : MonoBehaviour
         TextAsset szScript = Resources.Load<TextAsset>("Config/script");
         
 
-        if(!pLoader.Load(szSatisfaction.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text)) {
+        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }
