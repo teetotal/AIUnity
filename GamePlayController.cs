@@ -6,10 +6,26 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 #nullable enable
 public class GamePlayController : MonoBehaviour
 {
+    public enum ANIMATION_ID : int {
+        Invalid = -4,
+        Min = -3,
+        Levelup = -2,
+        Walk = -1,
+        Idle = 0, 
+        Greeting, 
+        Strong, 
+        Bashful, 
+        Digging, 
+        Dancing,
+        Drinking,
+        Farming,
+        Max
+    }
     public float Interval = 3;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();    
+    private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     // Start is called before the first frame update
     void Start()
     {
@@ -26,6 +42,10 @@ public class GamePlayController : MonoBehaviour
         if(!CreateActors()) {
             Debug.Log("Creating Actors Failure");
             return;
+        }
+
+        for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
+            mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
     }
    
@@ -45,6 +65,12 @@ public class GamePlayController : MonoBehaviour
                 continue;            
             }
         }
+    }
+    public int GetAnimationId(string aniName) {
+        if(mDicAnimation.ContainsKey(aniName)) {
+            return mDicAnimation[aniName];
+        }
+        return (int)ANIMATION_ID.Invalid;
     }
     public GameObject? GetActorObject(string actorId) {
         if(mActorObjects.ContainsKey(actorId)) {

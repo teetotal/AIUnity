@@ -90,14 +90,14 @@ public class ActorController : MonoBehaviour
         FINISH_TASK,
         LEVELUP,
     }
+    
     //config
     public string UIPrefab = "ActorUI";    
     public float ApprochRange = 3f;
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string GameController = "GamePlay";
-    private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing"};
-    //private float mDefaultWaitTime = 2.5f; 
+    //private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing", "Drinking"};    
     private float mDefaultWaitTimeMin = 0.3f;
 
     //unity objects
@@ -110,8 +110,7 @@ public class ActorController : MonoBehaviour
     private Animator mAnimator;
     
     //variable
-    private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();
-    private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
+    private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
     private STATE mState = STATE.INVALID;
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
@@ -121,9 +120,7 @@ public class ActorController : MonoBehaviour
     {        
         mAnimationContext.Init(this);
         mActor = ActorHandler.Instance.GetActor(name);
-        for(int i =0; i < mAnimationIds.Length; i++ ) {
-            mDicAnimation.Add(mAnimationIds[i], i);
-        }
+        
         mAnimator = GetComponent<Animator>();
 
         mAgent = gameObject.GetComponent<NavMeshAgent>();
@@ -398,10 +395,9 @@ public class ActorController : MonoBehaviour
         float distance = Vector3.Distance(transform.position, mTargetTransform.position);
         return distance;        
     }    
-    public void SetAnimation(string animation) {
-        //Debug.Log(name + "SetAnimation " + animation);
-        if(mDicAnimation.ContainsKey(animation)) {
-            int id = mDicAnimation[animation];
+    public void SetAnimation(string animation) {     
+        int id = mGamePlayController.GetAnimationId(animation);   
+        if((int)GamePlayController.ANIMATION_ID.Invalid < id) {            
             mAnimator.SetInteger(AnimationId, id);
         }
     }    
