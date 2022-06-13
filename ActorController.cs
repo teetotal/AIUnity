@@ -141,7 +141,7 @@ public class ActorController : MonoBehaviour
             mUI.SetName(name);
         }
     }
-    public void Callback(Actor.CALLBACK_TYPE type) {
+    public void Callback(Actor.CALLBACK_TYPE type, string actorId) {
         //Debug.Log(name + " " + type.ToString());
         switch(type) {            
             case Actor.CALLBACK_TYPE.TAKE_TASK:
@@ -162,6 +162,8 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.INTERRUPT:
             break;
             case Actor.CALLBACK_TYPE.INTERRUPTED:
+            break;
+            case Actor.CALLBACK_TYPE.REFUSAL:
             break;
         }
     }

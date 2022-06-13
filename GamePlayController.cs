@@ -19,6 +19,9 @@ public class GamePlayController : MonoBehaviour
         Dancing,
         Drinking,
         Farming,
+        Restrain,
+        Headbang,
+        HandUp,
         Max
     }
     public float Interval = 3;
@@ -84,10 +87,14 @@ public class GamePlayController : MonoBehaviour
             Actor actor = p.Value;
             if(actor.position != null) {
                 Vector3 position = new Vector3(actor.position.x, actor.position.y, actor.position.z);
-                GameObject prefab = Resources.Load<GameObject>(actor.prefab);
+                GameObject prefab = Resources.Load<GameObject>(actor.mInfo.prefab);
                 if(prefab == null) 
                     continue;
-                GameObject obj = Instantiate(prefab, position, Quaternion.identity);
+                Quaternion rotation = Quaternion.identity;
+                if(actor.mInfo.rotation != null) {
+                    rotation = Quaternion.Euler(actor.mInfo.rotation[0], actor.mInfo.rotation[1], actor.mInfo.rotation[2]);
+                }
+                GameObject obj = Instantiate(prefab, position, rotation);
                 obj.name = actorName;
                 actor.SetCallback(obj.GetComponent<ActorController>().Callback);
                 mActorObjects.Add(actorName, obj);
