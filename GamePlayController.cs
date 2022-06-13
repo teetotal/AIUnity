@@ -22,6 +22,7 @@ public class GamePlayController : MonoBehaviour
         Restrain,
         Headbang,
         HandUp,
+        Sitting,
         Max
     }
     public float Interval = 3;
@@ -64,8 +65,7 @@ public class GamePlayController : MonoBehaviour
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];
             if(actor.GetState() == Actor.STATE.READY && actor.TakeTask() == false) {                    
-                Debug.Log(p.Key + " Take Task Failure");
-                continue;            
+                throw new System.Exception(p.Key + " Take Task Failure");
             }
         }
     }

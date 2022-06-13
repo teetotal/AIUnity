@@ -4,20 +4,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using ENGINE.GAMEPLAY.MOTIVATION;
-/*
+
+
 public class ActorControllerApproching {
+    public bool enable = false;
     public float timer { get; set; }
-    public Transform to { get; set; }
+    public Vector3 toPosition { get; set; }
     public Vector3 fromPosition { get; set; }
-    //public Quaternion toQuaternion { get; set; }
+    public Vector3 lookAt { get; set; }
     public Quaternion fromQuaternion { get; set; }
     public float distance { get; set; }
     public float time { get; set; }
     public float speed { get; set; }    
-    public ActorControllerApproching(Transform from, Transform to, float speed) {
+    public void Set(Transform from, Vector3 toPosition, Vector3 lookAt, float speed) {
+        this.enable = true;
         this.fromPosition = new Vector3(from.position.x, from.position.y, from.position.z);        
         this.fromQuaternion = from.rotation;
-        this.to = to;
+        this.toPosition = toPosition;
+        this.lookAt = lookAt;
         this.speed = speed;
         this.timer = 0;
         //this.fromQuaternion = fromQ;        
@@ -29,15 +33,18 @@ public class ActorControllerApproching {
         timer += deltaTime;
         return Mathf.Min(1, timer/time);
     }
+    public void Release() {
+        this.enable = false;
+    }
     private void SetDistance() {
-        distance = Vector3.Distance(fromPosition, to.position);
+        distance = Vector3.Distance(fromPosition, toPosition);
     }
     private void SetTime() {
         //시간 = 거리 / 속력
         time = distance / speed;
     }
 }
-*/
+
 public class AnimationContext {
     public string name = "";
     public int count = 0;
@@ -81,6 +88,8 @@ public class ActorController : MonoBehaviour
         IDLE,
         READY_MOVING,
         MOVING,
+        APPROCHING,
+        APPROCHING_FINISH,
     };
     public enum STATE_ANIMATION_CALLBACK {
         ACK,
@@ -104,7 +113,31 @@ public class ActorController : MonoBehaviour
     private GameObject mUIObject;
     private BattleActorUI mUI;
     private GamePlayController mGamePlayController;
-    private Transform mTargetTransform;
+
+    class Target {
+        public bool enable = false;
+        public bool isPositionOnly = false;
+        public Transform transform;
+        public Vector3 position = Vector3.zero;
+        public void SetPostion(Vector3 position) {
+            this.enable = true;
+            this.isPositionOnly = true;
+            this.transform = null;
+            this.position = position;
+        }
+        public void SetTransform(Transform transform) {
+            this.enable = true;
+            this.isPositionOnly = false;
+            this.transform = transform;
+            this.position = Vector3.zero;
+        }
+        public void Release() {
+            this.enable = false;
+        }
+    }
+    private Target mTarget = new Target();
+    private ActorControllerApproching mApprochingContext = new ActorControllerApproching();
+    
     private float mTargetPositionRandom = 0;
     private NavMeshAgent mAgent;
     private Animator mAnimator;
@@ -177,20 +210,30 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.TAKE_TASK:
             {
                 mUI.SetMessage(mActor.GetCurrentTask().mInfo.title);
-                var p = mActor.GetTaskContext().target;
-                if(p == null) return;
-                if(p.Item2 == string.Empty) {
-                    //제자리에서 
+                Actor.TaskContext_Target p = mActor.GetTaskContext().target; 
+                switch(p.type) {
+                    case Actor.TASKCONTEXT_TARGET_TYPE.INVALID:
+                    throw new Exception("Dequeue error! Invalid target type.");
+                    case Actor.TASKCONTEXT_TARGET_TYPE.NON_TARGET:
                     StartTask();
-                } else {
-                    GameObject target = GameObject.Find(p.Item2);
-                    if(target != null) {          
-                        mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);  
-                        mTargetTransform = target.transform;            
+                    break;
+                    case Actor.TASKCONTEXT_TARGET_TYPE.POSITION:                        
+                        mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
+                        mTargetPositionRandom = ApprochRange;
                         mState = STATE.READY_MOVING;
+                    break;
+                    default:
+                    { 
+                        GameObject target = GameObject.Find(p.objectName);
+                        if(target == null) {        
+                            throw new Exception("Invalid GameObject Name " + p.objectName);
+                        }
+                        mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);                          
+                        mTarget.SetTransform(target.transform);             
+                        mState = STATE.READY_MOVING;                                                    
                     }
+                    break;
                 }
-                
             }
             return;
             case Actor.CALLBACK_TYPE.DO_TASK:
@@ -223,10 +266,10 @@ public class ActorController : MonoBehaviour
             case STATE_ANIMATION_CALLBACK.START_TASK:
             mAnimationContext.Set(mActor.GetCurrentTask().GetAnimation(), mActor.GetCurrentTask().mInfo.time, STATE_ANIMATION_CALLBACK.TASK);
             var target = mActor.GetTaskContext().target;
-            if(target.Item1) {
-                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor, ActorHandler.Instance.GetActor(target.Item2)) );
+            if(target.type == Actor.TASKCONTEXT_TARGET_TYPE.ACTOR) {
+                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor, ActorHandler.Instance.GetActor(target.objectName)) );
                 //lookat
-                var to = mGamePlayController.GetActorObject(target.Item2);
+                var to = mGamePlayController.GetActorObject(target.objectName);
                 if(to != null) {
                     transform.LookAt(to.transform);
                 }
@@ -299,17 +342,51 @@ public class ActorController : MonoBehaviour
             case STATE.MOVING:
             {
                 if(GetDistance() <  mTargetPositionRandom) {
-                    mTimer = 0;
-                    mTargetTransform = null;
+                    mTimer = 0;                    
                     mAgent.isStopped = true;
                     //SetAnimation(StopAnimation);
                     //mState = STATE.START_TASK;   
-                    StartTask(); 
+                    if(mTarget.isPositionOnly) {
+                        Position lookAt = mActor.GetCurrentTask().mInfo.target.lookAt;                        
+                        mApprochingContext.Set(transform, mTarget.position, new Vector3(lookAt.x, lookAt.y, lookAt.z), mAgent.acceleration);
+                        mState = STATE.APPROCHING;
+                        mTimer = 0;
+                    } else {
+                        mTarget.Release();
+                        StartTask(); 
+                    }                    
                 } else {
-                    mAgent.destination = mTargetTransform.position;
+                    if(!mTarget.enable)
+                        throw new Exception("Target must be enable");
+                    if(mTarget.isPositionOnly)
+                        mAgent.destination = mTarget.position;
+                    else
+                        mAgent.destination = mTarget.transform.position;
                 }            
             }
             break;   
+            case STATE.APPROCHING:
+                float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
+                transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
+                //transform.LookAt(mApprochingContext.toPosition);
+                if(rate >= 1) {                    
+                    mState = STATE.APPROCHING_FINISH;
+                    SetAnimation(StopAnimation); 
+                    mTimer = 0;
+                }
+            break;
+            case STATE.APPROCHING_FINISH:
+            {
+                mTimer += Time.deltaTime;
+                if(mTimer > mDefaultWaitTimeMin) {
+                    transform.position = mApprochingContext.toPosition;
+                    transform.LookAt(mApprochingContext.lookAt);
+                    mTarget.Release();
+                    mApprochingContext.Release();
+                    StartTask(); 
+                }
+            }                
+            break;
             /*
             case STATE.ACK:
             mTimer += Time.deltaTime;
@@ -394,8 +471,13 @@ public class ActorController : MonoBehaviour
         mState = STATE.IDLE;        
     }
     private float GetDistance() {
-        float distance = Vector3.Distance(transform.position, mTargetTransform.position);
-        return distance;        
+        if(!mTarget.enable) {
+            throw new Exception("Target must be enable");
+        }
+        if(mTarget.isPositionOnly)
+            return Vector3.Distance(transform.position, mTarget.position);
+        else 
+            return Vector3.Distance(transform.position, mTarget.transform.position);
     }    
     public void SetAnimation(string animation) {     
         int id = mGamePlayController.GetAnimationId(animation);   
