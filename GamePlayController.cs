@@ -7,10 +7,11 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 public class GamePlayController : MonoBehaviour
 {
     public enum ANIMATION_ID : int {
-        Invalid = -4,
-        Min = -3,
-        Levelup = -2,
-        Walk = -1,
+        Invalid = -5,
+        Min,
+        Disappointed,
+        Levelup,
+        Walk,
         Idle = 0, 
         Greeting, 
         Strong, 
@@ -66,7 +67,7 @@ public class GamePlayController : MonoBehaviour
             Actor actor = mActors[p.Key];
             if(actor.GetState() == Actor.STATE.READY && actor.TakeTask() == false) {                    
                 throw new System.Exception(p.Key + " Take Task Failure");
-            }
+            }            
         }
     }
     public int GetAnimationId(string aniName) {

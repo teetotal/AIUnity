@@ -15,8 +15,11 @@ public class BattleActorUI : MonoBehaviour
     private Text _Message;
     bool mIseSetMSG = false;
     float timer = 0;
+    [SerializeField]
+    private GameObject _panel;
 
     void Start() {        
+        _panel.SetActive(false);
     }
 	public void SetHP(float value)
 	{
@@ -28,6 +31,7 @@ public class BattleActorUI : MonoBehaviour
     }
     public void SetMessage(string msg) 
     {
+        _panel.SetActive(true);
         _Message.text = msg;
         mIseSetMSG = true;
         timer = 0;        
@@ -36,6 +40,7 @@ public class BattleActorUI : MonoBehaviour
         timer += Time.deltaTime;
         if(timer > 4) {
             _Message.text = "";
+            _panel.SetActive(false);
         }
         if(target == null) {
             target = GameObject.Find(targetName).transform;

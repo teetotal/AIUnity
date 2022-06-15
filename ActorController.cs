@@ -112,12 +112,15 @@ public class ActorController : MonoBehaviour
     };
     public enum STATE_ANIMATION_CALLBACK {
         ACK,
-        LOOK_AT_CALLER,
+        STOPPING,
         START_TASK,
         TASK,
         FINISH_TASK,
         LEVELUP,
         APPROCHING,
+        DISAPPOINTED_START,
+        DISAPPOINTED,
+        DISAPPOINTED_FINISH,
     }
     
     //config
@@ -125,6 +128,7 @@ public class ActorController : MonoBehaviour
     public float ApprochRange = 3f;
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
+    public string DisappointedAnimation = "Disappointed";
     public string GameController = "GamePlay";
     //private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing", "Drinking"};    
     private float mDefaultWaitTimeMin = 0.3f;
@@ -133,21 +137,19 @@ public class ActorController : MonoBehaviour
     private GameObject? mUIObject;
     private BattleActorUI? mUI;
     private GamePlayController mGamePlayController = new GamePlayController();
-
-    
-    private Target mTarget = new Target();
-    private ActorControllerApproching mApprochingContext = new ActorControllerApproching();
-    
-    private float mTargetPositionRandom = 0;
     private NavMeshAgent? mAgent;
     private Animator? mAnimator;
     
     //variable
+    private Target mTarget = new Target();
+    private ActorControllerApproching mApprochingContext = new ActorControllerApproching();    
+    private float mTargetPositionRandom = 0;
     private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
-    private STATE mState = STATE.INVALID;
+    private STATE mState = STATE.IDLE;
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
     private Actor? mActor = null;
+    private bool mIsActorReleaseAtStopFinish = false; //거절당했을때 처럼 actor 상태를 초기화 할 시점을 StopFinish에 실행하게 하는 flag
     
     void Start()
     {        
@@ -177,14 +179,15 @@ public class ActorController : MonoBehaviour
             mUI.SetName(name);
         }
     }
-    public void Callback(Actor.CALLBACK_TYPE type, string actorId) {
-        //Debug.Log(name + " " + type.ToString());
+    public void Callback(Actor.CALLBACK_TYPE type, string actorId) {        
         switch(type) {            
             case Actor.CALLBACK_TYPE.TAKE_TASK:
-            case Actor.CALLBACK_TYPE.ASKED:
+            //Debug.Log(actorId + " " + mActor.GetCurrentTask().mTaskTitle);
             mCallbackQueue.Enqueue(type);
-            Stop();
             break;
+            case Actor.CALLBACK_TYPE.ASKED:            
+            mCallbackQueue.Enqueue(type);
+            break;            
             case Actor.CALLBACK_TYPE.SET_READY:
             break;
             case Actor.CALLBACK_TYPE.DO_TASK:
@@ -200,6 +203,10 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.INTERRUPTED:
             break;
             case Actor.CALLBACK_TYPE.REFUSAL:
+            {
+                LookAtCaller();
+                SetMessage(GetScript(GetInteractionFromActor(), true));
+            }
             break;
         }
     }
@@ -214,11 +221,11 @@ public class ActorController : MonoBehaviour
             return;
             case Actor.CALLBACK_TYPE.TAKE_TASK:
             {
-                SetMessage(mActor.GetCurrentTaskTitle());
+                //SetMessage(mActor.GetCurrentTaskTitle());
                 Actor.TaskContext_Target p = mActor.GetTaskContext().target; 
                 switch(p.type) {
                     case Actor.TASKCONTEXT_TARGET_TYPE.INVALID:
-                    throw new Exception("Dequeue error! Invalid target type.");
+                        throw new Exception("Dequeue error! Invalid target type.");
                     case Actor.TASKCONTEXT_TARGET_TYPE.NON_TARGET:
                     StartTask();
                     break;
@@ -250,7 +257,7 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.ASK:
             return;
             case Actor.CALLBACK_TYPE.ASKED: {
-            var fromObj = GetInteractionFrom();
+            var fromObj = GetInteractionFromObject();
             if(fromObj != null) {
                 transform.LookAt(fromObj.transform);
             }
@@ -260,7 +267,9 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.INTERRUPT:
             break;
             case Actor.CALLBACK_TYPE.INTERRUPTED:
-            return;
+            return;            
+            case Actor.CALLBACK_TYPE.REFUSAL:
+            return;            
         }
     }    
     void CallbackAnimationFinish(STATE_ANIMATION_CALLBACK state) {
@@ -268,14 +277,12 @@ public class ActorController : MonoBehaviour
             throw new Exception("mActor is null");
 
         switch(state) {
+            case STATE_ANIMATION_CALLBACK.STOPPING:
+            StopFinish();
+            break;
             case STATE_ANIMATION_CALLBACK.START_TASK: {
-                if(!mActor.DoTaskBefore()) {
-                    //거절 당한 상태
-                    //거절 모션 처리
-                    Debug.Log(string.Format("{0} DoTaskBefore Failure", name));                    
-                    break;
-                } 
-                if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) {
+                STATE_ANIMATION_CALLBACK next = STATE_ANIMATION_CALLBACK.TASK;                
+                if(!SetCurrentTaskAnimation(next)) {
                     throw new Exception("SetCurrentTaskAnimation Failure");
                 }                
                 var target = mActor.GetTaskContext().target;
@@ -291,9 +298,16 @@ public class ActorController : MonoBehaviour
                 }                
             }            
             break;
-            case STATE_ANIMATION_CALLBACK.TASK:
-            SetMessage(mActor.GetTaskString());
-            mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);            
+            case STATE_ANIMATION_CALLBACK.TASK: {
+                STATE_ANIMATION_CALLBACK next = STATE_ANIMATION_CALLBACK.FINISH_TASK;                
+                if(!mActor.DoTaskBefore()) {
+                    //거절 당한 상태
+                    //거절 모션 처리
+                    next = STATE_ANIMATION_CALLBACK.DISAPPOINTED_START;                    
+                } 
+                //SetMessage(mActor.GetTaskString());
+                mAnimationContext.Set(StopAnimation, 1, next);
+            }
             break;
             case STATE_ANIMATION_CALLBACK.FINISH_TASK:
             Tuple<bool, bool> ret = mActor.DoTask();
@@ -308,6 +322,9 @@ public class ActorController : MonoBehaviour
             }
             Stop();
             break;
+            case STATE_ANIMATION_CALLBACK.LEVELUP:
+            Stop();
+            break;
             case STATE_ANIMATION_CALLBACK.APPROCHING:
             {
                 transform.position = mApprochingContext.toPosition;
@@ -317,6 +334,16 @@ public class ActorController : MonoBehaviour
                 StartTask(); 
             }           
             break;
+            case STATE_ANIMATION_CALLBACK.DISAPPOINTED_START:
+            mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED);
+            break;
+            case STATE_ANIMATION_CALLBACK.DISAPPOINTED:
+            mAnimationContext.Set(DisappointedAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH);
+            break;
+            case STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH:
+            mIsActorReleaseAtStopFinish = true;
+            Stop();                        
+            break;            
         }
     }
     // Update is called once per frame
@@ -466,15 +493,27 @@ public class ActorController : MonoBehaviour
     }
     private void StartTask() {
         if(!mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.START_TASK))
-            Debug.Log("Animation Conext Failure");
+            throw new Exception("Animation Conext Failure");
         mState = STATE.INVALID;   
     }
     private void Stop() {
-        SetAnimation(StopAnimation); 
+        mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.STOPPING);        
+    }
+    private void StopFinish() {
+        if(mActor == null)
+            throw new Exception("mActor or mAgent is null");
+
+        mApprochingContext.Release();
+        mTarget.Release();                
         if(mState != STATE.IDLE) {
             mTimer = 0;
         }
         mState = STATE.IDLE;        
+
+        if(mIsActorReleaseAtStopFinish) {
+            mIsActorReleaseAtStopFinish = false;
+            mActor.ReleaseTask();
+        }
     }
     private float GetDistance() {
         return Vector3.Distance(transform.position, GetDestination());
@@ -507,13 +546,27 @@ public class ActorController : MonoBehaviour
         mAnimationContext.Set(task.GetAnimation(), task.mInfo.time, state);  
         return true;
     }
-    private GameObject? GetInteractionFrom() {
+    private Actor? GetInteractionFromActor() {
         if(mActor == null)
             return null;
         var task = mActor.GetTaskContext();
         if(task == null || task.interactionFromActor == null)
             return null;
-        string from = task.interactionFromActor.mUniqueId;
+        return task.interactionFromActor;
+    }
+    private void LookAtCaller() {
+        var fromObj = GetInteractionFromObject();
+        if(fromObj != null) {
+            transform.LookAt(fromObj.transform);
+        }
+    }
+    private GameObject? GetInteractionFromObject() {
+        if(mActor == null)
+            return null;
+        var task = mActor.GetTaskContext();
+        if(task == null || task.interactionFromActor == null)
+            return null;
+        string from = task.interactionFromActor.mUniqueId;            
         return mGamePlayController.GetActorObject(from);
     }
     private bool SetApproching() {
@@ -528,16 +581,16 @@ public class ActorController : MonoBehaviour
         return true;
 
     }
-    private string GetScript(Actor? targetActor) {        
+    private string GetScript(Actor? targetActor, bool isRefusal = false) {        
         if(mActor == null)
             throw new Exception("mActor is null");
         var task = mActor.GetCurrentTask();
         if(task == null)
             return string.Empty;
         if(targetActor == null)
-            return ScriptHandler.Instance.GetScript(task.mTaskId, mActor);
+            return isRefusal ? ScriptHandler.Instance.GetScriptRefusal(task.mTaskId, mActor) : ScriptHandler.Instance.GetScript(task.mTaskId, mActor);
         else 
-            return ScriptHandler.Instance.GetScript(task.mTaskId, mActor, targetActor);
+            return isRefusal ? ScriptHandler.Instance.GetScriptRefusal(task.mTaskId, mActor, targetActor): ScriptHandler.Instance.GetScript(task.mTaskId, mActor, targetActor);
     }
     private void SetMessage(string msg) {
         if(mUI != null && mActor != null) {
