@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using ENGINE.GAMEPLAY;
 using ENGINE.GAMEPLAY.MOTIVATION;
 
 public class BattleActorController : MonoBehaviour
@@ -71,7 +72,7 @@ public class BattleActorController : MonoBehaviour
         mUI.SetHP(amount);
     }
     void SetMessage(string message) {        
-        mUI.SetMessage(message);
+        mUI.SetMessage(message, (int)CounterHandler.Instance.GetCount());
     }
     void SetActionType(BATTLE_ACTOR_ACTION_TYPE type) {
         mCurrActionType = type;

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using ENGINE.GAMEPLAY;
 using ENGINE.GAMEPLAY.MOTIVATION;
 #nullable enable
 public class ActorControllerApproching {
@@ -338,9 +339,9 @@ public class ActorController : MonoBehaviour
             mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED);
             break;
             case STATE_ANIMATION_CALLBACK.DISAPPOINTED:
-            mAnimationContext.Set(DisappointedAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH);
+            mAnimationContext.Set(DisappointedAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH);            
             break;
-            case STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH:
+            case STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH:            
             mIsActorReleaseAtStopFinish = true;
             Stop();                        
             break;            
@@ -594,7 +595,7 @@ public class ActorController : MonoBehaviour
     }
     private void SetMessage(string msg) {
         if(mUI != null && mActor != null) {
-            mUI.SetMessage(msg);
+            mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount());
         }
     }
 }
