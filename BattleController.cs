@@ -11,8 +11,10 @@ using ENGINE.GAMEPLAY.MOTIVATION;
  }
 public class BattleController : MonoBehaviour
 {
-    public float Interval;
-    public TileX[] mTilesY;    
+    [SerializeField]
+    private float Interval;
+    [SerializeField]
+    private TileX[] mTilesY;    
     //actor id, obj
     private Dictionary<string, GameObject> mMappingTable = new Dictionary<string, GameObject>();    
     //private Dictionary<string, GameObject> mActorUI = new Dictionary<string, GameObject>();

@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using ENGINE.GAMEPLAY.MOTIVATION;
-
-
+#nullable enable
 public class ActorControllerApproching {
     public bool enable = false;
     public float timer { get; set; }
@@ -50,7 +49,7 @@ public class AnimationContext {
     public int count = 0;
     public int targetCount;
     public ActorController.STATE_ANIMATION_CALLBACK callbackState;
-    private ActorController mActorController;
+    private ActorController? mActorController = null;
     private DateTime lastTime;
     public void Init(ActorController p) {
         mActorController = p;
@@ -60,7 +59,7 @@ public class AnimationContext {
         count = 0;
     }
     public bool Set(string animationName, int targetCount, ActorController.STATE_ANIMATION_CALLBACK callbackState) {
-        if(name.Length > 0)
+        if(name.Length > 0 || mActorController == null)
             return false;
         this.name = animationName;
         this.targetCount = targetCount;
@@ -81,6 +80,27 @@ public class AnimationContext {
         return false;
     }
 }
+public class Target {
+    public bool enable = false;
+    public bool isPositionOnly = false;
+    public Transform? transform { get; set; } = null;
+    public Vector3 position = Vector3.zero;
+    public void SetPostion(Vector3 position) {
+        this.enable = true;
+        this.isPositionOnly = true;
+        this.transform = null;
+        this.position = position;
+    }
+    public void SetTransform(Transform transform) {
+        this.enable = true;
+        this.isPositionOnly = false;
+        this.transform = transform;
+        this.position = Vector3.zero;
+    }
+    public void Release() {
+        this.enable = false;
+    }
+}
 public class ActorController : MonoBehaviour
 {    
     enum STATE {
@@ -88,8 +108,7 @@ public class ActorController : MonoBehaviour
         IDLE,
         READY_MOVING,
         MOVING,
-        APPROCHING,
-        APPROCHING_FINISH,
+        APPROCHING,        
     };
     public enum STATE_ANIMATION_CALLBACK {
         ACK,
@@ -98,6 +117,7 @@ public class ActorController : MonoBehaviour
         TASK,
         FINISH_TASK,
         LEVELUP,
+        APPROCHING,
     }
     
     //config
@@ -110,49 +130,32 @@ public class ActorController : MonoBehaviour
     private float mDefaultWaitTimeMin = 0.3f;
 
     //unity objects
-    private GameObject mUIObject;
-    private BattleActorUI mUI;
-    private GamePlayController mGamePlayController;
+    private GameObject? mUIObject;
+    private BattleActorUI? mUI;
+    private GamePlayController mGamePlayController = new GamePlayController();
 
-    class Target {
-        public bool enable = false;
-        public bool isPositionOnly = false;
-        public Transform transform;
-        public Vector3 position = Vector3.zero;
-        public void SetPostion(Vector3 position) {
-            this.enable = true;
-            this.isPositionOnly = true;
-            this.transform = null;
-            this.position = position;
-        }
-        public void SetTransform(Transform transform) {
-            this.enable = true;
-            this.isPositionOnly = false;
-            this.transform = transform;
-            this.position = Vector3.zero;
-        }
-        public void Release() {
-            this.enable = false;
-        }
-    }
+    
     private Target mTarget = new Target();
     private ActorControllerApproching mApprochingContext = new ActorControllerApproching();
     
     private float mTargetPositionRandom = 0;
-    private NavMeshAgent mAgent;
-    private Animator mAnimator;
+    private NavMeshAgent? mAgent;
+    private Animator? mAnimator;
     
     //variable
     private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
     private STATE mState = STATE.INVALID;
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
-    private Actor mActor;
+    private Actor? mActor = null;
     
     void Start()
     {        
         mAnimationContext.Init(this);
-        mActor = ActorHandler.Instance.GetActor(name);
+        var actor = ActorHandler.Instance.GetActor(name);
+        if(actor == null)
+            throw new Exception("Invalid Actor. " + name);
+        mActor = actor;
         
         mAnimator = GetComponent<Animator>();
 
@@ -201,6 +204,8 @@ public class ActorController : MonoBehaviour
         }
     }
     private void Dequeue() {
+        if(mActor == null)
+            throw new Exception("mActor is null");
         if(mCallbackQueue.Count == 0)
             return;
         Actor.CALLBACK_TYPE type = mCallbackQueue.Dequeue();
@@ -209,7 +214,7 @@ public class ActorController : MonoBehaviour
             return;
             case Actor.CALLBACK_TYPE.TAKE_TASK:
             {
-                mUI.SetMessage(mActor.GetCurrentTask().mInfo.title);
+                SetMessage(mActor.GetCurrentTaskTitle());
                 Actor.TaskContext_Target p = mActor.GetTaskContext().target; 
                 switch(p.type) {
                     case Actor.TASKCONTEXT_TARGET_TYPE.INVALID:
@@ -245,9 +250,7 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.ASK:
             return;
             case Actor.CALLBACK_TYPE.ASKED: {
-            //mState = STATE.LOOK_AT_CALLER;
-            string from = mActor.GetTaskContext().interactionFromActor.mUniqueId;
-            var fromObj = mGamePlayController.GetActorObject(from);
+            var fromObj = GetInteractionFrom();
             if(fromObj != null) {
                 transform.LookAt(fromObj.transform);
             }
@@ -261,27 +264,35 @@ public class ActorController : MonoBehaviour
         }
     }    
     void CallbackAnimationFinish(STATE_ANIMATION_CALLBACK state) {
-        //Debug.Log("CallbackAnimationFinish " + state.ToString());
+        if(mActor == null)
+            throw new Exception("mActor is null");
+
         switch(state) {
-            case STATE_ANIMATION_CALLBACK.START_TASK:
-            mAnimationContext.Set(mActor.GetCurrentTask().GetAnimation(), mActor.GetCurrentTask().mInfo.time, STATE_ANIMATION_CALLBACK.TASK);
-            var target = mActor.GetTaskContext().target;
-            if(target.type == Actor.TASKCONTEXT_TARGET_TYPE.ACTOR) {
-                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor, ActorHandler.Instance.GetActor(target.objectName)) );
-                //lookat
-                var to = mGamePlayController.GetActorObject(target.objectName);
-                if(to != null) {
-                    transform.LookAt(to.transform);
-                }
-            } else {
-                mUI.SetMessage(ScriptHandler.Instance.GetScript(mActor.GetTaskContext().currentTask.mTaskId, mActor) );
-            }
-            if(!mActor.DoTaskBefore()) {
-                Debug.Log(string.Format("{0} DoTaskBefore Failure", name));                    
-            }
+            case STATE_ANIMATION_CALLBACK.START_TASK: {
+                if(!mActor.DoTaskBefore()) {
+                    //거절 당한 상태
+                    //거절 모션 처리
+                    Debug.Log(string.Format("{0} DoTaskBefore Failure", name));                    
+                    break;
+                } 
+                if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) {
+                    throw new Exception("SetCurrentTaskAnimation Failure");
+                }                
+                var target = mActor.GetTaskContext().target;
+                if(target.type == Actor.TASKCONTEXT_TARGET_TYPE.ACTOR) {
+                    SetMessage(GetScript(ActorHandler.Instance.GetActor(target.objectName)));
+                    //lookat
+                    var to = mGamePlayController.GetActorObject(target.objectName);
+                    if(to != null) {
+                        transform.LookAt(to.transform);
+                    }
+                } else {
+                    SetMessage( GetScript(null) );
+                }                
+            }            
             break;
             case STATE_ANIMATION_CALLBACK.TASK:
-            mUI.SetMessage(mActor.GetTaskString());
+            SetMessage(mActor.GetTaskString());
             mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);            
             break;
             case STATE_ANIMATION_CALLBACK.FINISH_TASK:
@@ -291,20 +302,32 @@ public class ActorController : MonoBehaviour
             } else {
                 if(ret.Item2) {              
                     mAnimationContext.Set("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                    mUI.SetMessage("LEVEL UP! lv." + mActor.mLevel.ToString());
+                    SetMessage("LEVEL UP! lv." + mActor.mLevel.ToString());
                     break;
                 }
             }
             Stop();
+            break;
+            case STATE_ANIMATION_CALLBACK.APPROCHING:
+            {
+                transform.position = mApprochingContext.toPosition;
+                transform.LookAt(mApprochingContext.lookAt);
+                mTarget.Release();
+                mApprochingContext.Release();
+                StartTask(); 
+            }           
             break;
         }
     }
     // Update is called once per frame
     void Update()
     {
+        if(mActor == null || mAgent == null)
+            throw new Exception("mActor or mAgent is null");
+
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
 
-        if(mAnimationContext.name.Length > 0) {
+        if(mAnimationContext.name.Length > 0 && mAnimator != null) {
             if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.name) && 
                 mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
             {
@@ -346,9 +369,9 @@ public class ActorController : MonoBehaviour
                     mAgent.isStopped = true;
                     //SetAnimation(StopAnimation);
                     //mState = STATE.START_TASK;   
-                    if(mTarget.isPositionOnly) {
-                        Position lookAt = mActor.GetCurrentTask().mInfo.target.lookAt;                        
-                        mApprochingContext.Set(transform, mTarget.position, new Vector3(lookAt.x, lookAt.y, lookAt.z), mAgent.acceleration);
+                    if(mTarget.isPositionOnly) {                        
+                        if(!SetApproching())
+                            throw new Exception("Set Approching Failure");
                         mState = STATE.APPROCHING;
                         mTimer = 0;
                     } else {
@@ -356,12 +379,7 @@ public class ActorController : MonoBehaviour
                         StartTask(); 
                     }                    
                 } else {
-                    if(!mTarget.enable)
-                        throw new Exception("Target must be enable");
-                    if(mTarget.isPositionOnly)
-                        mAgent.destination = mTarget.position;
-                    else
-                        mAgent.destination = mTarget.transform.position;
+                    mAgent.destination = GetDestination();
                 }            
             }
             break;   
@@ -369,23 +387,11 @@ public class ActorController : MonoBehaviour
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
                 transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
                 //transform.LookAt(mApprochingContext.toPosition);
-                if(rate >= 1) {                    
-                    mState = STATE.APPROCHING_FINISH;
-                    SetAnimation(StopAnimation); 
+                if(rate >= 1) {         
                     mTimer = 0;
+                    mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
+                    mState = STATE.INVALID;
                 }
-            break;
-            case STATE.APPROCHING_FINISH:
-            {
-                mTimer += Time.deltaTime;
-                if(mTimer > mDefaultWaitTimeMin) {
-                    transform.position = mApprochingContext.toPosition;
-                    transform.LookAt(mApprochingContext.lookAt);
-                    mTarget.Release();
-                    mApprochingContext.Release();
-                    StartTask(); 
-                }
-            }                
             break;
             /*
             case STATE.ACK:
@@ -471,18 +477,71 @@ public class ActorController : MonoBehaviour
         mState = STATE.IDLE;        
     }
     private float GetDistance() {
+        return Vector3.Distance(transform.position, GetDestination());
+    }    
+    private Vector3 GetDestination() {
         if(!mTarget.enable) {
             throw new Exception("Target must be enable");
         }
         if(mTarget.isPositionOnly)
-            return Vector3.Distance(transform.position, mTarget.position);
+            return mTarget.position;
+        else if(mTarget.transform != null)
+            return mTarget.transform.position;
         else 
-            return Vector3.Distance(transform.position, mTarget.transform.position);
+            throw new Exception("Target Transform must be enable");
     }    
     public void SetAnimation(string animation) {     
-        int id = mGamePlayController.GetAnimationId(animation);   
-        if((int)GamePlayController.ANIMATION_ID.Invalid < id) {            
-            mAnimator.SetInteger(AnimationId, id);
+        if(mGamePlayController != null && mAnimator != null) {
+            int id = mGamePlayController.GetAnimationId(animation);   
+            if((int)GamePlayController.ANIMATION_ID.Invalid < id) {            
+                mAnimator.SetInteger(AnimationId, id);
+            }
+        }        
+    }   
+    private bool SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK state) {
+        if(mActor == null)
+            return false;
+        var task = mActor.GetCurrentTask();
+        if(task == null)
+            return false;
+        mAnimationContext.Set(task.GetAnimation(), task.mInfo.time, state);  
+        return true;
+    }
+    private GameObject? GetInteractionFrom() {
+        if(mActor == null)
+            return null;
+        var task = mActor.GetTaskContext();
+        if(task == null || task.interactionFromActor == null)
+            return null;
+        string from = task.interactionFromActor.mUniqueId;
+        return mGamePlayController.GetActorObject(from);
+    }
+    private bool SetApproching() {
+        if(mActor == null || mAgent == null)
+            return false;
+        var task = mActor.GetCurrentTask();
+        if(task == null)
+            return false;
+
+        Position lookAt = task.mInfo.target.lookAt;                        
+        mApprochingContext.Set(transform, mTarget.position, new Vector3(lookAt.x, lookAt.y, lookAt.z), mAgent.acceleration);
+        return true;
+
+    }
+    private string GetScript(Actor? targetActor) {        
+        if(mActor == null)
+            throw new Exception("mActor is null");
+        var task = mActor.GetCurrentTask();
+        if(task == null)
+            return string.Empty;
+        if(targetActor == null)
+            return ScriptHandler.Instance.GetScript(task.mTaskId, mActor);
+        else 
+            return ScriptHandler.Instance.GetScript(task.mTaskId, mActor, targetActor);
+    }
+    private void SetMessage(string msg) {
+        if(mUI != null && mActor != null) {
+            mUI.SetMessage(msg);
         }
-    }    
+    }
 }
