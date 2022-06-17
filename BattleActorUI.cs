@@ -49,7 +49,7 @@ public class BattleActorUI : MonoBehaviour
     }
     void LateUpdate()
     {
-		transform.position = Camera.main.WorldToScreenPoint(target.position + new Vector3(0, 0.8f, 0));
+		transform.position = Camera.main.WorldToScreenPoint(target.position + new Vector3(0, 1.8f, 0));
     }
 
 }
