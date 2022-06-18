@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class RenderObj {
+    public GameObject gameObject;
     public Shader originalShader;
     public MeshRenderer originalRenderer; //shader만 저장해서 다시 설정 했더니 안되서 meshRenderer도 저장
-    public RenderObj(Shader originalShader, MeshRenderer originalRenderer) {
+    public RenderObj(GameObject gameObject, Shader originalShader, MeshRenderer originalRenderer) {
+        this.gameObject = gameObject;
         this.originalShader = originalShader;
         this.originalRenderer = originalRenderer;
     }
@@ -40,6 +42,8 @@ public class AngleContext {
 
 public class TransparentObject : MonoBehaviour
 {
+    //저사양 모드. true면 투명 처리 대신 SetActive(false)한다
+    public bool IsLowMode = false;
     public string TargetObject = string.Empty;
     private GameObject mTargetObject; //대상 
     public string TargetLayer = string.Empty; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
@@ -95,12 +99,15 @@ public class TransparentObject : MonoBehaviour
             if(mDictShader.ContainsKey(obj.name) == false) {                
                 MeshRenderer render = obj.GetComponent<MeshRenderer>();     
 
-                RenderObj renderObj = new RenderObj(render.material.shader, render);
+                RenderObj renderObj = new RenderObj(obj, render.material.shader, render);
 
                 mDictShader.Add(obj.name, renderObj);
-                render.material.shader = mTransparentShader;
-                render.material.SetColor("_Color", ColorTransparent);
-                //Debug.Log(string.Format("Transparent {0} {1} > {2}", obj.name, mDictShader[obj.name].originalShader.name, render.material.shader.name));
+                if(IsLowMode)
+                    obj.SetActive(false);
+                else {
+                    render.material.shader = mTransparentShader;
+                    render.material.SetColor("_Color", ColorTransparent);
+                }
             }            
         }
     }
@@ -128,8 +135,13 @@ public class TransparentObject : MonoBehaviour
         for(int i = 0; i < keys.Count; i++) {
             string key = keys[i];
             RenderObj obj = mDictShader[key];
-            obj.originalRenderer.material.shader = obj.originalShader;
-            //Debug.Log(string.Format("Recovery {0} > {1}", key, obj.originalShader.name));
+
+            if(IsLowMode)
+                obj.gameObject.SetActive(true);
+            else {
+                obj.originalRenderer.material.shader = obj.originalShader;
+                //Debug.Log(string.Format("Recovery {0} > {1}", key, obj.originalShader.name));
+            }
             mDictShader.Remove(key);
         }
     }

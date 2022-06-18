@@ -30,8 +30,11 @@ public class BattleActorUI : MonoBehaviour
     {
         _Name.text = name;
     }
-    public void SetMessage(string msg, int order) 
+    public void SetMessage(string msg, int order, bool isOverlap = true) 
     {
+        if(!isOverlap && mIseSetMSG)
+            return;
+            
         _panel.sortingOrder = order;
         _panel.enabled = true;
         _Message.text = msg;

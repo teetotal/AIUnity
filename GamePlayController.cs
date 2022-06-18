@@ -27,6 +27,10 @@ public class GamePlayController : MonoBehaviour
         Max
     }
     public float Interval = 3;
+    //NPC아닌 actor type
+    public int ManagedActorType = 1;
+    //NPC아닌 actor의 최소 실행 주기
+    public int ManagedInterval = 5;
     public GameObject? MainCamera;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
@@ -71,8 +75,16 @@ public class GamePlayController : MonoBehaviour
         long counter = CounterHandler.Instance.Next();
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];
-            if(actor.GetState() == Actor.STATE.READY && actor.TakeTask() == false) {                    
-                throw new System.Exception(p.Key + " Take Task Failure");
+               
+            if(actor.GetState() == Actor.STATE.READY) {
+                if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {
+                    //Debug.Log(string.Format("{0} {1} / {2}", p.Key, actor.GetTaskContext().lastCount, CounterHandler.Instance.GetCount()));
+                    var obj = GetActorObject(p.Key);
+                    obj.GetComponent<ActorController>().SetMessage("흠...", false);
+                    continue;
+                }
+                if(actor.TakeTask() == false)                
+                    throw new System.Exception(p.Key + " Take Task Failure");
             }            
         }
     }

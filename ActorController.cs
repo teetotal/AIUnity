@@ -362,7 +362,14 @@ public class ActorController : MonoBehaviour
                 GameObject? obj = mGamePlayController.GetActorObject(actorId);
                 if(obj == null)
                     throw new Exception("Invalid ActorId. " + actorId);
-                transform.LookAt(obj.transform);
+                
+                float distance = mActor.GetDistance(actorId);
+                Vector3 direction =  transform.position - obj.transform.position;
+                Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
+                toRotation.x = 0;
+                toRotation.z = 0;
+                float rate = distance == 0 ? 0 : (1.0f/distance);
+                transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
             }
         }
         
@@ -534,9 +541,9 @@ public class ActorController : MonoBehaviour
         else 
             return isRefusal ? ScriptHandler.Instance.GetScriptRefusal(taskId, mActor, targetActor): ScriptHandler.Instance.GetScript(taskId, mActor, targetActor);
     }
-    private void SetMessage(string msg) {
+    public void SetMessage(string msg, bool isOverlap = true) {
         if(mUI != null && mActor != null) {
-            mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount());
+            mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount(), isOverlap);
         }
     }
     private void SetInteractionCameraAngle() {
