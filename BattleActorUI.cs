@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class BattleActorUI : MonoBehaviour
 {	
-    public string targetName;
+    public string targetName = string.Empty;
 	private Transform target;
     [SerializeField]
     private Slider _slider;
@@ -14,6 +14,7 @@ public class BattleActorUI : MonoBehaviour
     [SerializeField]
     private Text _Message;
     bool mIseSetMSG = false;
+    bool mDelayFinishFlag = false;
     float timer = 0;
     [SerializeField]
     private Canvas _panel;
@@ -34,17 +35,27 @@ public class BattleActorUI : MonoBehaviour
         _panel.sortingOrder = order;
         _panel.enabled = true;
         _Message.text = msg;
+        _panel.enabled = false;
         mIseSetMSG = true;
+        mDelayFinishFlag = false;
         timer = 0;        
     }
     private void Update() {
-        timer += Time.deltaTime;
-        if(timer > 4) {
-            _Message.text = "";
-            _panel.enabled = false;
-        }
         if(target == null) {
             target = GameObject.Find(targetName).transform;
+        }
+        if(mIseSetMSG) {
+            timer += Time.deltaTime;
+            if(!mDelayFinishFlag && timer > 1.0f) {
+                _panel.enabled = true;
+                mDelayFinishFlag = true;
+            } else if(timer > 5.5f) 
+            {
+                mDelayFinishFlag = false;
+                _Message.text = "";
+                _panel.enabled = false;
+                mIseSetMSG = false;
+            }
         }
     }
     void LateUpdate()

@@ -27,10 +27,13 @@ public class GamePlayController : MonoBehaviour
         Max
     }
     public float Interval = 3;
+    public GameObject? MainCamera;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();    
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
+    private TransparentObject? mTransparentObject;
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -52,6 +55,9 @@ public class GamePlayController : MonoBehaviour
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
+
+        if(MainCamera != null)
+            mTransparentObject = MainCamera.GetComponent<TransparentObject>();
     }
    
     private void Update() {
@@ -70,6 +76,13 @@ public class GamePlayController : MonoBehaviour
             }            
         }
     }
+    public void SetInteractionCameraAngle(ActorController actor) {
+        if(mTransparentObject == null)
+            return;
+        if(mTransparentObject.TargetObject != actor.name) 
+            return;
+        mTransparentObject.SetInteractionAngle();
+    }   
     public int GetAnimationId(string aniName) {
         if(mDicAnimation.ContainsKey(aniName)) {
             return mDicAnimation[aniName];

@@ -10,6 +10,33 @@ public class RenderObj {
         this.originalRenderer = originalRenderer;
     }
 }
+public class AngleContext {
+    private float angle = 0;
+    private bool isSet = false;
+    private float timer = 0;
+    private float duration = 5;
+    public void Set(float angle, float duration = 8) {
+        this.angle = angle;
+        this.timer = 0;
+        this.isSet = true;
+        this.duration = duration;
+    }
+    public void Check(float deltaTime) {
+        if(isSet) {
+            timer += deltaTime;
+            if(timer > duration)
+                Release();
+        }
+    }
+    private void Release() {
+        this.angle = 0;
+        this.timer = 0;
+        this.isSet = false;
+    }
+    public float GetAngle() {
+        return angle;
+    }
+}
 
 public class TransparentObject : MonoBehaviour
 {
@@ -27,6 +54,9 @@ public class TransparentObject : MonoBehaviour
     private float mDistance = 10.0f;
     private Transform mTransform;
     private bool mIsTargeted = false;
+
+    private AngleContext mAngle = new AngleContext();
+
     // Start is called before the first frame update
     void Start()
     {
@@ -76,9 +106,10 @@ public class TransparentObject : MonoBehaviour
     }
     void LateUpdate()
     {        
+        mAngle.Check(Time.deltaTime);
         //전면을 보게 하고 싶으면 180 + mTargetObject.transform.eulerAngles.y
         //뒤에서 따라갈거면 mTargetObject.transform.eulerAngles.y
-        float currYAngle = Mathf.LerpAngle(mTransform.eulerAngles.y, mTargetObject.transform.eulerAngles.y, mSmoothRotation * Time.deltaTime);
+        float currYAngle = Mathf.LerpAngle(mTransform.eulerAngles.y, mAngle.GetAngle() + mTargetObject.transform.eulerAngles.y, mSmoothRotation * Time.deltaTime);
         Quaternion rot = Quaternion.Euler(0, currYAngle, 0 );
         mTransform.position = mTargetObject.transform.position - (rot * Vector3.forward * mDistance) + (Vector3.up *  mHeight);
         mTransform.LookAt(mTargetObject.transform);
@@ -101,5 +132,9 @@ public class TransparentObject : MonoBehaviour
             //Debug.Log(string.Format("Recovery {0} > {1}", key, obj.originalShader.name));
             mDictShader.Remove(key);
         }
+    }
+    public void SetInteractionAngle() {
+        //Debug.Log("SetInteractionAngle");        
+        mAngle.Set(180);
     }
 }
