@@ -80,7 +80,8 @@ public class GamePlayController : MonoBehaviour
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {
                     //Debug.Log(string.Format("{0} {1} / {2}", p.Key, actor.GetTaskContext().lastCount, CounterHandler.Instance.GetCount()));
                     var obj = GetActorObject(p.Key);
-                    obj.GetComponent<ActorController>().SetMessage("흠...", false);
+                    if(obj != null)
+                        obj.GetComponent<ActorController>().SetMessage(ScriptHandler.Instance.GetScript("WAITING", actor), false);
                     continue;
                 }
                 if(actor.TakeTask() == false)                

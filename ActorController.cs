@@ -369,6 +369,7 @@ public class ActorController : MonoBehaviour
                 toRotation.x = 0;
                 toRotation.z = 0;
                 float rate = distance == 0 ? 0 : (1.0f/distance);
+                rate = rate * 0.1f;
                 transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
             }
         }
