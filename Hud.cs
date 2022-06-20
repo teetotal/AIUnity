@@ -12,6 +12,8 @@ public class Hud : MonoBehaviour
     public Vector2 BottomSize = new Vector2(700, 60);
     public Vector2 AskSize = new Vector2(400, 300);
 
+    public Text TopLeftText, TopRightText;    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -84,11 +86,16 @@ public class Hud : MonoBehaviour
         RectTransform askRT = Ask.GetComponent<RectTransform>();
         x = (AskSize.x / 1334.0f) * Screen.width;
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
+        Ask.SetActive(false);
     }
 
     // Update is called once per frame
-    void Update()
-    {
-        
+    public void SetTopLeftText(string sz) {
+        TopLeftText.text = sz;
     }
+
+    public void SetTopRightText(string sz) {
+        TopRightText.text = sz;
+    }
+
 }

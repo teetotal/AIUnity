@@ -124,7 +124,7 @@ public class ActorController : MonoBehaviour
         DISAPPOINTED_FINISH,
     }
     
-    //config
+    //config    
     public string UIPrefab = "ActorUI";    
     public float ApprochRange = 3f;
     public string AnimationId = "AnimationId";
@@ -142,6 +142,8 @@ public class ActorController : MonoBehaviour
     private Animator? mAnimator;
     
     //variable
+    private Hud? mHud = null;
+    private bool mIsFollowingActor = false;
     private Target mTarget = new Target();
     private ActorControllerApproching mApprochingContext = new ActorControllerApproching();    
     private float mTargetPositionRandom = 0;
@@ -179,7 +181,26 @@ public class ActorController : MonoBehaviour
             mUI.targetName = name;
             mUI.SetName(name);
         }
+        //Hud
+        SetHubTopLeft();
     }
+    // HUD ------------------------------------------------------------------
+    public void SetFollowingActor(bool isFollowing, Hud hud) {
+        mIsFollowingActor = isFollowing;
+        mHud = hud;
+    }
+    private void SetHubTopLeft() {
+        if(!mIsFollowingActor || mHud == null || mActor == null)
+            return;
+        mHud.SetTopLeftText(string.Format("{0} Lv.{1}", name, mActor.mLevel));
+    } 
+    private void SetHubTopRight() {
+        if(!mIsFollowingActor || mHud == null || mActor == null)
+            return;        
+        
+        mHud.SetTopRightText(string.Format("{0} 하는 중...\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
+    } 
+    // ----------------------------------------------------------------------
     public void Callback(Actor.CALLBACK_TYPE type, string actorId) {        
         switch(type) {            
             case Actor.CALLBACK_TYPE.SET_READY:
@@ -246,6 +267,7 @@ public class ActorController : MonoBehaviour
                     }
                     break;
                 }
+                SetHubTopRight();
             }
             return;
             case Actor.CALLBACK_TYPE.DO_TASK:
@@ -305,7 +327,6 @@ public class ActorController : MonoBehaviour
                 }     
                 //interaction type에 따라 카메라 앵글 변경
                 SetInteractionCameraAngle();
-
             }            
             break;
             case STATE_ANIMATION_CALLBACK.TASK: {
@@ -324,6 +345,7 @@ public class ActorController : MonoBehaviour
             Stop();
             break;
             case STATE_ANIMATION_CALLBACK.LEVELUP:
+            SetHubTopLeft();
             Stop();
             break;
             case STATE_ANIMATION_CALLBACK.APPROCHING:

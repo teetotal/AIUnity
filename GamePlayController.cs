@@ -37,6 +37,9 @@ public class GamePlayController : MonoBehaviour
     private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();    
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     private TransparentObject? mTransparentObject;
+
+    public string FollowActorId = string.Empty;
+    public Hud HudInstance;
     
     // Start is called before the first frame update
     void Start()
@@ -92,7 +95,7 @@ public class GamePlayController : MonoBehaviour
     public void SetInteractionCameraAngle(ActorController actor) {
         if(mTransparentObject == null)
             return;
-        if(mTransparentObject.TargetObject != actor.name) 
+        if(mTransparentObject.GetFollowingActorId() != actor.name) 
             return;
         mTransparentObject.SetInteractionAngle();
     }   
@@ -122,8 +125,12 @@ public class GamePlayController : MonoBehaviour
                     rotation = Quaternion.Euler(actor.mInfo.rotation[0], actor.mInfo.rotation[1], actor.mInfo.rotation[2]);
                 }
                 GameObject obj = Instantiate(prefab, position, rotation);
+                ActorController actorController = obj.GetComponent<ActorController>();
                 obj.name = actorName;
-                actor.SetCallback(obj.GetComponent<ActorController>().Callback);
+                actor.SetCallback(actorController.Callback);
+                //나중에 캐릭터 생성에 대한 부분 처리할때 옮겨갈 코드
+                if(actorName == FollowActorId)
+                    actorController.SetFollowingActor(true, HudInstance);
                 mActorObjects.Add(actorName, obj);
             }            
         }

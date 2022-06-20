@@ -44,7 +44,8 @@ public class TransparentObject : MonoBehaviour
 {
     //저사양 모드. true면 투명 처리 대신 SetActive(false)한다
     public bool IsLowMode = false;
-    public string TargetObject = string.Empty;
+    public GameObject GameController;
+    private string mFollowActorId = string.Empty;
     private GameObject mTargetObject; //대상 
     public string TargetLayer = string.Empty; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
     public Color ColorTransparent = Color.white;
@@ -64,20 +65,24 @@ public class TransparentObject : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        mFollowActorId = GameController.GetComponent<GamePlayController>().FollowActorId;
         mTransform = GetComponent<Transform>();        
         mTransparentShader = Shader.Find("Legacy Shaders/Transparent/Diffuse");
         mLayerMask = 1 << LayerMask.NameToLayer(TargetLayer);        
         SetTargetObject();
     }  
     bool SetTargetObject() {        
-        mTargetObject = GameObject.Find(TargetObject);
+        mTargetObject = GameObject.Find(mFollowActorId);
         if(mTargetObject == null) {
-            Debug.Log("Invalid Target Object " + TargetObject);
+            Debug.Log("Invalid Target Object " + mFollowActorId);
             mIsTargeted = false;
             return false;
         }
         mIsTargeted = true;
         return true;
+    }
+    public string GetFollowingActorId() {
+        return mFollowActorId;
     }
 
     // Update is called once per frame
