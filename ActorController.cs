@@ -183,6 +183,7 @@ public class ActorController : MonoBehaviour
         }
         //Hud
         SetHubTopLeft();
+        SetLevelProgress();
     }
     // HUD ------------------------------------------------------------------
     public void SetFollowingActor(bool isFollowing, Hud hud) {
@@ -190,16 +191,24 @@ public class ActorController : MonoBehaviour
         mHud = hud;
     }
     private void SetHubTopLeft() {
-        if(!mIsFollowingActor || mHud == null || mActor == null)
-            return;
-        mHud.SetTopLeftText(string.Format("{0} Lv.{1}", name, mActor.mLevel));
+        if(hasHud())
+            mHud.SetTopLeftText(string.Format("{0} Lv.{1}", name, mActor.mLevel));
     } 
     private void SetHubTopRight() {
-        if(!mIsFollowingActor || mHud == null || mActor == null)
-            return;        
-        
-        mHud.SetTopRightText(string.Format("{0} 하는 중...\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
+        if(hasHud())     
+            mHud.SetTopRightText(string.Format("{0} 하는 중...\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
     } 
+    private void SetLevelProgress() {
+        if(hasHud()) {
+            float v = mActor.GetLevelUpProgress();
+            mHud.SetLevelProgress(v);
+        }
+    }
+    private bool hasHud() {
+        if(!mIsFollowingActor || mHud == null || mActor == null)
+            return false;
+        return true;  
+    }
     // ----------------------------------------------------------------------
     public void Callback(Actor.CALLBACK_TYPE type, string actorId) {        
         switch(type) {            
@@ -211,6 +220,7 @@ public class ActorController : MonoBehaviour
             mCallbackQueue.Enqueue(type);
             break;
             case Actor.CALLBACK_TYPE.DO_TASK:
+            SetLevelProgress();
             break;
             case Actor.CALLBACK_TYPE.RESERVE:
             break;            
@@ -297,6 +307,7 @@ public class ActorController : MonoBehaviour
             {
                 mAnimationContext.Set("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
                 SetMessage("LEVEL UP! lv." + mActor.mLevel.ToString());
+                SetLevelProgress();
             }            
             return;    
         }

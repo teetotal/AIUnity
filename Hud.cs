@@ -13,6 +13,7 @@ public class Hud : MonoBehaviour
     public Vector2 AskSize = new Vector2(400, 300);
 
     public Text TopLeftText, TopRightText;    
+    public Slider LevelProgress;
 
     // Start is called before the first frame update
     void Start()
@@ -96,6 +97,9 @@ public class Hud : MonoBehaviour
 
     public void SetTopRightText(string sz) {
         TopRightText.text = sz;
+    }
+    public void SetLevelProgress(float v) {
+        LevelProgress.value = v;
     }
 
 }
