@@ -182,7 +182,8 @@ public class ActorController : MonoBehaviour
             mUI.SetName(name);
         }
         //Hud
-        SetHubTopLeft();
+        SetHudName();
+        SetHudLevel();
         SetLevelProgress();
     }
     // HUD ------------------------------------------------------------------
@@ -190,25 +191,24 @@ public class ActorController : MonoBehaviour
         mIsFollowingActor = isFollowing;
         mHud = hud;
     }
-    private void SetHubTopLeft() {
-        if(hasHud())
-            mHud.SetTopLeftText(string.Format("{0} Lv.{1}", name, mActor.mLevel));
+    private void SetHudName() {
+        if(mIsFollowingActor && mHud != null && mActor != null)
+            mHud.SetName(name);
     } 
-    private void SetHubTopRight() {
-        if(hasHud())     
+    private void SetHudLevel() {
+        if(mIsFollowingActor && mHud != null && mActor != null)
+            mHud.SetLevel(mActor.mLevel);
+    } 
+    private void SetHudTopRight() {
+        if(mIsFollowingActor && mHud != null && mActor != null)
             mHud.SetTopRightText(string.Format("{0} 하는 중...\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
     } 
     private void SetLevelProgress() {
-        if(hasHud()) {
+        if(mIsFollowingActor && mHud != null && mActor != null) {
             float v = mActor.GetLevelUpProgress();
             mHud.SetLevelProgress(v);
         }
-    }
-    private bool hasHud() {
-        if(!mIsFollowingActor || mHud == null || mActor == null)
-            return false;
-        return true;  
-    }
+    }    
     // ----------------------------------------------------------------------
     public void Callback(Actor.CALLBACK_TYPE type, string actorId) {        
         switch(type) {            
@@ -277,7 +277,7 @@ public class ActorController : MonoBehaviour
                     }
                     break;
                 }
-                SetHubTopRight();
+                SetHudTopRight();
             }
             return;
             case Actor.CALLBACK_TYPE.DO_TASK:
@@ -356,7 +356,7 @@ public class ActorController : MonoBehaviour
             Stop();
             break;
             case STATE_ANIMATION_CALLBACK.LEVELUP:
-            SetHubTopLeft();
+            SetHudLevel();
             Stop();
             break;
             case STATE_ANIMATION_CALLBACK.APPROCHING:

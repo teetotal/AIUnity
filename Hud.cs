@@ -12,8 +12,10 @@ public class Hud : MonoBehaviour
     public Vector2 BottomSize = new Vector2(700, 60);
     public Vector2 AskSize = new Vector2(400, 300);
 
-    public Text TopLeftText, TopRightText;    
+    public Text NameText,LevelText, LevelTextProgress, TopRightText;    
     public Slider LevelProgress;
+
+    private string mPrefixLevel = "Lv.";
 
     // Start is called before the first frame update
     void Start()
@@ -91,8 +93,11 @@ public class Hud : MonoBehaviour
     }
 
     // Update is called once per frame
-    public void SetTopLeftText(string sz) {
-        TopLeftText.text = sz;
+    public void SetName(string name) {
+        NameText.text = name;
+    }
+    public void SetLevel(int level)  {
+        LevelText.text = mPrefixLevel + level.ToString();
     }
 
     public void SetTopRightText(string sz) {
@@ -100,6 +105,7 @@ public class Hud : MonoBehaviour
     }
     public void SetLevelProgress(float v) {
         LevelProgress.value = v;
+        LevelTextProgress.text = string.Format("{0}%", (int)(v * 100));
     }
 
 }
