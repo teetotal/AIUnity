@@ -2,8 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
 public class Hud : MonoBehaviour
 {
+    public ScrollRect ScrollRectQuest;
+    public GameObject ContentQuest;
     public GameObject TopLeft, TopRight, Left, Bottom, Ask;
     public Vector2 Margin = new Vector2(5,10);
     public Vector2 TopLeftSize = new Vector2(160, 40);
@@ -17,9 +20,26 @@ public class Hud : MonoBehaviour
 
     private string mPrefixLevel = "Lv.";
 
+    void SetQuest(RectTransform leftRT) {
+        int n = 4;
+
+        RectTransform contentRect = ContentQuest.GetComponent<RectTransform>();
+        contentRect.sizeDelta = new Vector2(leftRT.sizeDelta.x, (leftRT.sizeDelta.y / 3) * 4);
+        GameObject prefab = Resources.Load<GameObject>("QuestPanel");
+
+        
+        for(int i = 0; i < n; i ++) {
+            GameObject obj = Instantiate(prefab);
+            RectTransform rect = obj.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(contentRect.sizeDelta.x, leftRT.sizeDelta.y / 3);
+
+            obj.transform.SetParent(ContentQuest.transform);
+        }
+        ScrollRectQuest.normalizedPosition = new Vector2(0, 1);
+    }
     // Start is called before the first frame update
     void Start()
-    {
+    {  
         //변경 이벤트 잡으려면 deviceOrientation을 계속 확인 하는 방법밖에 없다.
         Rect safe = Screen.safeArea;
 
@@ -90,6 +110,8 @@ public class Hud : MonoBehaviour
         x = (AskSize.x / 1334.0f) * Screen.width;
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
+
+        SetQuest(leftRT);
     }
 
     // Update is called once per frame
