@@ -125,9 +125,13 @@ public class GamePlayController : MonoBehaviour
                     rotation = Quaternion.Euler(actor.mInfo.rotation[0], actor.mInfo.rotation[1], actor.mInfo.rotation[2]);
                 }
                 GameObject obj = Instantiate(prefab, position, rotation);
+                
+                
                 ActorController actorController = obj.GetComponent<ActorController>();
-                obj.name = actorName;
+                actorController.Init(actorName, actor);                
+
                 actor.SetCallback(actorController.Callback);
+                
                 //나중에 캐릭터 생성에 대한 부분 처리할때 옮겨갈 코드
                 if(actorName == FollowActorId)
                     actorController.SetFollowingActor(true, HudInstance);

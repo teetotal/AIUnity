@@ -154,14 +154,13 @@ public class ActorController : MonoBehaviour
     private Actor? mActor = null;    
     private bool mIsActorReleaseAtStopFinish = false; //거절당했을때 처럼 actor 상태를 초기화 할 시점을 StopFinish에 실행하게 하는 flag
     
+    public void Init(string name, Actor actor) {
+        this.mActor = actor;
+        this.name = name;
+    }
     void Start()
     {        
-        mAnimationContext.Init(this);
-        var actor = ActorHandler.Instance.GetActor(name);
-        if(actor == null)
-            throw new Exception("Invalid Actor. " + name);
-        mActor = actor;
-        
+        mAnimationContext.Init(this);        
         mAnimator = GetComponent<Animator>();
 
         mAgent = gameObject.GetComponent<NavMeshAgent>();
@@ -190,6 +189,14 @@ public class ActorController : MonoBehaviour
     public void SetFollowingActor(bool isFollowing, Hud hud) {
         mIsFollowingActor = isFollowing;
         mHud = hud;
+
+        if(mIsFollowingActor && mHud != null && mActor != null)
+            mHud.InitSatisfaction(mActor.GetSatisfactions());
+    }
+    private void SetSatisfaction()
+    {
+        if(mIsFollowingActor && mHud != null && mActor != null)
+            mHud.SetSatisfaction(mActor.GetSatisfactions());
     }
     private void SetHudName() {
         if(mIsFollowingActor && mHud != null && mActor != null)
@@ -199,9 +206,9 @@ public class ActorController : MonoBehaviour
         if(mIsFollowingActor && mHud != null && mActor != null)
             mHud.SetLevel(mActor.mLevel);
     } 
-    private void SetHudTopRight() {
+    private void SetHudTopCenter() {
         if(mIsFollowingActor && mHud != null && mActor != null)
-            mHud.SetTopRightText(string.Format("{0} 하는 중...\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
+            mHud.SetTopCenterText(string.Format("{0}\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
     } 
     private void SetLevelProgress() {
         if(mIsFollowingActor && mHud != null && mActor != null) {
@@ -221,6 +228,7 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.CALLBACK_TYPE.DO_TASK:
             SetLevelProgress();
+            SetSatisfaction();
             break;
             case Actor.CALLBACK_TYPE.RESERVE:
             break;            
@@ -234,6 +242,9 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.CALLBACK_TYPE.INTERRUPTED:
             break;                        
+            case Actor.CALLBACK_TYPE.DISCHARGE:
+            SetSatisfaction();
+            break;
         }
     }
     private void Dequeue() {
@@ -277,10 +288,10 @@ public class ActorController : MonoBehaviour
                     }
                     break;
                 }
-                SetHudTopRight();
+                SetHudTopCenter();
             }
             return;
-            case Actor.CALLBACK_TYPE.DO_TASK:
+            case Actor.CALLBACK_TYPE.DO_TASK:            
             return;
             case Actor.CALLBACK_TYPE.RESERVE:
             return;
