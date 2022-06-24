@@ -130,7 +130,7 @@ public class ActorController : MonoBehaviour
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string DisappointedAnimation = "Disappointed";
-    public string GameController = "GamePlay";
+    private string GameController = "Hud";
     //private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing", "Drinking"};    
     private float mDefaultWaitTimeMin = 0.3f;
 

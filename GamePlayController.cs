@@ -39,11 +39,13 @@ public class GamePlayController : MonoBehaviour
     private TransparentObject? mTransparentObject;
 
     public string FollowActorId = string.Empty;
-    public Hud HudInstance;
+    private Hud HudInstance;
     
     // Start is called before the first frame update
     void Start()
     {
+        HudInstance = this.GetComponent<Hud>();
+        
         if(!Load()) {
             Debug.Log("Loading Failure");
             return;

@@ -5,15 +5,15 @@ using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 public class Hud : MonoBehaviour
 {
-    public ScrollRect ScrollRectQuest;    
+    //public ScrollRect ScrollRectQuest;    
     public GameObject ScrollViewSatisfaction;
-    public GameObject ContentQuest, ContentSatisfaction;
+    public GameObject ContentSatisfaction;
     public GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
     public Vector2 Margin = new Vector2(5,5);
     public Vector2 TopLeftSize = new Vector2(200, 60);
     public Vector2 TopCenterSize = new Vector2(240, 40);
-    public Vector2 TopRightSize = new Vector2(400, 40); 
-    public Vector2 LeftSize = new Vector2(240, 300);     
+    public Vector2 TopRightSize = new Vector2(200, 40); 
+    public float LeftWidth = 240;     
     public float RightWidth = 200;
     public Vector2 BottomSize = new Vector2(500, 60);
     public Vector2 AskSize = new Vector2(400, 300);
@@ -26,8 +26,11 @@ public class Hud : MonoBehaviour
     private string mPrefixLevel = "Lv.";
     private Dictionary<string, GameObject> mDicSatisfaction = new Dictionary<string, GameObject>();
 
+    void Start() {
+        Init();
+    }
     // Start is called before the first frame update
-    void Start()
+    void Init()
     {  
         //변경 이벤트 잡으려면 deviceOrientation을 계속 확인 하는 방법밖에 없다.
         Rect safe = Screen.safeArea;
@@ -47,30 +50,28 @@ public class Hud : MonoBehaviour
         y = (BottomSize.y / BottomSize.x) * x
         */
         RectTransform bottomRT = Bottom.GetComponent<RectTransform>();
-        float x = (BottomSize.x / 1334.0f) * Screen.width;
+        float x = (BottomSize.x / 1334.0f) * safe.width;
         bottomRT.sizeDelta = new Vector2(x, ((BottomSize.y / BottomSize.x) * x));
         bottomRT.anchoredPosition = new Vector2(0, safe.y);
 
         /*
         Left
         Left-Middle
-        750 : 240 = height : y
-        = (240 / 750) * h
         1334 : 240 = width : x
         = (240 / 1334) * w
         */
         RectTransform leftRT = Left.GetComponent<RectTransform>();
-        leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, 0);
-        leftRT.sizeDelta = new Vector2((LeftSize.x / 1334.0f) * Screen.width, (LeftSize.y / 750.0f) * Screen.height);
+        leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + Margin.y);
+        leftRT.sizeDelta = new Vector2((LeftWidth / 1334.0f) * safe.width, safe.height - (Margin.y * 2));
 
         /*
         Right
         Left-Middle
         */
         RectTransform RightRT = Right.GetComponent<RectTransform>();
-        float ActualRightWidth = RightWidth * Screen.width / 1334.0f;
-        RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, 0);
-        RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height);
+        float ActualRightWidth = RightWidth * safe.width / 1334.0f;
+        RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, safe.y + Margin.y);
+        RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height - (Margin.y * 2));
 
         /*
         Top Left
@@ -82,14 +83,14 @@ public class Hud : MonoBehaviour
         */
         RectTransform topLeftRT = TopLeft.GetComponent<RectTransform>();
         topLeftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + safe.height - Margin.y);
-        topLeftRT.sizeDelta = new Vector2((TopLeftSize.x / 1334.0f) * Screen.width, (TopLeftSize.y / 750.0f) * Screen.height);
+        topLeftRT.sizeDelta = new Vector2((TopLeftSize.x / 1334.0f) * safe.width, (TopLeftSize.y / 750.0f) * safe.height);
         /*
         Top Center
         Center-Bottom
         */
         RectTransform topCenterRT = TopCenter.GetComponent<RectTransform>();
         topCenterRT.anchoredPosition = new Vector2(0, safe.y + safe.height - Margin.y);
-        topCenterRT.sizeDelta = new Vector2((TopCenterSize.x / 1334.0f) * Screen.width, (TopCenterSize.y / 750.0f) * Screen.height);
+        topCenterRT.sizeDelta = new Vector2((TopCenterSize.x / 1334.0f) * safe.width, (TopCenterSize.y / 750.0f) * safe.height);
 
         /*
         Top Right
@@ -98,7 +99,7 @@ public class Hud : MonoBehaviour
         = 400 / 1334 * w
         */
         RectTransform topRightRT = TopRight.GetComponent<RectTransform>();
-        topRightRT.sizeDelta = new Vector2((TopRightSize.x / 1334.0f) * Screen.width, (TopRightSize.y / 750.0f) * Screen.height);
+        topRightRT.sizeDelta = new Vector2((TopRightSize.x / 1334.0f) * safe.width, (TopRightSize.y / 750.0f) * safe.height);
         topRightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - topRightRT.sizeDelta.x, safe.y + safe.height - Margin.y);
         
         /*
@@ -112,7 +113,7 @@ public class Hud : MonoBehaviour
         y = (AskSize.y / AskSize.x) * x
         */
         RectTransform askRT = Ask.GetComponent<RectTransform>();
-        x = (AskSize.x / 1334.0f) * Screen.width;
+        x = (AskSize.x / 1334.0f) * safe.width;
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
 
@@ -142,12 +143,16 @@ public class Hud : MonoBehaviour
         }        
     }
     public void InitSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
-        RectTransform rect = ScrollViewSatisfaction.GetComponent<RectTransform>();        
+        float height = Screen.safeArea.height / 6;     
         int n = satisfaction.Count;
         //4개씩 보이게끔
-        float height = rect.rect.height / 4;
+        height = height / 4;
+        float width = (RightWidth / 1334.0f) * Screen.safeArea.width;
+        width -= 10; //scroll bar width
         RectTransform contentRect = ContentSatisfaction.GetComponent<RectTransform>();
-        contentRect.sizeDelta = new Vector2(contentRect.sizeDelta.x, height * n);
+        contentRect.sizeDelta = new Vector2(width, height * n);
+
+        Debug.Log(height);
         Debug.Log(contentRect.sizeDelta);
 
         GameObject prefab = Resources.Load<GameObject>(PrefabSatisfaction);
@@ -165,21 +170,7 @@ public class Hud : MonoBehaviour
         SetSatisfaction(satisfaction);
     }
     void SetQuest(RectTransform leftRT) {
-        int n = 4;
-
-        RectTransform contentRect = ContentQuest.GetComponent<RectTransform>();
-        contentRect.sizeDelta = new Vector2(leftRT.sizeDelta.x, (leftRT.sizeDelta.y / 3) * 4);
-        GameObject prefab = Resources.Load<GameObject>("QuestPanel");
-
-        
-        for(int i = 0; i < n; i ++) {
-            GameObject obj = Instantiate(prefab);
-            RectTransform rect = obj.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(contentRect.sizeDelta.x, leftRT.sizeDelta.y / 3);
-
-            obj.transform.SetParent(ContentQuest.transform);
-        }
-        ScrollRectQuest.normalizedPosition = new Vector2(0, 1);
+        return;
     }
 
 }
