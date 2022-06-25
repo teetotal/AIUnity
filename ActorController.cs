@@ -241,8 +241,6 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.RESERVE:
             break;            
             case Actor.CALLBACK_TYPE.RESERVED:
-            {   
-            }
             break;
             case Actor.CALLBACK_TYPE.ASK:
             break;
@@ -252,6 +250,9 @@ public class ActorController : MonoBehaviour
             break;                        
             case Actor.CALLBACK_TYPE.DISCHARGE:
             SetHudSatisfaction();
+            break;
+            case Actor.CALLBACK_TYPE.COMPLETE_QUEST:
+            SetHudQuest();
             break;
         }
     }

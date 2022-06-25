@@ -169,7 +169,12 @@ public class Hud : MonoBehaviour
         SetSatisfaction(satisfaction);
     }
     public void SetQuest(Actor actor, List<string> quests) {
-        for(int i = 0; i < quests.Count; i++) {
+        for(int i = 0; i < QuestElements.Length; i++) {
+            if(i > quests.Count - 1) {
+                QuestElements[i].SetEmpty();
+                continue;
+            }
+            
             string questId = quests[i];
             var info = QuestHandler.Instance.GetQuestInfo(actor.mType, questId);
             if(info == null)
