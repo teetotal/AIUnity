@@ -20,6 +20,7 @@ public class Hud : MonoBehaviour
 
     public Text NameText,LevelText, LevelTextProgress, TopCenterText;    
     public Slider LevelProgress;
+    public QuestElement[] QuestElements = new QuestElement[3];
 
     public string PrefabSatisfaction = "SatisfactionInfo";
 
@@ -116,8 +117,6 @@ public class Hud : MonoBehaviour
         x = (AskSize.x / 1334.0f) * safe.width;
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
-
-        SetQuest(leftRT);        
     }
 
     // Update is called once per frame
@@ -169,7 +168,15 @@ public class Hud : MonoBehaviour
 
         SetSatisfaction(satisfaction);
     }
-    void SetQuest(RectTransform leftRT) {
+    public void SetQuest(Actor actor, List<string> quests) {
+        for(int i = 0; i < quests.Count; i++) {
+            string questId = quests[i];
+            var info = QuestHandler.Instance.GetQuestInfo(actor.mType, questId);
+            if(info == null)
+                throw new System.Exception("Invalid Quest Id: " + questId + ", Actor Type: " + actor.mType.ToString());
+            
+            QuestElements[i].SetQuestInfo(actor, info);
+        }
         return;
     }
 

@@ -190,10 +190,17 @@ public class ActorController : MonoBehaviour
         mIsFollowingActor = isFollowing;
         mHud = hud;
 
-        if(mIsFollowingActor && mHud != null && mActor != null)
+        if(mIsFollowingActor && mHud != null && mActor != null) {
             mHud.InitSatisfaction(mActor.GetSatisfactions());
+            SetHudQuest();
+        }
+            
     }
-    private void SetSatisfaction()
+    private void SetHudQuest() {
+        if(mIsFollowingActor && mHud != null && mActor != null)
+            mHud.SetQuest(mActor, mActor.GetQuest());
+    }
+    private void SetHudSatisfaction()
     {
         if(mIsFollowingActor && mHud != null && mActor != null)
             mHud.SetSatisfaction(mActor.GetSatisfactions());
@@ -228,7 +235,8 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.CALLBACK_TYPE.DO_TASK:
             SetLevelProgress();
-            SetSatisfaction();
+            SetHudSatisfaction();
+            SetHudQuest();
             break;
             case Actor.CALLBACK_TYPE.RESERVE:
             break;            
@@ -243,7 +251,7 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.INTERRUPTED:
             break;                        
             case Actor.CALLBACK_TYPE.DISCHARGE:
-            SetSatisfaction();
+            SetHudSatisfaction();
             break;
         }
     }
