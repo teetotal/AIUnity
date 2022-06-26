@@ -55,8 +55,8 @@ public class TransparentObject : MonoBehaviour
     private Dictionary<string, RenderObj> mDictShader = new Dictionary<string, RenderObj>();
     private float mCounter = 0;
     private float mSmoothRotation = 1.0f;
-    private float mHeight = 5.0f;
-    private float mDistance = 10.0f;
+    private float mHeight = 2.5f;//5.0f;
+    private float mDistance = 12.0f;
     private Transform mTransform;
     private bool mIsTargeted = false;
 
