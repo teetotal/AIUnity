@@ -34,7 +34,10 @@ public class GamePlayController : MonoBehaviour
     public GameObject? MainCamera;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
-    private Dictionary<string, GameObject> mActorObjects = new Dictionary<string, GameObject>();    
+    private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
+    private ActorController? mFollowActorObject;
+    public float VisibleDistance = 30.0f;
+    public float VisibleDistanceBack = 5.0f;
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     private TransparentObject? mTransparentObject;
 
@@ -47,18 +50,15 @@ public class GamePlayController : MonoBehaviour
         HudInstance = this.GetComponent<Hud>();
         
         if(!Load()) {
-            Debug.Log("Loading Failure");
-            return;
+            throw new System.Exception("Loading Failure");            
         }
         //Actor생성
         mActors = ActorHandler.Instance.GetActors();
         if(mActors == null) {
-            Debug.Log("Loading Actor Failure");
-            return;
+            throw new System.Exception("Loading Actor Failure");
         }
         if(!CreateActors()) {
-            Debug.Log("Creating Actors Failure");
-            return;
+            throw new System.Exception("Creating Actors Failure");
         }
 
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
@@ -74,19 +74,43 @@ public class GamePlayController : MonoBehaviour
         if(mTimer > Interval) {
             Next();            
             mTimer = 0;
-        }        
+        }
+        //Actor UI visible   
+        if(mFollowActorObject == null) 
+            return;    
+        foreach(var actor in mActorObjects) {
+            bool visible = true;
+            if(FollowActorId != actor.Key) {
+                Vector3 from = mFollowActorObject.gameObject.transform.position;
+                Vector3 to = actor.Value.gameObject.transform.position;
+
+                Vector3 diff = to - from;                            
+                float distance = diff.magnitude;
+                Quaternion angle = Quaternion.LookRotation( diff.normalized );
+
+                if(distance > VisibleDistance) visible = false;        
+                else if(distance > VisibleDistanceBack && angle.y < 0) visible = false;        
+            }
+
+            actor.Value.SetVisibleActorUI(visible);
+        }
     }    
     private void Next() {
         long counter = CounterHandler.Instance.Next();
+        DischargeHandler.Instance.Discharge(ManagedActorType);
+        ActorHandler.Instance.UpdateSatisfactionSum();
+
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];
                
             if(actor.GetState() == Actor.STATE.READY) {
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {
                     //Debug.Log(string.Format("{0} {1} / {2}", p.Key, actor.GetTaskContext().lastCount, CounterHandler.Instance.GetCount()));
+                    /*
                     var obj = GetActorObject(p.Key);
                     if(obj != null)
                         obj.GetComponent<ActorController>().SetMessage(ScriptHandler.Instance.GetScript("WAITING", actor), false);
+                    */
                     continue;
                 }
                 if(actor.TakeTask() == false)                
@@ -109,7 +133,7 @@ public class GamePlayController : MonoBehaviour
     }
     public GameObject? GetActorObject(string actorId) {
         if(mActorObjects.ContainsKey(actorId)) {
-            return mActorObjects[actorId];
+            return mActorObjects[actorId].gameObject;
         }
         return null;
     }
@@ -130,14 +154,18 @@ public class GamePlayController : MonoBehaviour
                 
                 
                 ActorController actorController = obj.GetComponent<ActorController>();
-                actorController.Init(actorName, actor);                
+                if(!actorController.Init(actorName, actor))
+                    throw new System.Exception("ActorController Init Failure. " + actorName);
 
                 actor.SetCallback(actorController.Callback);
                 
                 //나중에 캐릭터 생성에 대한 부분 처리할때 옮겨갈 코드
-                if(actorName == FollowActorId)
+                if(actorName == FollowActorId) {
+                    mFollowActorObject = actorController;
                     actorController.SetFollowingActor(true, HudInstance);
-                mActorObjects.Add(actorName, obj);
+                }
+                    
+                mActorObjects.Add(actorName, actorController);
             }            
         }
         return true;

@@ -1,17 +1,17 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 public class Hud : MonoBehaviour
 {
     //public ScrollRect ScrollRectQuest;    
-    public GameObject ScrollViewSatisfaction;
+    public ScrollRect ScrollViewSatisfaction;
     public GameObject ContentSatisfaction;
     public GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
     public Vector2 Margin = new Vector2(5,5);
     public Vector2 TopLeftSize = new Vector2(200, 60);
-    public Vector2 TopCenterSize = new Vector2(240, 40);
+    public Vector2 TopCenterSize = new Vector2(240, 50);
     public Vector2 TopRightSize = new Vector2(200, 40); 
     public float LeftWidth = 240;     
     public float RightWidth = 200;
@@ -25,7 +25,7 @@ public class Hud : MonoBehaviour
     public string PrefabSatisfaction = "SatisfactionInfo";
 
     private string mPrefixLevel = "Lv.";
-    private Dictionary<string, GameObject> mDicSatisfaction = new Dictionary<string, GameObject>();
+    private List<GameObject> mSatisfactionList = new List<GameObject>();
 
     void Start() {
         Init();
@@ -36,7 +36,7 @@ public class Hud : MonoBehaviour
         //변경 이벤트 잡으려면 deviceOrientation을 계속 확인 하는 방법밖에 없다.
         Rect safe = Screen.safeArea;
 
-        Debug.Log(string.Format("{0}, {1} {2}", Screen.width, Screen.height, safe));
+        //Debug.Log(string.Format("{0}, {1} {2}", Screen.width, Screen.height, safe));
         /*
         Bottom
         Center-Bottom
@@ -136,10 +136,13 @@ public class Hud : MonoBehaviour
     }
     // ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
-        foreach(var p in satisfaction) {
-            //p.value 적용
-            mDicSatisfaction[p.Key].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
-        }        
+        int i = 0;
+        foreach(var p in satisfaction.OrderBy( i => (i.Value.Value / i.Value.Max))) {
+            //p.value 적용            
+            mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
+            i++;
+        }    
+        ScrollViewSatisfaction.verticalNormalizedPosition = 1;
     }
     public void InitSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
         float height = Screen.safeArea.height / 6;     
@@ -151,9 +154,6 @@ public class Hud : MonoBehaviour
         RectTransform contentRect = ContentSatisfaction.GetComponent<RectTransform>();
         contentRect.sizeDelta = new Vector2(width, height * n);
 
-        Debug.Log(height);
-        Debug.Log(contentRect.sizeDelta);
-
         GameObject prefab = Resources.Load<GameObject>(PrefabSatisfaction);
         foreach(var p in satisfaction) {
             GameObject obj = Instantiate(prefab);            
@@ -163,7 +163,7 @@ public class Hud : MonoBehaviour
             obj.transform.SetParent(ContentSatisfaction.transform);
 
             //저장
-            mDicSatisfaction.Add(p.Key, obj);
+            mSatisfactionList.Add(obj);
         }
 
         SetSatisfaction(satisfaction);

@@ -154,9 +154,13 @@ public class ActorController : MonoBehaviour
     private Actor? mActor = null;    
     private bool mIsActorReleaseAtStopFinish = false; //거절당했을때 처럼 actor 상태를 초기화 할 시점을 StopFinish에 실행하게 하는 flag
     
-    public void Init(string name, Actor actor) {
+    public bool Init(string name, Actor actor) {
+        if(name == string.Empty || actor == null)
+            return false;
         this.mActor = actor;
         this.name = name;
+        
+        return true;
     }
     void Start()
     {        
@@ -185,6 +189,12 @@ public class ActorController : MonoBehaviour
         SetHudLevel();
         SetLevelProgress();
     }
+    // Actor UI -------------------------------------------------------------
+    public void SetVisibleActorUI(bool visible) {
+        if(mUIObject != null)
+            mUIObject.SetActive(visible);
+    }
+
     // HUD ------------------------------------------------------------------
     public void SetFollowingActor(bool isFollowing, Hud hud) {
         mIsFollowingActor = isFollowing;
@@ -409,24 +419,24 @@ public class ActorController : MonoBehaviour
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
 
         //주변의 actor를 쳐다 본다.
-        if(mActor.GetTaskContext().state == Actor.STATE.RESERVED) {
-            string actorId = mActor.LookAround();
-            if(actorId != string.Empty) {
-                GameObject? obj = mGamePlayController.GetActorObject(actorId);
-                if(obj == null)
-                    throw new Exception("Invalid ActorId. " + actorId);
-                
-                float distance = mActor.GetDistance(actorId);
-                Vector3 direction =  transform.position - obj.transform.position;
-                Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
-                toRotation.x = 0;
-                toRotation.z = 0;
-                float rate = distance == 0 ? 0 : (1.0f/distance);
-                rate = rate * 0.1f;
-                transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
-            }
+        string actorId = mActor.LookAround();
+        if(actorId != string.Empty) {            
+            GameObject? obj = mGamePlayController.GetActorObject(actorId);
+            if(obj == null)
+                throw new Exception("Invalid ActorId. " + actorId);
+            /*
+            float distance = mActor.GetDistance(actorId);
+            Vector3 direction =  (transform.position - obj.transform.position).normalized;
+            Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
+            toRotation.x = 0;
+            toRotation.z = 0;
+            float rate = distance == 0 ? 0 : (1.0f/distance);
+            //rate = rate * 0.1f;
+            Debug.Log(string.Format("LookAround {0} -> {1} {2}", name, actorId, rate));
+            //transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
+            */
+            transform.LookAt(obj.transform);
         }
-        
 
         if(mAnimationContext.name.Length > 0 && mAnimator != null) {
             if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.name) && 

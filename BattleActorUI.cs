@@ -1,12 +1,14 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.AI;
 
 public class BattleActorUI : MonoBehaviour
 {	
     public string targetName = string.Empty;
-	private Transform target;
+	private GameObject target;
+    private float height;
     [SerializeField]
     private Slider _slider;
     [SerializeField]
@@ -15,7 +17,8 @@ public class BattleActorUI : MonoBehaviour
     private Text _Message;
     bool mIseSetMSG = false;
     bool mDelayFinishFlag = false;
-    float timer = 0;
+    DateTime mStartTime;
+    
     [SerializeField]
     private Canvas _panel;
 
@@ -41,19 +44,21 @@ public class BattleActorUI : MonoBehaviour
         _panel.enabled = false;
         mIseSetMSG = true;
         mDelayFinishFlag = false;
-        timer = 0;        
+        mStartTime = DateTime.Now;
+        
     }
     private void Update() {
         if(target == null) {
-            target = GameObject.Find(targetName).transform;
+            target = GameObject.Find(targetName);
+            NavMeshAgent nav = target.GetComponent<NavMeshAgent>();     
+            height = nav.height;
         }
         if(mIseSetMSG) {
-            timer += Time.deltaTime;
-            if(!mDelayFinishFlag && timer > 1.0f) {
+            double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
+            if(!mDelayFinishFlag && interval > 1000) {
                 _panel.enabled = true;
                 mDelayFinishFlag = true;
-            } else if(timer > 5.5f) 
-            {
+            } else if(interval > 5500) {                
                 mDelayFinishFlag = false;
                 _Message.text = "";
                 _panel.enabled = false;
@@ -63,7 +68,10 @@ public class BattleActorUI : MonoBehaviour
     }
     void LateUpdate()
     {
-		transform.position = Camera.main.WorldToScreenPoint(target.position + new Vector3(0, 1.8f, 0));
+        if(target != null) {
+            transform.position = Camera.main.WorldToScreenPoint(target.transform.position + new Vector3(0, height, 0));
+        }
+		    
     }
 
 }
