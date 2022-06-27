@@ -12,18 +12,22 @@ public class BattleActorUI : MonoBehaviour
     [SerializeField]
     private Slider _slider;
     [SerializeField]
-    private Text _Name;
+    private Text _name;
     [SerializeField]
-    private Text _Message;
+    private Text _message;
     bool mIseSetMSG = false;
     bool mDelayFinishFlag = false;
     DateTime mStartTime;
     
     [SerializeField]
-    private Canvas _panel;
+    private Canvas _canvas;
+    [SerializeField]
+    private RectTransform _panel;
 
     void Start() {        
-        _panel.enabled = false;
+        //_panel.sizeDelta.x : 1366 = x : Screen.safeArea.width
+        _panel.sizeDelta = Scale.GetScaledSize(_panel.sizeDelta);
+        _canvas.enabled = false;
     }
 	public void SetHP(float value)
 	{
@@ -31,17 +35,17 @@ public class BattleActorUI : MonoBehaviour
 	}
     public void SetName(string name) 
     {
-        _Name.text = name;
+        _name.text = name;
     }
     public void SetMessage(string msg, int order, bool isOverlap = true) 
     {
         if(!isOverlap && mIseSetMSG)
             return;
             
-        _panel.sortingOrder = order;
-        _panel.enabled = true;
-        _Message.text = msg;
-        _panel.enabled = false;
+        _canvas.sortingOrder = order;
+        _canvas.enabled = true;
+        _message.text = msg;
+        _canvas.enabled = false;
         mIseSetMSG = true;
         mDelayFinishFlag = false;
         mStartTime = DateTime.Now;
@@ -56,12 +60,12 @@ public class BattleActorUI : MonoBehaviour
         if(mIseSetMSG) {
             double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
             if(!mDelayFinishFlag && interval > 1000) {
-                _panel.enabled = true;
+                _canvas.enabled = true;
                 mDelayFinishFlag = true;
             } else if(interval > 5500) {                
                 mDelayFinishFlag = false;
-                _Message.text = "";
-                _panel.enabled = false;
+                _message.text = "";
+                _canvas.enabled = false;
                 mIseSetMSG = false;
             }
         }

@@ -51,7 +51,7 @@ public class Hud : MonoBehaviour
         y = (BottomSize.y / BottomSize.x) * x
         */
         RectTransform bottomRT = Bottom.GetComponent<RectTransform>();
-        float x = (BottomSize.x / 1334.0f) * safe.width;
+        float x = Scale.GetScaledWidth(BottomSize.x);
         bottomRT.sizeDelta = new Vector2(x, ((BottomSize.y / BottomSize.x) * x));
         bottomRT.anchoredPosition = new Vector2(0, safe.y);
 
@@ -63,14 +63,14 @@ public class Hud : MonoBehaviour
         */
         RectTransform leftRT = Left.GetComponent<RectTransform>();
         leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + Margin.y);
-        leftRT.sizeDelta = new Vector2((LeftWidth / 1334.0f) * safe.width, safe.height - (Margin.y * 2));
+        leftRT.sizeDelta = new Vector2(Scale.GetScaledWidth(LeftWidth), safe.height - (Margin.y * 2));
 
         /*
         Right
         Left-Middle
         */
         RectTransform RightRT = Right.GetComponent<RectTransform>();
-        float ActualRightWidth = RightWidth * safe.width / 1334.0f;
+        float ActualRightWidth = Scale.GetScaledWidth(RightWidth);
         RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, safe.y + Margin.y);
         RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height - (Margin.y * 2));
 
@@ -84,14 +84,14 @@ public class Hud : MonoBehaviour
         */
         RectTransform topLeftRT = TopLeft.GetComponent<RectTransform>();
         topLeftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + safe.height - Margin.y);
-        topLeftRT.sizeDelta = new Vector2((TopLeftSize.x / 1334.0f) * safe.width, (TopLeftSize.y / 750.0f) * safe.height);
+        topLeftRT.sizeDelta = Scale.GetScaledSize(TopLeftSize);
         /*
         Top Center
         Center-Bottom
         */
         RectTransform topCenterRT = TopCenter.GetComponent<RectTransform>();
         topCenterRT.anchoredPosition = new Vector2(0, safe.y + safe.height - Margin.y);
-        topCenterRT.sizeDelta = new Vector2((TopCenterSize.x / 1334.0f) * safe.width, (TopCenterSize.y / 750.0f) * safe.height);
+        topCenterRT.sizeDelta = Scale.GetScaledSize(TopCenterSize);
 
         /*
         Top Right
@@ -100,7 +100,7 @@ public class Hud : MonoBehaviour
         = 400 / 1334 * w
         */
         RectTransform topRightRT = TopRight.GetComponent<RectTransform>();
-        topRightRT.sizeDelta = new Vector2((TopRightSize.x / 1334.0f) * safe.width, (TopRightSize.y / 750.0f) * safe.height);
+        topRightRT.sizeDelta = Scale.GetScaledSize(TopRightSize);
         topRightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - topRightRT.sizeDelta.x, safe.y + safe.height - Margin.y);
         
         /*
@@ -114,7 +114,7 @@ public class Hud : MonoBehaviour
         y = (AskSize.y / AskSize.x) * x
         */
         RectTransform askRT = Ask.GetComponent<RectTransform>();
-        x = (AskSize.x / 1334.0f) * safe.width;
+        x = Scale.GetScaledWidth(AskSize.x);
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
     }
