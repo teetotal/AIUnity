@@ -295,6 +295,14 @@ public class ActorController : MonoBehaviour
                         mTargetPositionRandom = ApprochRange;
                         mState = STATE.READY_MOVING;
                     break;
+                    case Actor.TASKCONTEXT_TARGET_TYPE.FLY:
+                        mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
+                        mTargetPositionRandom = ApprochRange;
+                        if(!SetApproching())
+                            throw new Exception("SetApproching Failure");
+                        mState = STATE.APPROCHING;
+                        mTimer = 0;                        
+                    break;
                     default:
                     { 
                         GameObject target = GameObject.Find(p.objectName);
@@ -497,7 +505,7 @@ public class ActorController : MonoBehaviour
             case STATE.APPROCHING:
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
                 transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
-                //transform.LookAt(mApprochingContext.toPosition);
+                transform.LookAt(mApprochingContext.toPosition);
                 if(rate >= 1) {         
                     mTimer = 0;
                     mAnimationContext.Set(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
