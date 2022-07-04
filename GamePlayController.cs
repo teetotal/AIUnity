@@ -30,7 +30,7 @@ public class GamePlayController : MonoBehaviour
     //NPC아닌 actor type
     public int ManagedActorType = 1;
     //NPC아닌 actor의 최소 실행 주기
-    public int ManagedInterval = 5;
+    public int ManagedInterval = 2;
     public GameObject? MainCamera;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
@@ -70,7 +70,10 @@ public class GamePlayController : MonoBehaviour
     }
    
     private void Update() {
-        mTimer += Time.deltaTime;
+        float deltaTime = Time.deltaTime;        
+        DialogueHandler.Instance.Update(deltaTime);
+
+        mTimer += deltaTime;
         if(mTimer > Interval) {
             Next();            
             mTimer = 0;
@@ -93,7 +96,7 @@ public class GamePlayController : MonoBehaviour
             }
 
             actor.Value.SetVisibleActorUI(visible);
-        }
+        }        
     }    
     private void Next() {
         long counter = CounterHandler.Instance.Next();
@@ -101,8 +104,7 @@ public class GamePlayController : MonoBehaviour
         ActorHandler.Instance.UpdateSatisfactionSum();
 
         foreach(var p in mActors) {
-            Actor actor = mActors[p.Key];
-               
+            Actor actor = mActors[p.Key];            
             if(actor.GetState() == Actor.STATE.READY) {
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {
                     //Debug.Log(string.Format("{0} {1} / {2}", p.Key, actor.GetTaskContext().lastCount, CounterHandler.Instance.GetCount()));
@@ -115,6 +117,8 @@ public class GamePlayController : MonoBehaviour
                 }
                 if(actor.TakeTask() == false)                
                     throw new System.Exception(p.Key + " Take Task Failure");
+                
+                Debug.Log(string.Format("{0} {1}", p.Key, actor.GetCurrentTaskId()));
             }            
         }
     }
@@ -179,8 +183,9 @@ public class GamePlayController : MonoBehaviour
         TextAsset szLevel = Resources.Load<TextAsset>("Config/level");
         TextAsset szQuest = Resources.Load<TextAsset>("Config/quest");
         TextAsset szScript = Resources.Load<TextAsset>("Config/script");        
+        TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");        
 
-        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text)) {
+        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }
