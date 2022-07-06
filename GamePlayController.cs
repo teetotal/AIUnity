@@ -105,20 +105,13 @@ public class GamePlayController : MonoBehaviour
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];            
-            if(actor.GetState() == Actor.STATE.READY) {
-                if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {
-                    //Debug.Log(string.Format("{0} {1} / {2}", p.Key, actor.GetTaskContext().lastCount, CounterHandler.Instance.GetCount()));
-                    /*
-                    var obj = GetActorObject(p.Key);
-                    if(obj != null)
-                        obj.GetComponent<ActorController>().SetMessage(ScriptHandler.Instance.GetScript("WAITING", actor), false);
-                    */
+            if(actor.GetState() == Actor.LOOP_STATE.READY) {
+                if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
                     continue;
                 }
-                if(actor.TakeTask() == false)                
-                    throw new System.Exception(p.Key + " Take Task Failure");
-                
-                Debug.Log(string.Format("{0} {1}", p.Key, actor.GetCurrentTaskId()));
+                if(actor.Loop_TakeTask() == false) {
+                    actor.Loop_Ready();
+                }   
             }            
         }
     }

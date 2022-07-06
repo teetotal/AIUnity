@@ -104,12 +104,12 @@ public class Target {
 }
 public class ActorController : MonoBehaviour
 {    
-    enum STATE {
-        INVALID,
-        IDLE,
+    enum MOVING_STATE {        
+        IDLE,        
         READY_MOVING,
         MOVING,
         APPROCHING,        
+        ANIMATION
     };
     public enum STATE_ANIMATION_CALLBACK {
         INVALID,
@@ -149,8 +149,8 @@ public class ActorController : MonoBehaviour
     private Target mTarget = new Target();
     private ActorControllerApproching mApprochingContext = new ActorControllerApproching();    
     private float mTargetPositionRandom = 0;
-    private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
-    private STATE mState = STATE.IDLE;
+    //private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
+    private MOVING_STATE mMovingState = MOVING_STATE.IDLE;
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
     public Actor? mActor = null;    
@@ -222,8 +222,11 @@ public class ActorController : MonoBehaviour
             mHud.SetName(name);
     } 
     private void SetHudLevel() {
-        if(mIsFollowingActor && mHud != null && mActor != null)
+        if(mIsFollowingActor && mHud != null && mActor != null) {
             mHud.SetLevel(mActor.mLevel);
+            SetLevelProgress();
+            SetHudSatisfaction();
+        }
     } 
     private void SetHudTopCenter() {
         if(mIsFollowingActor && mHud != null && mActor != null)
@@ -236,8 +239,64 @@ public class ActorController : MonoBehaviour
         }
     }    
     // ----------------------------------------------------------------------
-    public void Callback(Actor.CALLBACK_TYPE type, string actorId) {        
-        switch(type) {            
+    public void Callback(Actor.LOOP_STATE state, Actor actor) {        
+        switch(state) {     
+            case Actor.LOOP_STATE.INVALID:
+            break;
+            case Actor.LOOP_STATE.READY:
+            break;            
+            case Actor.LOOP_STATE.TASK_UI:
+            break;
+            case Actor.LOOP_STATE.TAKE_TASK:              
+            actor.Loop_Move();
+            break;
+            case Actor.LOOP_STATE.MOVE:
+            //이동 처리
+            SetMoving();          
+            break;            
+            case Actor.LOOP_STATE.ANIMATION:
+            //Animation
+            if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) throw new Exception("SetCurrentTaskAnimation Failure");                                
+            break;
+            case Actor.LOOP_STATE.RESERVED:
+            actor.Loop_LookAt();
+            break;
+            case Actor.LOOP_STATE.LOOKAT:
+            //쳐다 보기 설정
+            //Decide가 호출될때 까지 처다만 본다.
+            break;
+            case Actor.LOOP_STATE.DIALOGUE:
+            //Dialogue로 handover
+            DialogueInstance p = new DialogueInstance(actor, actor.GetTaskContext().GetTargetActor(), actor.GetCurrentTask());       
+            p.Do();     
+            break;            
+            case Actor.LOOP_STATE.SET_TASK:            
+            actor.Loop_Move();
+            break;
+            case Actor.LOOP_STATE.DO_TASK:
+            SetHudSatisfaction();
+            actor.Loop_Levelup();
+            break;
+            case Actor.LOOP_STATE.AUTO_DO_TASK:
+            SetHudSatisfaction();
+            actor.Loop_Levelup();
+            break;
+            case Actor.LOOP_STATE.LEVELUP:
+            //levelup 모션 처리      
+            SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
+            SetMessage("LEVEL UP! lv." + actor.mLevel.ToString());                       
+            break;
+            case Actor.LOOP_STATE.REFUSAL:
+            actor.Loop_Chain();
+            break;            
+            case Actor.LOOP_STATE.RELEASE:
+            actor.Loop_Ready();
+            break;
+            case Actor.LOOP_STATE.DISCHARGE:
+            //update UI
+            SetHudSatisfaction();
+            break; 
+            /*      
             case Actor.CALLBACK_TYPE.SET_READY:
             case Actor.CALLBACK_TYPE.TAKE_TASK:            
             case Actor.CALLBACK_TYPE.ASKED:            
@@ -266,8 +325,67 @@ public class ActorController : MonoBehaviour
             case Actor.CALLBACK_TYPE.COMPLETE_QUEST:
             SetHudQuest();
             break;
+            */
         }
     }
+    private void SetMoving() {     
+        if(mActor == null) 
+            throw new Exception("Null mActor");
+
+        Actor.TaskContext_Target p = mActor.GetTaskContext().target; 
+        switch(p.type) {
+            case Actor.TASKCONTEXT_TARGET_TYPE.INVALID:                
+            break;
+            case Actor.TASKCONTEXT_TARGET_TYPE.NON_TARGET:
+            Arrive();
+            break;
+            case Actor.TASKCONTEXT_TARGET_TYPE.POSITION:                        
+                mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
+                mTargetPositionRandom = ApprochRange;
+                mMovingState = MOVING_STATE.READY_MOVING;
+            break;
+            case Actor.TASKCONTEXT_TARGET_TYPE.FLY:
+                mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
+                mTargetPositionRandom = ApprochRange;
+                if(!SetApproching())
+                    throw new Exception("SetApproching Failure");
+                mMovingState = MOVING_STATE.APPROCHING;
+                mTimer = 0;                        
+            break;
+            default:
+            { 
+                GameObject target = GameObject.Find(p.objectName);
+                if(target == null) {        
+                    throw new Exception("Invalid GameObject Name " + p.objectName);
+                }
+                mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);                          
+                mTarget.SetTransform(target.transform);             
+                mMovingState = MOVING_STATE.READY_MOVING;
+            }
+            break;
+        }
+        SetHudTopCenter();
+    }
+    private void Arrive(){
+        mMovingState = MOVING_STATE.IDLE;
+        if(mActor == null) 
+            throw new Exception("Null mActor");
+
+        var task = mActor.GetCurrentTask();
+        if(task == null) 
+            throw new Exception("Null Task");
+
+        switch(task.mInfo.target.interaction.type) {
+            case TASK_INTERACTION_TYPE.ASK:
+            case TASK_INTERACTION_TYPE.INTERRUPT:
+            mActor.Loop_Dialogue();
+            return;
+            default:
+            mActor.Loop_Animation();
+            return;
+        }            
+    }
+    /*
     private void Dequeue() {
         if(mActor == null)
             throw new Exception("mActor is null");
@@ -352,6 +470,7 @@ public class ActorController : MonoBehaviour
             return;    
         }
     }    
+    */
     void CallbackAnimationFinish(STATE_ANIMATION_CALLBACK state) {
         if(mActor == null)
             throw new Exception("mActor is null");
@@ -390,27 +509,17 @@ public class ActorController : MonoBehaviour
                 
             }            
             break;
-            case STATE_ANIMATION_CALLBACK.TASK: {                                
-                SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.FINISH_TASK);
+            case STATE_ANIMATION_CALLBACK.TASK: 
+            {                                
+                mActor.Loop_DoTask();
             }
-            break;
-            case STATE_ANIMATION_CALLBACK.FINISH_TASK:            
-            mActor.DoTask();                  
-            Stop();
-            break;
-            case STATE_ANIMATION_CALLBACK.LEVELUP:
-            SetHudLevel();
-            Stop();
-            break;
-            case STATE_ANIMATION_CALLBACK.APPROCHING:
+            break;            
+            case STATE_ANIMATION_CALLBACK.LEVELUP: 
             {
-                transform.position = mApprochingContext.toPosition;
-                transform.LookAt(mApprochingContext.lookAt);
-                mTarget.Release();
-                mApprochingContext.Release();
-                StartTask(); 
-            }           
-            break;
+                SetHudLevel();                  
+                mActor.Loop_Chain();
+            }
+            break;          
             case STATE_ANIMATION_CALLBACK.DISAPPOINTED_START:
             SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.DISAPPOINTED);
             break;
@@ -431,62 +540,59 @@ public class ActorController : MonoBehaviour
 
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
 
-        //주변의 actor를 쳐다 본다.
-        string actorId = mActor.LookAround();
-        if(actorId != string.Empty) {            
-            GameObject? obj = mGamePlayController.GetActorObject(actorId);
-            if(obj == null)
-                throw new Exception("Invalid ActorId. " + actorId);
-            /*
-            float distance = mActor.GetDistance(actorId);
-            Vector3 direction =  (transform.position - obj.transform.position).normalized;
-            Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
-            toRotation.x = 0;
-            toRotation.z = 0;
-            float rate = distance == 0 ? 0 : (1.0f/distance);
-            //rate = rate * 0.1f;
-            Debug.Log(string.Format("LookAround {0} -> {1} {2}", name, actorId, rate));
-            //transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
-            */
-            transform.LookAt(obj.transform);
-        }
-
-        if(mAnimationContext.name.Length > 0 && mAnimator != null) {
-            if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.name) && 
-                mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
+        switch(mMovingState) {
+            case MOVING_STATE.IDLE: 
             {
-                //Debug.Log(mAnimationContext.name + " Done " + mAnimationContext.count.ToString() + " / " + mAnimationContext.targetCount.ToString());
-                if(mAnimationContext.Increase()) {
-                    STATE_ANIMATION_CALLBACK state = mAnimationContext.callbackState;
-                    mAnimationContext.Reset();
-                    CallbackAnimationFinish(state);
+                 //주변의 actor를 쳐다 본다.
+                string actorId = mActor.LookAround();
+                if(actorId != string.Empty) {            
+                    GameObject? obj = mGamePlayController.GetActorObject(actorId);
+                    if(obj == null)
+                        throw new Exception("Invalid ActorId. " + actorId);
+                    /*
+                    float distance = mActor.GetDistance(actorId);
+                    Vector3 direction =  (transform.position - obj.transform.position).normalized;
+                    Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
+                    toRotation.x = 0;
+                    toRotation.z = 0;
+                    float rate = distance == 0 ? 0 : (1.0f/distance);
+                    //rate = rate * 0.1f;
+                    Debug.Log(string.Format("LookAround {0} -> {1} {2}", name, actorId, rate));
+                    //transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
+                    */
+                    transform.LookAt(obj.transform);
                 }
             }
-            return;
-        } 
-
-        switch(mState) {
-            case STATE.INVALID:
             break;
-            case STATE.IDLE:            
-            mTimer += Time.deltaTime;
-            if(mTimer > mDefaultWaitTimeMin) {
-                //Do something
-                Dequeue();
+            case MOVING_STATE.ANIMATION: 
+            {
+                if(mAnimationContext.name.Length > 0 && mAnimator != null) {
+                    if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.name) && 
+                        mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
+                    {
+                        //Debug.Log(mAnimationContext.name + " Done " + mAnimationContext.count.ToString() + " / " + mAnimationContext.targetCount.ToString());
+                        if(mAnimationContext.Increase()) {
+                            STATE_ANIMATION_CALLBACK state = mAnimationContext.callbackState;
+                            mAnimationContext.Reset();
+                            CallbackAnimationFinish(state);
+                        }
+                    }
+                    return;
+                } 
             }
             break;
-            case STATE.READY_MOVING:
+            case MOVING_STATE.READY_MOVING:
             {
                 mTimer += Time.deltaTime;
                 if(mTimer > mDefaultWaitTimeMin) {
                     mAgent.ResetPath();                    
-                    mState = STATE.MOVING;
+                    mMovingState = MOVING_STATE.MOVING;
                     SetAnimation("Walk");
                     mTimer = 0;
                 }
             }
             break;
-            case STATE.MOVING:
+            case MOVING_STATE.MOVING:
             {
                 if(GetDistance() <  mTargetPositionRandom) {
                     mTimer = 0;                    
@@ -496,33 +602,36 @@ public class ActorController : MonoBehaviour
                     if(mTarget.isPositionOnly) {                        
                         if(!SetApproching())
                             throw new Exception("Set Approching Failure");
-                        mState = STATE.APPROCHING;
+                        mMovingState = MOVING_STATE.APPROCHING;
                         mTimer = 0;
-                    } else {
+                    } else {                        
                         mTarget.Release();
-                        StartTask(); 
+                        mMovingState = MOVING_STATE.IDLE;
+                        Arrive(); 
                     }                    
                 } else {
                     mAgent.destination = GetDestination();
                 }            
             }
-            break;   
-            case STATE.APPROCHING:
+            break;
+            case MOVING_STATE.APPROCHING:
+            {
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
                 transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
                 transform.LookAt(mApprochingContext.toPosition);
                 if(rate >= 1) {         
                     mTimer = 0;
-                    SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
-                    mState = STATE.INVALID;
+                    //SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
+                    transform.position = mApprochingContext.toPosition;
+                    transform.LookAt(mApprochingContext.lookAt);
+                    mTarget.Release();
+                    mApprochingContext.Release();
+                    mMovingState = MOVING_STATE.IDLE;
+                    Arrive(); 
                 }
-            break;            
-        }        
-    }
-    private void StartTask() {
-        if(!SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.START_TASK))
-            throw new Exception("Animation Conext Failure");
-        mState = STATE.INVALID;   
+            }
+            break;
+        }
     }
     public void Stop() {
         SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.STOPPING);        

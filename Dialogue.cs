@@ -86,7 +86,7 @@ public class Dialogue {
         }
 
         //미리 결과를 알고 진행
-        result = from.mActor.DoTaskBefore();        
+        result = to.mActor.Loop_Decide();
     }
     public bool IsFinished() {
          if(scenarioFrom.Count == 0 && scenarioTo.Count == 0) {
@@ -122,7 +122,11 @@ public class Dialogue {
             from.SetMessage(from.GetScript(to.mActor, taskId));
             break;
             case SCENARIO_NODE_TYPE.REACTION_FROM:
-            from.mActor.DoTask(!result);
+            if(result) {
+                from.mActor.Loop_DoTask();
+            } else {
+                from.mActor.Loop_Refusal();
+            }            
             if(!result) {
                 from.SetAnimationContext(from.DisappointedAnimation, 1, ActorController.STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH);
             }
@@ -141,7 +145,7 @@ public class Dialogue {
                 if(result)
                     to.SetCurrentTaskAnimation(ActorController.STATE_ANIMATION_CALLBACK.FINISH_TASK);
                 else
-                    to.mActor.CallCallback(Actor.CALLBACK_TYPE.REFUSAL);
+                    to.mActor.Loop_Release();
             }
             
             break;
