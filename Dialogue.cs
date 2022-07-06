@@ -51,16 +51,26 @@ public class Dialogue {
     private StringBuilder sb = new StringBuilder();      
     private ActorController from;
     private ActorController to;
-    private string taskId;
+    private string taskId, feedbackTaskId;
+    private FnTask task, taskFeedback;
     private DateTime startTime;
     private Queue<ScenarioNode> scenarioFrom = new Queue<ScenarioNode>();
     private Queue<ScenarioNode> scenarioTo = new Queue<ScenarioNode>();
     private const string DEFAULT = "default";
     private const string SEP = "-";
-    public void Init(ref ActorController from ,ref ActorController to, string taskId) {
+    public void Init(ActorController from ,ActorController to, string taskId) {
         this.from = from;
         this.to = to;
         this.taskId = taskId;
+        var fnTask = TaskHandler.Instance.GetTask(this.taskId); 
+        if(fnTask == null)
+            throw new Exception("Invalid Task. " + taskId);
+        this.task = fnTask;
+        this.feedbackTaskId = TaskHandler.Instance.GetTask(taskId).mInfo.target.interaction.taskId;
+        var fnTaskFeedback = TaskHandler.Instance.GetTask(this.feedbackTaskId); 
+        if(fnTaskFeedback == null)
+            throw new Exception("Invalid Task. " + this.feedbackTaskId);
+        taskFeedback = fnTaskFeedback;
         this.startTime = DateTime.Now;
 
         sb.Clear();
@@ -109,51 +119,62 @@ public class Dialogue {
 
     private void Do(ScenarioNode node) {
         switch(node.type) {
-            case SCENARIO_NODE_TYPE.INVALID:
-            break;
-            case SCENARIO_NODE_TYPE.SAY_FROM:
-            from.SetMessage(from.GetScript(to.mActor, taskId));
-            break;
-            case SCENARIO_NODE_TYPE.ANIMATION_FROM:
-            from.SetCurrentTaskAnimation(ActorController.STATE_ANIMATION_CALLBACK.DIALOGUE);
-            break;
-            case SCENARIO_NODE_TYPE.SAY_ANIMATION_FROM:
-            from.SetCurrentTaskAnimation(ActorController.STATE_ANIMATION_CALLBACK.DIALOGUE);
-            from.SetMessage(from.GetScript(to.mActor, taskId));
-            break;
-            case SCENARIO_NODE_TYPE.REACTION_FROM:
-            if(result) {
-                from.mActor.Loop_DoTask();
-            } else {
-                from.mActor.Loop_Refusal();
-            }            
-            if(!result) {
-                from.SetAnimationContext(from.DisappointedAnimation, 1, ActorController.STATE_ANIMATION_CALLBACK.DISAPPOINTED_FINISH);
+            case SCENARIO_NODE_TYPE.FROM_STOP:
+            {
+                from.SetAnimation(from.StopAnimation);
             }
             break;
-            case SCENARIO_NODE_TYPE.SAY_TO:            
-            break;
-            case SCENARIO_NODE_TYPE.ANIMATION_TO:
-            break;
-            case SCENARIO_NODE_TYPE.SAY_ANIMATION_TO:
-            break;
-            case SCENARIO_NODE_TYPE.FEEDBACK_TO:
+            case SCENARIO_NODE_TYPE.FROM_SAY:
             {
-                string feedbackTaskId = TaskHandler.Instance.GetTask(taskId).mInfo.target.interaction.taskId;
-                to.mActor.SetCurrentTask(feedbackTaskId);                
-                to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));        
+                from.SetMessage(from.GetScript(to.mActor, taskId));
+            }            
+            break;
+            case SCENARIO_NODE_TYPE.FROM_ANIMATION:            
+            {
+                from.SetAnimation(this.task.mInfo.animation);
+            }            
+            break;
+            case SCENARIO_NODE_TYPE.FROM_SAY_ANIMATION:
+            {
+                from.SetAnimation(this.task.mInfo.animation);
+                from.SetMessage(from.GetScript(to.mActor, taskId));
+            }            
+            break;
+            case SCENARIO_NODE_TYPE.FROM_REACTION:            
+            {
+                if(result) {
+                    from.mActor.Loop_DoTask();
+                } else {
+                    from.mActor.Loop_Refusal();
+                }
+            }                                   
+            break;      
+            case SCENARIO_NODE_TYPE.TO_STOP:
+            {
+                to.SetAnimation(to.StopAnimation);
+            }                  
+            break;
+            case SCENARIO_NODE_TYPE.TO_FEEDBACK:
+            {                
+                to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
                 if(result)
-                    to.SetCurrentTaskAnimation(ActorController.STATE_ANIMATION_CALLBACK.FINISH_TASK);
+                    to.SetAnimation(taskFeedback.mInfo.animation);
+                    
+            }            
+            break;
+            case SCENARIO_NODE_TYPE.TO_DECIDE:    
+            {
+                if(result)
+                    to.mActor.Loop_AutoDoTask(feedbackTaskId);
                 else
                     to.mActor.Loop_Release();
-            }
-            
+            }                           
             break;
         }
 
         //pooling
         ScenarioNodePool.Instance.ReleaeScenarioNode(node);
-    }
+    }    
 }
 //Dialogue 인스턴스를 관리하기 위한 pool
 public class DialoguePool {
@@ -163,9 +184,9 @@ public class DialoguePool {
             ReleaeDialogue(AllocDialogue());
         }
     }
-    public Dialogue GetDialogue(ref ActorController from ,ref ActorController to, string taskId) {        
+    public Dialogue GetDialogue(ActorController from ,ActorController to, string taskId) {        
         Dialogue p = GetDialogue();
-        p.Init(ref from, ref to, taskId);
+        p.Init(from, to, taskId);
         return p;
     }
 
@@ -212,10 +233,8 @@ public class DialogueHandler {
             mDialoguePool.ReleaeDialogue(p);
         }
     }
-    public bool Handover(ref ActorController from ,ref ActorController to, string taskId) {
-        Dialogue p = mDialoguePool.GetDialogue(ref from, ref to, taskId);
+    public void Handover(ActorController from ,ActorController to, string taskId) {        
+        Dialogue p = mDialoguePool.GetDialogue(from, to, taskId);
         mDialogues.Add(p.uniqueId, p);
-        
-        return true;
     }   
 }

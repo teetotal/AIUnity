@@ -6,6 +6,14 @@ using UnityEngine.AI;
 
 public class BattleActorUI : MonoBehaviour
 {	
+    public class ScriptNode {
+        public int time;
+        public string msg;
+        public ScriptNode(int time, string msg) {
+            this.time = time;
+            this.msg = msg;
+        }
+    }
     public string targetName = string.Empty;
 	private GameObject target;
     private float height;
@@ -15,9 +23,11 @@ public class BattleActorUI : MonoBehaviour
     private Text _name;
     [SerializeField]
     private Text _message;
-    bool mIseSetMSG = false;
-    bool mDelayFinishFlag = false;
+    private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
+    bool mIseSetMSG = false;    
     DateTime mStartTime;
+    int startTime = 1000;
+    int endTime = 5500;
     
     [SerializeField]
     private Canvas _canvas;
@@ -44,12 +54,17 @@ public class BattleActorUI : MonoBehaviour
             
         _canvas.sortingOrder = order;
         _canvas.enabled = true;
-        _message.text = msg;
         _canvas.enabled = false;
-        mIseSetMSG = true;
-        mDelayFinishFlag = false;
+        mIseSetMSG = true;        
         mStartTime = DateTime.Now;
         
+        //나중에 pooling으로 바꿔야 함
+        msgQ.Clear();
+        string[] arr = msg.Split('\n');
+        int time = (int)((endTime - startTime) / arr.Length);
+        for(int i=0; i < arr.Length; i++) {            
+            msgQ.Enqueue(new ScriptNode(startTime + (time * i), arr[i]));
+        }
     }
     private void Update() {
         if(target == null) {
@@ -59,12 +74,15 @@ public class BattleActorUI : MonoBehaviour
         }
         if(mIseSetMSG) {
             double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
-            if(!mDelayFinishFlag && interval > 1000) {
-                _canvas.enabled = true;
-                mDelayFinishFlag = true;
-            } else if(interval > 5500) {                
-                mDelayFinishFlag = false;
-                _message.text = "";
+            if(msgQ.Count > 0 && interval <= endTime) {                                
+                if(msgQ.Peek().time <= interval) {
+                    _canvas.enabled = true;
+                    ScriptNode node = msgQ.Dequeue();
+                    _message.text = node.msg;
+                }
+            }
+            else if(interval > endTime) {                
+                _message.text = string.Empty;
                 _canvas.enabled = false;
                 mIseSetMSG = false;
             }

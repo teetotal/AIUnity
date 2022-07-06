@@ -26,7 +26,7 @@ public class GamePlayController : MonoBehaviour
         Sitting,
         Max
     }
-    public float Interval = 3;
+    public float Interval = 2;
     //NPC아닌 actor type
     public int ManagedActorType = 1;
     //NPC아닌 actor의 최소 실행 주기
@@ -131,6 +131,12 @@ public class GamePlayController : MonoBehaviour
     public GameObject? GetActorObject(string actorId) {
         if(mActorObjects.ContainsKey(actorId)) {
             return mActorObjects[actorId].gameObject;
+        }
+        return null;
+    }
+    public ActorController? GetActorController(string actorId) {
+        if(mActorObjects.ContainsKey(actorId)) {
+            return mActorObjects[actorId];
         }
         return null;
     }
