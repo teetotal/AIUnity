@@ -186,7 +186,7 @@ public class ActorController : MonoBehaviour
             mUIObject.transform.SetParent(canvas.transform);
             mUI = mUIObject.GetComponent<BattleActorUI>();
             mUI.targetName = name;
-            mUI.SetName(name);
+            mUI.SetName(mActor.mInfo.nickname);
         }
         //Hud
         SetHudName();
@@ -225,7 +225,7 @@ public class ActorController : MonoBehaviour
     } 
     private void SetHudLevel() {
         if(mIsFollowingActor && mHud != null) {
-            mHud.SetLevel(mActor.mLevel);
+            mHud.SetLevel(mActor.level);
             SetLevelProgress();
             SetHudSatisfaction();
         }
@@ -245,7 +245,10 @@ public class ActorController : MonoBehaviour
         }
     }    
     // ----------------------------------------------------------------------
-    public void Callback(Actor.LOOP_STATE state, Actor actor) {      
+    public void Callback(Actor.LOOP_STATE state, Actor actor) {     
+        //if(actor.mUniqueId == "PET200-1")
+        //    Debug.Log(string.Format("{0} {1}", state, actor.follower));   
+
         switch(state) {     
             case Actor.LOOP_STATE.INVALID:
             break;
@@ -253,7 +256,7 @@ public class ActorController : MonoBehaviour
             break;            
             case Actor.LOOP_STATE.TASK_UI:
             break;
-            case Actor.LOOP_STATE.TAKE_TASK:              
+            case Actor.LOOP_STATE.TAKE_TASK:           
             actor.Loop_Move();
             break;
             case Actor.LOOP_STATE.MOVE:
@@ -290,9 +293,6 @@ public class ActorController : MonoBehaviour
                 if(toActor == null)
                     throw new Exception("null actor");
                 var to = mGamePlayController.GetActorController(toActor.mUniqueId);
-                if(to == null)
-                    throw new Exception("null ActorContoller");
-
                 DialogueHandler.Instance.Handover(this, to, actor.GetCurrentTaskId());
                 mGamePlayController.SetInteractionCameraAngle(this);
             }            
@@ -323,7 +323,7 @@ public class ActorController : MonoBehaviour
                 SetHudLevel();
                 //levelup 모션 처리      
                 SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                SetMessage("LEVEL UP! lv." + actor.mLevel.ToString());                       
+                SetMessage("LEVEL UP! lv." + actor.level.ToString());                       
             }            
             break;
             case Actor.LOOP_STATE.REFUSAL:
@@ -435,24 +435,28 @@ public class ActorController : MonoBehaviour
         switch(mMovingState) {
             case MOVING_STATE.IDLE: 
             {
-                //주변의 actor를 쳐다 본다.
-                string actorId = mActor.LookAround();
-                if(actorId != string.Empty) {            
-                    GameObject? obj = mGamePlayController.GetActorObject(actorId);
-                    if(obj == null)
-                        throw new Exception("Invalid ActorId. " + actorId);
-                    /*
-                    float distance = mActor.GetDistance(actorId);
-                    Vector3 direction =  (transform.position - obj.transform.position).normalized;
-                    Quaternion toRotation = Quaternion.FromToRotation(transform.forward, direction);
-                    toRotation.x = 0;
-                    toRotation.z = 0;
-                    float rate = distance == 0 ? 0 : (1.0f/distance);
-                    //rate = rate * 0.1f;
-                    Debug.Log(string.Format("LookAround {0} -> {1} {2}", name, actorId, rate));
-                    //transform.rotation = Quaternion.Lerp(transform.rotation, toRotation, rate);
-                    */
-                    transform.LookAt(obj.transform);
+                //pet이 있고 pet 중 하나라도 Ready상태가 아니면 pet을 따라 다니는거 구현 해야함!.
+                if(mActor.follower) {
+                    //master와 거리를 보고 행동
+                    double distance = mActor.GetDistanceToMaster();
+                    if(distance < 1) {
+                        SetAnimation(StopAnimation);
+                    } else {
+                        GameObject master = mGamePlayController.GetActorObject(mActor.GetMaster().mUniqueId);
+                        SetAnimation("Walk");
+                        transform.position = Vector3.Lerp(transform.position, master.transform.position, Time.deltaTime);
+                        transform.LookAt(master.transform);
+                    }
+
+                } else {
+                    //주변의 actor를 쳐다 본다.
+                    string actorId = mActor.LookAround();
+                    if(actorId != string.Empty) {            
+                        GameObject? obj = mGamePlayController.GetActorObject(actorId);
+                        if(obj == null)
+                            throw new Exception("Invalid ActorId. " + actorId);
+                        transform.LookAt(obj.transform);
+                    }
                 }
             }
             break;

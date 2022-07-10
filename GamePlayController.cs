@@ -60,6 +60,8 @@ public class GamePlayController : MonoBehaviour
         if(!CreateActors()) {
             throw new System.Exception("Creating Actors Failure");
         }
+        //Pet
+        ActorHandler.Instance.SetPets();
 
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
@@ -104,7 +106,9 @@ public class GamePlayController : MonoBehaviour
         ActorHandler.Instance.UpdateSatisfactionSum();
 
         foreach(var p in mActors) {
-            Actor actor = mActors[p.Key];            
+            Actor actor = mActors[p.Key];      
+            if(actor.follower)
+                continue;         
             if(actor.GetState() == Actor.LOOP_STATE.READY) {
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
                     continue;
@@ -128,17 +132,12 @@ public class GamePlayController : MonoBehaviour
         }
         return (int)ANIMATION_ID.Invalid;
     }
-    public GameObject? GetActorObject(string actorId) {
-        if(mActorObjects.ContainsKey(actorId)) {
-            return mActorObjects[actorId].gameObject;
-        }
-        return null;
+    //잘못된 actorId에 대해서는 그냥 exception발생 시켜버림
+    public GameObject GetActorObject(string actorId) {
+        return mActorObjects[actorId].gameObject;
     }
-    public ActorController? GetActorController(string actorId) {
-        if(mActorObjects.ContainsKey(actorId)) {
-            return mActorObjects[actorId];
-        }
-        return null;
+    public ActorController GetActorController(string actorId) {
+        return mActorObjects[actorId];
     }
     private bool CreateActors() {        
         foreach(var p in mActors) {
