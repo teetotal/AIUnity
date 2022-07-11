@@ -107,9 +107,7 @@ public class GamePlayController : MonoBehaviour
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];      
-            if(actor.follower)
-                continue;         
-            if(actor.GetState() == Actor.LOOP_STATE.READY) {
+            if(actor.IsAutoTakeable()) {
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
                     continue;
                 }

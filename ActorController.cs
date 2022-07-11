@@ -435,11 +435,24 @@ public class ActorController : MonoBehaviour
         switch(mMovingState) {
             case MOVING_STATE.IDLE: 
             {
+                if(mActor.HasPet()) {
+                    var pet = mActor.GetDoingTaskPet();
+                    if(pet == null) return;
+                    double distance = mActor.GetDistanceToDoingPet();
+                    if(distance < 3) {
+                        SetAnimation(StopAnimation);
+                    } else {
+                        GameObject petDoing = mGamePlayController.GetActorObject(pet.mUniqueId);
+                        SetAnimation("Walk");
+                        transform.position = Vector3.Lerp(transform.position, petDoing.transform.position, Time.deltaTime);
+                        transform.LookAt(petDoing.transform);
+                    }
+                }
                 //pet이 있고 pet 중 하나라도 Ready상태가 아니면 pet을 따라 다니는거 구현 해야함!.
-                if(mActor.follower) {
+                else if(mActor.follower) {
                     //master와 거리를 보고 행동
                     double distance = mActor.GetDistanceToMaster();
-                    if(distance < 1) {
+                    if(distance < 3) {
                         SetAnimation(StopAnimation);
                     } else {
                         GameObject master = mGamePlayController.GetActorObject(mActor.GetMaster().mUniqueId);
@@ -447,7 +460,6 @@ public class ActorController : MonoBehaviour
                         transform.position = Vector3.Lerp(transform.position, master.transform.position, Time.deltaTime);
                         transform.LookAt(master.transform);
                     }
-
                 } else {
                     //주변의 actor를 쳐다 본다.
                     string actorId = mActor.LookAround();
