@@ -134,6 +134,7 @@ public class ActorController : MonoBehaviour
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string DisappointedAnimation = "Disappointed";
+    public int FlyActorType = 100;
     private string GameController = "Hud";
     //private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing", "Drinking"};    
     private float mDefaultWaitTimeMin = 0.3f;
@@ -221,7 +222,7 @@ public class ActorController : MonoBehaviour
     }
     private void SetHudName() {
         if(mIsFollowingActor && mHud != null)
-            mHud.SetName(name);
+            mHud.SetName(mActor.mInfo.nickname);
     } 
     private void SetHudLevel() {
         if(mIsFollowingActor && mHud != null) {
@@ -253,6 +254,8 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.INVALID:
             break;
             case Actor.LOOP_STATE.READY:
+            if(mAgent != null && mActor.mType != FlyActorType)
+                mAgent.ResetPath();
             break;            
             case Actor.LOOP_STATE.TASK_UI:
             break;
@@ -439,26 +442,26 @@ public class ActorController : MonoBehaviour
                     var pet = mActor.GetDoingTaskPet();
                     if(pet == null) return;
                     double distance = mActor.GetDistanceToDoingPet();
-                    if(distance < 3) {
+                    if(distance < 4) {
+                        mAgent.ResetPath();     
                         SetAnimation(StopAnimation);
                     } else {
                         GameObject petDoing = mGamePlayController.GetActorObject(pet.mUniqueId);
                         SetAnimation("Walk");
-                        transform.position = Vector3.Lerp(transform.position, petDoing.transform.position, Time.deltaTime);
-                        transform.LookAt(petDoing.transform);
+                        mAgent.destination = petDoing.transform.position;
                     }
                 }
                 //pet이 있고 pet 중 하나라도 Ready상태가 아니면 pet을 따라 다니는거 구현 해야함!.
                 else if(mActor.follower) {
                     //master와 거리를 보고 행동
                     double distance = mActor.GetDistanceToMaster();
-                    if(distance < 3) {
+                    if(distance < 4) {
+                        mAgent.ResetPath();   
                         SetAnimation(StopAnimation);
                     } else {
                         GameObject master = mGamePlayController.GetActorObject(mActor.GetMaster().mUniqueId);
                         SetAnimation("Walk");
-                        transform.position = Vector3.Lerp(transform.position, master.transform.position, Time.deltaTime);
-                        transform.LookAt(master.transform);
+                        mAgent.destination = master.transform.position;
                     }
                 } else {
                     //주변의 actor를 쳐다 본다.
@@ -523,7 +526,9 @@ public class ActorController : MonoBehaviour
                             throw new Exception("Set Approching Failure");
                         mMovingState = MOVING_STATE.APPROCHING;
                         mTimer = 0;
-                    } else {                        
+                    } else {     
+                        //lookat
+                        transform.LookAt(mTarget.transform);                
                         mTarget.Release();
                         mMovingState = MOVING_STATE.IDLE;
                         Arrive(); 
