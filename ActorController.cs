@@ -423,7 +423,7 @@ public class ActorController : MonoBehaviour
             }
             break;                      
             case STATE_ANIMATION_CALLBACK.DISAPPOINTED:
-            mActor.Loop_Chain();
+            mActor.Loop_Release();
             break;            
         }
     }
