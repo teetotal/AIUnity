@@ -36,8 +36,8 @@ public class GamePlayController : MonoBehaviour
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
     private ActorController? mFollowActorObject;
-    public float VisibleDistance = 30.0f;
-    public float VisibleDistanceBack = 5.0f;
+    public float VisibleDistance = 10.0f;
+    public float VisibleDistanceBack = 3.0f;
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     private TransparentObject? mTransparentObject;
 
@@ -91,10 +91,10 @@ public class GamePlayController : MonoBehaviour
 
                 Vector3 diff = to - from;                            
                 float distance = diff.magnitude;
-                Quaternion angle = Quaternion.LookRotation( diff.normalized );
+                //Quaternion angle = Quaternion.LookRotation( diff.normalized );
 
                 if(distance > VisibleDistance) visible = false;        
-                else if(distance > VisibleDistanceBack && angle.y < 0) visible = false;        
+                //else if(distance > VisibleDistanceBack && angle.y < 0) visible = false;        
             }
 
             actor.Value.SetVisibleActorUI(visible);

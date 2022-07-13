@@ -544,8 +544,9 @@ public class ActorController : MonoBehaviour
                 float rate = mApprochingContext.GetTimeRate(Time.deltaTime);
                 transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
                 transform.LookAt(mApprochingContext.toPosition);
-                if(rate >= 1) {         
+                if(rate >= 1) {              
                     mTimer = 0;
+                    SetAnimation(StopAnimation);
                     //SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
                     transform.position = mApprochingContext.toPosition;
                     transform.LookAt(mApprochingContext.lookAt);
