@@ -12,31 +12,50 @@ public class RenderObj {
         this.originalRenderer = originalRenderer;
     }
 }
-public class AngleContext {
-    private float angle = 0;
-    private bool isSet = false;
+public class CameraContext {
+    public class Context {
+        public float angle = 0;
+        public float distance;
+        public float height;
+    }
+    private bool isInteractionMode = false;
     private float timer = 0;
-    private float duration = 5;
-    public void Set(float angle, float duration = 8) {
-        this.angle = angle;
+
+    private float duration;
+    private Context defaultContext = new Context();
+    private Context interactionContext = new Context();
+
+    public void Init(   float angle, float distance, float height, 
+                        float angleInteraction, float defaultDistance, float defaultHeight,
+                        float duration) {
+
+        this.defaultContext.angle       = angle;
+        this.defaultContext.distance    = distance;
+        this.defaultContext.height      = height;
+
+        this.interactionContext.angle       = angleInteraction;
+        this.interactionContext.distance    = defaultDistance;
+        this.interactionContext.height      = defaultHeight;
+
         this.timer = 0;
-        this.isSet = true;
         this.duration = duration;
     }
     public void Check(float deltaTime) {
-        if(isSet) {
+        if(isInteractionMode) {
             timer += deltaTime;
             if(timer > duration)
                 Release();
         }
     }
     private void Release() {
-        this.angle = 0;
         this.timer = 0;
-        this.isSet = false;
+        this.isInteractionMode = false;
     }
-    public float GetAngle() {
-        return angle;
+    public Context GetContext() {
+        return isInteractionMode ? interactionContext : defaultContext;
+    }
+    public void SetInteractionMode() {
+        isInteractionMode = true;
     }
 }
 
@@ -50,21 +69,33 @@ public class TransparentObject : MonoBehaviour
     public string TargetLayer = string.Empty; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
     public Color ColorTransparent = Color.white;
     public float RecoveryTime = 5; //원래 shader로 복구 시간
+    
+    public float SmoothRotation = 1.0f;
+    public float ContextChangeDuration = 8;
+
+    public float Angle = 0;
+    public float Distance = 12.0f;
+    public float Height = 1.8f;
+
+    public float InteractionAngle = -45;
+    public float InteractionDistance = 8;
+    public float InteractionHeight = 2.5f;
+    
+
     private int mLayerMask; 
     private Shader mTransparentShader;
     private Dictionary<string, RenderObj> mDictShader = new Dictionary<string, RenderObj>();
     private float mCounter = 0;
-    private float mSmoothRotation = 1.0f;
-    private float mHeight = 2.5f;//5.0f;
-    private float mDistance = 12.0f;
     private Transform mTransform;
     private bool mIsTargeted = false;
 
-    private AngleContext mAngle = new AngleContext();
+    private CameraContext mContext = new CameraContext();
 
     // Start is called before the first frame update
     void Start()
     {
+        mContext.Init(Angle, Distance, Height, InteractionAngle, InteractionDistance, InteractionHeight, ContextChangeDuration);
+        
         mFollowActorId = GameController.GetComponent<GamePlayController>().FollowActorId;
         mTransform = GetComponent<Transform>();        
         mTransparentShader = Shader.Find("Legacy Shaders/Transparent/Diffuse");
@@ -74,7 +105,7 @@ public class TransparentObject : MonoBehaviour
     bool SetTargetObject() {        
         mTargetObject = GameObject.Find(mFollowActorId);
         if(mTargetObject == null) {
-            Debug.Log("Invalid Target Object " + mFollowActorId);
+            //Debug.Log("Invalid Target Object " + mFollowActorId);
             mIsTargeted = false;
             return false;
         }
@@ -118,17 +149,20 @@ public class TransparentObject : MonoBehaviour
     }
     void LateUpdate()
     {        
-        mAngle.Check(Time.deltaTime);
+        mContext.Check(Time.deltaTime);
+        CameraContext.Context context = mContext.GetContext();
+        
         //전면을 보게 하고 싶으면 180 + mTargetObject.transform.eulerAngles.y
         //뒤에서 따라갈거면 mTargetObject.transform.eulerAngles.y
-        float currYAngle = Mathf.LerpAngle(mTransform.eulerAngles.y, mAngle.GetAngle() + mTargetObject.transform.eulerAngles.y, mSmoothRotation * Time.deltaTime);
+        float currYAngle = Mathf.LerpAngle(mTransform.eulerAngles.y, context.angle + mTargetObject.transform.eulerAngles.y, SmoothRotation * Time.deltaTime);
         Quaternion rot = Quaternion.Euler(0, currYAngle, 0 );
-        mTransform.position = mTargetObject.transform.position - (rot * Vector3.forward * mDistance) + (Vector3.up *  mHeight);
+        Vector3 position = mTargetObject.transform.position - (rot * Vector3.forward * context.distance) + (Vector3.up *  context.height);
+        mTransform.position = Vector3.Lerp(mTransform.position, position, SmoothRotation * Time.deltaTime);
         mTransform.LookAt(mTargetObject.transform);
     }
     void Recovery() {
         mCounter += Time.deltaTime;        
-        if(mCounter < 5 || mDictShader.Keys.Count == 0) 
+        if(mCounter < RecoveryTime || mDictShader.Keys.Count == 0) 
             return;
         
         mCounter = 0;
@@ -152,6 +186,6 @@ public class TransparentObject : MonoBehaviour
     }
     public void SetInteractionAngle() {
         //Debug.Log("SetInteractionAngle");        
-        mAngle.Set(180);
+        mContext.SetInteractionMode();
     }
 }

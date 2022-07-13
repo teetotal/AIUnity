@@ -517,7 +517,8 @@ public class ActorController : MonoBehaviour
             case MOVING_STATE.MOVING:
             {
                 if(GetDistance() <  mTargetPositionRandom) {
-                    mTimer = 0;                    
+                    mTimer = 0;         
+                    mAgent.ResetPath();             
                     mAgent.isStopped = true;
                     //SetAnimation(StopAnimation);
                     //mState = STATE.START_TASK;   
