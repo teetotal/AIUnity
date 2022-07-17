@@ -60,8 +60,8 @@ public class GamePlayController : MonoBehaviour
         if(!CreateActors()) {
             throw new System.Exception("Creating Actors Failure");
         }
-        //Pet
-        ActorHandler.Instance.SetPets();
+
+        ActorHandler.Instance.PostInit(VillageLevelUpCallback);
 
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
@@ -103,7 +103,7 @@ public class GamePlayController : MonoBehaviour
     private void Next() {
         long counter = CounterHandler.Instance.Next();
         DischargeHandler.Instance.Discharge(ManagedActorType);
-        ActorHandler.Instance.UpdateSatisfactionSum();
+        ActorHandler.Instance.TaxCollection();
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];      
@@ -116,6 +116,9 @@ public class GamePlayController : MonoBehaviour
                 }   
             }            
         }
+    }
+    private void VillageLevelUpCallback(string villageId, int level) {
+        Debug.Log(string.Format("VillageLevelUp {0}, {1}", villageId, level));
     }
     public void SetInteractionCameraAngle(ActorController actor) {
         if(mTransparentObject == null)
@@ -179,9 +182,10 @@ public class GamePlayController : MonoBehaviour
         TextAsset szLevel = Resources.Load<TextAsset>("Config/level");
         TextAsset szQuest = Resources.Load<TextAsset>("Config/quest");
         TextAsset szScript = Resources.Load<TextAsset>("Config/script");        
-        TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");        
+        TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");   
+        TextAsset szVillage = Resources.Load<TextAsset>("Config/village");        
 
-        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text)) {
+        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }
