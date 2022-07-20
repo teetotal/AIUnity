@@ -26,12 +26,12 @@ public class GamePlayController : MonoBehaviour
         Sitting,
         Max
     }
+   
     public float Interval = 2;
     //NPC아닌 actor type
     public int ManagedActorType = 1;
     //NPC아닌 actor의 최소 실행 주기
     public int ManagedInterval = 2;
-    public GameObject? MainCamera;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
@@ -39,7 +39,7 @@ public class GamePlayController : MonoBehaviour
     public float VisibleDistance = 10.0f;
     public float VisibleDistanceBack = 3.0f;
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
-    private TransparentObject? mTransparentObject;
+    public TransparentObject TransparentInstance;
 
     public string FollowActorId = string.Empty;
     private Hud HudInstance;
@@ -66,9 +66,6 @@ public class GamePlayController : MonoBehaviour
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
-
-        if(MainCamera != null)
-            mTransparentObject = MainCamera.GetComponent<TransparentObject>();
     }
    
     private void Update() {
@@ -103,7 +100,10 @@ public class GamePlayController : MonoBehaviour
     private void Next() {
         long counter = CounterHandler.Instance.Next();
         DischargeHandler.Instance.Discharge(ManagedActorType);
-        ActorHandler.Instance.TaxCollection();
+        if(ActorHandler.Instance.TaxCollection()) {
+            //update
+            SetHudVillage();
+        }
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];      
@@ -118,14 +118,28 @@ public class GamePlayController : MonoBehaviour
         }
     }
     private void VillageLevelUpCallback(string villageId, int level) {
-        Debug.Log(string.Format("VillageLevelUp {0}, {1}", villageId, level));
+        //Debug.Log(string.Format("VillageLevelUp {0}, {1}", villageId, level));
+        SetHudVillage();
+    }
+    private void SetHudVillage() {
+        string actorId = TransparentInstance.GetFollowingActorId();
+        Actor actor = ActorHandler.Instance.GetActor(actorId);
+        string village = actor.mInfo.village;
+
+        string name = ActorHandler.Instance.GetVillageInfo(village).name;
+        int level = ActorHandler.Instance.GetVillageLevel(village);
+        float v = ActorHandler.Instance.GetVillageProgression(village);
+
+        HudInstance.SetVillageName(name);
+        HudInstance.SetVillageLevel(level);
+        HudInstance.SetVillageLevelProgress(v);
     }
     public void SetInteractionCameraAngle(ActorController actor) {
-        if(mTransparentObject == null)
+        if(TransparentInstance == null)
             return;
-        if(mTransparentObject.GetFollowingActorId() != actor.name) 
+        if(TransparentInstance.GetFollowingActorId() != actor.name) 
             return;
-        mTransparentObject.SetInteractionAngle();
+        TransparentInstance.SetInteractionAngle();
     }   
     public int GetAnimationId(string aniName) {
         if(mDicAnimation.ContainsKey(aniName)) {

@@ -192,6 +192,10 @@ public class ActorController : MonoBehaviour
         SetHudName();
         SetHudLevel();
         SetLevelProgress();
+
+        SetHudVillageName();
+        SetHudVillageLevel();
+        SetHudVillageProgression();
     }
     // Actor UI -------------------------------------------------------------
     public void SetVisibleActorUI(bool visible) {
@@ -223,6 +227,25 @@ public class ActorController : MonoBehaviour
         if(mIsFollowingActor && mHud != null)
             mHud.SetName(mActor.mInfo.nickname);
     } 
+    private void SetHudVillageName() {
+        if(mIsFollowingActor && mHud != null) {
+            var info = ActorHandler.Instance.GetVillageInfo(mActor.mInfo.village);
+            mHud.SetVillageName(info.name);
+        }
+    } 
+    private void SetHudVillageLevel() {
+        if(mIsFollowingActor && mHud != null) {
+            int level = ActorHandler.Instance.GetVillageLevel(mActor.mInfo.village);
+            mHud.SetVillageLevel(level);
+        }
+    }
+    private void SetHudVillageProgression() {
+        if(mIsFollowingActor && mHud != null) {
+            float v = ActorHandler.Instance.GetVillageProgression(mActor.mInfo.village);
+            mHud.SetVillageLevelProgress(v);
+        }
+    }
+
     private void SetHudLevel() {
         if(mIsFollowingActor && mHud != null) {
             mHud.SetLevel(mActor.level);

@@ -15,7 +15,8 @@ public class Hud : MonoBehaviour
     public Vector2 AskSize = new Vector2(400, 300);
 
     private Text NameText,LevelText, LevelProgressText, StateText;    
-    private Slider LevelProgress;
+    private Text VillageNameText, VillageLevelText;
+    private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
     public string PrefabSatisfaction = "SatisfactionInfo";
@@ -44,6 +45,10 @@ public class Hud : MonoBehaviour
         LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<Text>();
         StateText           = GameObject.Find("HUD_State").GetComponent<Text>();   
         LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
+
+        VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<Text>();
+        VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<Text>();
+        VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
         
         Init();
     }
@@ -144,12 +149,22 @@ public class Hud : MonoBehaviour
         LevelText.text = mPrefixLevel + level.ToString();
     }
 
+    public void SetVillageName(string name) {
+        VillageNameText.text = name;
+    }
+    public void SetVillageLevel(int level)  {
+        VillageLevelText.text = mPrefixLevel + level.ToString();
+    }
+
     public void SetState(string sz) {
         StateText.text = sz;        
     }
     public void SetLevelProgress(float v) {
         LevelProgress.value = v;
         LevelProgressText.text = string.Format("{0}%", (int)(v * 100));
+    }
+    public void SetVillageLevelProgress(float v) {
+        VillageLevelProgress.value = v;
     }
     // ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
