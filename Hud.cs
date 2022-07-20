@@ -28,6 +28,7 @@ public class Hud : MonoBehaviour
     private List<GameObject> mSatisfactionList = new List<GameObject>();
 
     void Start() {
+        TopLeft = this.transform.Find("Panel_Top_Left").gameObject;
         Init();
     }
     // Start is called before the first frame update

@@ -134,7 +134,6 @@ public class ActorController : MonoBehaviour
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string DisappointedAnimation = "Disappointed";
-    public int FlyActorType = 100;
     private string GameController = "Hud";
     //private string[] mAnimationIds = {"Idle", "Walk", "Greeting", "Strong", "Bashful", "Digging", "Levelup", "Dancing", "Drinking"};    
     private float mDefaultWaitTimeMin = 0.3f;
@@ -254,7 +253,7 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.INVALID:
             break;
             case Actor.LOOP_STATE.READY:
-            if(mAgent != null && mActor.mType != FlyActorType)
+            if(mAgent != null && !mActor.mInfo.isFly)
                 mAgent.ResetPath();
             break;            
             case Actor.LOOP_STATE.TASK_UI:
@@ -595,7 +594,7 @@ public class ActorController : MonoBehaviour
         if(task == null)
             return false;
         
-        return SetAnimationContext(task.GetAnimation(), task.mInfo.time, state);
+        return SetAnimationContext(task.GetAnimation(), task.mInfo.animationRepeatTime, state);
     }           
     private bool SetApproching() {
         if(mAgent == null)
