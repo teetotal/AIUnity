@@ -6,7 +6,7 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 
 public class SatisfactionElement : MonoBehaviour
 {
-    public Text SatisfactionText;
+    public Text SatisfactionText; //start가 호출되기 전에 SetSatisfaction가 호출되서 어쩔 수 없이 public으로 했음
     private Color colorRed = new Color32(176, 61, 61, 255);
     private Color colorYellow = new Color32(228, 202, 68, 255);
     private Color colorGreen = new Color32(66, 134, 68, 255);
@@ -14,7 +14,6 @@ public class SatisfactionElement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
     }
 
     public void SetSatisfaction(Satisfaction satisfaction) {

@@ -230,13 +230,13 @@ public class ActorController : MonoBehaviour
             SetHudSatisfaction();
         }
     } 
-    private void SetHudTopCenter() {
+    private void SetHudState() {
         if(mIsFollowingActor && mHud != null)
-            mHud.SetTopCenterText(string.Format("{0}\n{1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
+            mHud.SetState(string.Format("{0}. {1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
     }
-    private void ResetHudTopCenter() {
+    private void ResetHudState() {
         if(mIsFollowingActor && mHud != null)
-            mHud.SetTopCenterText("...");
+            mHud.SetState("...");
     } 
     private void SetLevelProgress() {
         if(mIsFollowingActor && mHud != null) {
@@ -304,7 +304,7 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.LOOP_STATE.DO_TASK:
             {
-                ResetHudTopCenter();
+                ResetHudState();
                 SetLevelProgress();
                 SetHudSatisfaction();
                 SetHudQuest();
@@ -384,7 +384,7 @@ public class ActorController : MonoBehaviour
             }
             break;
         }
-        SetHudTopCenter();
+        SetHudState();
     }
     private void Arrive(){
         SetAnimation(StopAnimation);

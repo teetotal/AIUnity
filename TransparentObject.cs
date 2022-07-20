@@ -66,15 +66,15 @@ public class TransparentObject : MonoBehaviour
     public GameObject GameController;
     private string mFollowActorId = string.Empty;
     private GameObject mTargetObject; //대상 
-    public string TargetLayer = string.Empty; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
-    public Color ColorTransparent = Color.white;
+    public string TargetLayer = "Bld"; //raycast 비용이 비싸서 정해진 layer만 대상으로 하게끔    
+    public Color ColorTransparent = new Color(1,1,1,0.4f);
     public float RecoveryTime = 5; //원래 shader로 복구 시간
     
-    public float SmoothRotation = 1.0f;
+    public float SmoothRotation = 4.0f;
     public float ContextChangeDuration = 8;
 
     public float Angle = 0;
-    public float Distance = 12.0f;
+    public float Distance = 10.0f;
     public float Height = 1.8f;
 
     public float InteractionAngle = -45;

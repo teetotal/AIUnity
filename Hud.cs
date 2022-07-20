@@ -5,12 +5,8 @@ using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 public class Hud : MonoBehaviour
 {
-    //public ScrollRect ScrollRectQuest;    
-    public ScrollRect ScrollViewSatisfaction;
-    public GameObject ContentSatisfaction;
-    public GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
-    public Vector2 Margin = new Vector2(5,5);
-    public Vector2 TopLeftSize = new Vector2(200, 60);
+    public Vector2 Margin = new Vector2(10,10);
+    public Vector2 TopLeftSize = new Vector2(200, 100);
     public Vector2 TopCenterSize = new Vector2(240, 50);
     public Vector2 TopRightSize = new Vector2(200, 40); 
     public float LeftWidth = 240;     
@@ -18,8 +14,8 @@ public class Hud : MonoBehaviour
     public Vector2 BottomSize = new Vector2(500, 60);
     public Vector2 AskSize = new Vector2(400, 300);
 
-    public Text NameText,LevelText, LevelTextProgress, TopCenterText;    
-    public Slider LevelProgress;
+    private Text NameText,LevelText, LevelProgressText, StateText;    
+    private Slider LevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
     public string PrefabSatisfaction = "SatisfactionInfo";
@@ -27,8 +23,28 @@ public class Hud : MonoBehaviour
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
 
+    private ScrollRect ScrollViewSatisfaction;
+    private GameObject ContentSatisfaction;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
+
     void Start() {
-        TopLeft = this.transform.Find("Panel_Top_Left").gameObject;
+        TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
+        TopCenter   = this.transform.Find("Panel_Top_Center").gameObject;
+        TopRight    = this.transform.Find("Panel_Top_Right").gameObject;
+        Left        = this.transform.Find("Panel_Left").gameObject;
+        Right       = this.transform.Find("Panel_Right").gameObject;
+        Bottom      = this.transform.Find("Panel_Bottom").gameObject;
+        Ask         = this.transform.Find("Panel_Ask").gameObject;
+
+        ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
+        ScrollViewSatisfaction = GameObject.Find("HUD_ScrollView_Satisfaction").GetComponent<ScrollRect>();
+
+        NameText            = GameObject.Find("HUD_Name").GetComponent<Text>();
+        LevelText           = GameObject.Find("HUD_Level").GetComponent<Text>();;
+        LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<Text>();
+        StateText           = GameObject.Find("HUD_State").GetComponent<Text>();   
+        LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
+        
         Init();
     }
     // Start is called before the first frame update
@@ -128,12 +144,12 @@ public class Hud : MonoBehaviour
         LevelText.text = mPrefixLevel + level.ToString();
     }
 
-    public void SetTopCenterText(string sz) {
-        TopCenterText.text = sz;        
+    public void SetState(string sz) {
+        StateText.text = sz;        
     }
     public void SetLevelProgress(float v) {
         LevelProgress.value = v;
-        LevelTextProgress.text = string.Format("{0}%", (int)(v * 100));
+        LevelProgressText.text = string.Format("{0}%", (int)(v * 100));
     }
     // ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
