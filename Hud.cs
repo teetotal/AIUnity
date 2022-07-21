@@ -28,7 +28,7 @@ public class Hud : MonoBehaviour
     private GameObject ContentSatisfaction;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
 
-    void Start() {
+    private void Awake() {
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
         TopCenter   = this.transform.Find("Panel_Top_Center").gameObject;
         TopRight    = this.transform.Find("Panel_Top_Right").gameObject;
@@ -51,6 +51,8 @@ public class Hud : MonoBehaviour
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
         
         Init();
+
+        Debug.Log("Hud Init.");
     }
     // Start is called before the first frame update
     void Init()
