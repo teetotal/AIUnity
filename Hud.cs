@@ -51,8 +51,6 @@ public class Hud : MonoBehaviour
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
         
         Init();
-
-        Debug.Log("Hud Init.");
     }
     // Start is called before the first frame update
     void Init()

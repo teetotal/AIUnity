@@ -205,7 +205,6 @@ public class ActorController : MonoBehaviour
 
     // HUD ------------------------------------------------------------------
     public void SetFollowingActor(bool isFollowing, Hud hud) {
-        Debug.Log("Start SetFollowingActor");
         mIsFollowingActor = isFollowing;
         mHud = hud;
 
@@ -213,7 +212,6 @@ public class ActorController : MonoBehaviour
             mHud.InitSatisfaction(mActor.GetSatisfactions());
             SetHudQuest();
         }
-        Debug.Log("End SetFollowingActor");
     }
     private void SetHudQuest() {
         if(mIsFollowingActor && mHud != null)
