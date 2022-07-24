@@ -369,6 +369,7 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.COMPLETE_QUEST:
             {
                 SetHudQuest();
+                SetHudSatisfaction();
             }            
             break;
         }

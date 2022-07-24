@@ -169,11 +169,17 @@ public class Hud : MonoBehaviour
     // ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
         int i = 0;
+        /*
         foreach(var p in satisfaction.OrderBy( i => (i.Value.Value / i.Value.Max))) {
             //p.value 적용            
             mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
             i++;
-        }    
+        }   
+        */
+        foreach(var p in satisfaction) {
+            mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
+            i++;
+        }
         ScrollViewSatisfaction.verticalNormalizedPosition = 1;
     }
     public void InitSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
