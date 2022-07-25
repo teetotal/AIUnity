@@ -27,6 +27,7 @@ public class Hud : MonoBehaviour
     private ScrollRect ScrollViewSatisfaction;
     private GameObject ContentSatisfaction;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
+    public Button btn;
 
     private void Awake() {
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
@@ -49,8 +50,14 @@ public class Hud : MonoBehaviour
         VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<Text>();
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<Text>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
+
+        btn.onClick.AddListener(Onclick);
         
         Init();
+    }
+
+    void Onclick(){
+        Debug.Log("Onclick");
     }
     // Start is called before the first frame update
     void Init()

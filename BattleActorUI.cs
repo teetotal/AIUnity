@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.AI;
-
+using TMPro;
 public class BattleActorUI : MonoBehaviour
 {	
     public class ScriptNode {
@@ -20,9 +20,9 @@ public class BattleActorUI : MonoBehaviour
     [SerializeField]
     private Slider _slider;
     [SerializeField]
-    private Text _name;
+    private TextMeshProUGUI _name;
     [SerializeField]
-    private Text _message;
+    private TextMeshProUGUI _message;
     private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
     bool mIseSetMSG = false;    
     DateTime mStartTime;
