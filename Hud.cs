@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
+using TMPro;
 public class Hud : MonoBehaviour
 {
     public Vector2 Margin = new Vector2(10,10);
@@ -12,10 +12,10 @@ public class Hud : MonoBehaviour
     public float LeftWidth = 240;     
     public float RightWidth = 200;
     public Vector2 BottomSize = new Vector2(500, 60);
-    public Vector2 AskSize = new Vector2(400, 300);
+    public Vector2 AskSize = new Vector2(350, 300);
 
-    private Text NameText,LevelText, LevelProgressText, StateText;    
-    private Text VillageNameText, VillageLevelText;
+    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText;    
+    private TextMeshProUGUI VillageNameText, VillageLevelText;
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
@@ -41,14 +41,14 @@ public class Hud : MonoBehaviour
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
         ScrollViewSatisfaction = GameObject.Find("HUD_ScrollView_Satisfaction").GetComponent<ScrollRect>();
 
-        NameText            = GameObject.Find("HUD_Name").GetComponent<Text>();
-        LevelText           = GameObject.Find("HUD_Level").GetComponent<Text>();;
-        LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<Text>();
-        StateText           = GameObject.Find("HUD_State").GetComponent<Text>();   
+        NameText            = GameObject.Find("HUD_Name").GetComponent<TextMeshProUGUI>();
+        LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();;
+        LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<TextMeshProUGUI>();
+        StateText           = GameObject.Find("HUD_State").GetComponent<TextMeshProUGUI>();   
         LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
 
-        VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<Text>();
-        VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<Text>();
+        VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<TextMeshProUGUI>();
+        VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
 
         btn.onClick.AddListener(Onclick);
@@ -58,6 +58,7 @@ public class Hud : MonoBehaviour
 
     void Onclick(){
         Debug.Log("Onclick");
+        Ask.SetActive(!Ask.activeSelf);
     }
     // Start is called before the first frame update
     void Init()
@@ -152,8 +153,8 @@ public class Hud : MonoBehaviour
     public void SetName(string name) {
         NameText.text = name;
     }
-    public void SetLevel(int level)  {
-        LevelText.text = mPrefixLevel + level.ToString();
+    public void SetLevel(string level)  {
+        LevelText.text = level;
     }
 
     public void SetVillageName(string name) {

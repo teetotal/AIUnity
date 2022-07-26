@@ -247,7 +247,9 @@ public class ActorController : MonoBehaviour
 
     private void SetHudLevel() {
         if(mIsFollowingActor && mHud != null) {
-            mHud.SetLevel(mActor.level);
+            var p = LevelHandler.Instance.Get(mActor.mType, mActor.level);
+            if(p != null)
+                mHud.SetLevel(p.title);
             SetLevelProgress();
             SetHudSatisfaction();
         }

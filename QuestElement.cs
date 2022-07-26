@@ -13,7 +13,7 @@ public class QuestElement : MonoBehaviour
     private const string _emptyProgressText = "-";
     private string mQuestId = string.Empty;
     private StringBuilder mSzBuilder = new StringBuilder();
-    private string[] strArr = {"<size=50%>", "</size><br><size=40%>", "</size>"};
+    private string[] strArr = {"<size=100%>", "</size><br><size=70%>", "</size>"};
     private Actor mActor;
 
     private void Awake() {
