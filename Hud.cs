@@ -13,6 +13,7 @@ public class Hud : MonoBehaviour
     public float RightWidth = 200;
     public Vector2 BottomSize = new Vector2(500, 60);
     public Vector2 AskSize = new Vector2(350, 300);
+    public Vector2 TaskSize = new Vector2(500, 400);
 
     private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText;    
     private TextMeshProUGUI VillageNameText, VillageLevelText;
@@ -26,7 +27,7 @@ public class Hud : MonoBehaviour
 
     private ScrollRect ScrollViewSatisfaction;
     private GameObject ContentSatisfaction;
-    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task;
     public Button btn;
 
     private void Awake() {
@@ -37,6 +38,7 @@ public class Hud : MonoBehaviour
         Right       = this.transform.Find("Panel_Right").gameObject;
         Bottom      = this.transform.Find("Panel_Bottom").gameObject;
         Ask         = this.transform.Find("Panel_Ask").gameObject;
+        Task        = this.transform.Find("Panel_Task").gameObject;
 
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
         ScrollViewSatisfaction = GameObject.Find("HUD_ScrollView_Satisfaction").GetComponent<ScrollRect>();
@@ -59,6 +61,7 @@ public class Hud : MonoBehaviour
     void Onclick(){
         Debug.Log("Onclick");
         Ask.SetActive(!Ask.activeSelf);
+        Task.SetActive(!Task.activeSelf);
     }
     // Start is called before the first frame update
     void Init()
@@ -147,6 +150,11 @@ public class Hud : MonoBehaviour
         x = Scale.GetScaledWidth(AskSize.x);
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
+
+        //Task
+        RectTransform taskRT = Task.GetComponent<RectTransform>();
+        x = Scale.GetScaledWidth(TaskSize.x);
+        taskRT.sizeDelta = new Vector2(x, ((TaskSize.y / TaskSize.x) * x));
     }
 
     // Update is called once per frame
