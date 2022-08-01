@@ -106,12 +106,15 @@ public class GamePlayController : MonoBehaviour
         }
 
         foreach(var p in mActors) {
-            Actor actor = mActors[p.Key];      
+            Actor actor = mActors[p.Key];   
             if(actor.IsAutoTakeable()) {
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
                     continue;
                 }
-                if(actor.Loop_TakeTask() == false) {
+                //Auto인지 확인 추가.   
+                if(FollowActorId == p.Key) {
+                    actor.Loop_TaskUI();
+                } else if(actor.Loop_TakeTask() == false) {
                     actor.Loop_Ready();
                 }   
             }            

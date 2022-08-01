@@ -21,12 +21,14 @@ public class Hud : MonoBehaviour
     public QuestElement[] QuestElements = new QuestElement[3];
 
     public string PrefabSatisfaction = "SatisfactionInfo";
+    public string PrefabTask = "TaskPanel";
 
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
+    private List<GameObject> mTaskList = new List<GameObject>();
 
-    private ScrollRect ScrollViewSatisfaction;
-    private GameObject ContentSatisfaction;
+    private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
+    private GameObject ContentSatisfaction, ContentTask;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task;
     public Button btn;
 
@@ -39,9 +41,12 @@ public class Hud : MonoBehaviour
         Bottom      = this.transform.Find("Panel_Bottom").gameObject;
         Ask         = this.transform.Find("Panel_Ask").gameObject;
         Task        = this.transform.Find("Panel_Task").gameObject;
-
+        //Satisfaction
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
         ScrollViewSatisfaction = GameObject.Find("HUD_ScrollView_Satisfaction").GetComponent<ScrollRect>();
+        //Task
+        ContentTask = GameObject.Find("HUD_Content_Task");
+        ScrollViewTask = GameObject.Find("HUD_ScrollView_Task").GetComponent<ScrollRect>();
 
         NameText            = GameObject.Find("HUD_Name").GetComponent<TextMeshProUGUI>();
         LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();;
@@ -182,7 +187,7 @@ public class Hud : MonoBehaviour
     public void SetVillageLevelProgress(float v) {
         VillageLevelProgress.value = v;
     }
-    // ---------------------------------------------------------------------------------------------
+    // Satisfaction ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
         int i = 0;
         /*
@@ -222,6 +227,28 @@ public class Hud : MonoBehaviour
 
         SetSatisfaction(satisfaction);
     }
+    // Task ---------------------------------------------------------------------------------------------
+    public void SetTask(Dictionary<string, FnTask> tasks) {
+        float width = Scale.GetScaledHeight(493);
+        float height = Scale.GetScaledHeight(100);
+       
+        RectTransform contentRect = ContentTask.GetComponent<RectTransform>();
+        contentRect.sizeDelta = new Vector2(width, height * tasks.Count);
+
+        //pooling 기능 만들어야 함
+        GameObject prefab = Resources.Load<GameObject>(PrefabTask);
+        foreach(var p in tasks) {
+            GameObject obj = Instantiate(prefab);            
+
+            RectTransform rt = obj.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(contentRect.sizeDelta.x, height);
+            obj.transform.SetParent(ContentTask.transform);
+
+            TaskElement te = obj.GetComponent<TaskElement>();
+            te.Set(p.Key, p.Value.mInfo.villageLevel.ToString(), p.Value.mTaskDesc);
+        }
+    }
+    // Quest ---------------------------------------------------------------------------------------------
     public void SetQuest(Actor actor, List<string> quests) {
         for(int i = 0; i < QuestElements.Length; i++) {
             if(i > quests.Count - 1) {
