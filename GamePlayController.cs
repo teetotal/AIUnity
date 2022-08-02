@@ -190,6 +190,9 @@ public class GamePlayController : MonoBehaviour
         }
         return true;
     }
+    public ActorController? GetFollowActor() {
+        return mFollowActorObject;
+    }
     private bool Load() {
         var pLoader = new Loader();
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");

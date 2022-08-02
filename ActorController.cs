@@ -282,7 +282,7 @@ public class ActorController : MonoBehaviour
             break;            
             case Actor.LOOP_STATE.TASK_UI:
             if(mIsFollowingActor && mHud != null) {
-                mHud.SetTask(TaskHandler.Instance.GetTasks(actor));
+                mHud.SetTask(mGamePlayController, TaskHandler.Instance.GetTasks(actor));
             }
             break;
             case Actor.LOOP_STATE.TAKE_TASK:           

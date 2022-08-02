@@ -25,10 +25,11 @@ public class Hud : MonoBehaviour
 
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
-    private List<GameObject> mTaskList = new List<GameObject>();
+    private List<GameObject> mTaskObjectList = new List<GameObject>();
+    private Stack<GameObject> mTaskObjectPool = new Stack<GameObject>();
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
-    private GameObject ContentSatisfaction, ContentTask;
+    private GameObject ContentSatisfaction, ContentTask, TaskPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task;
     public Button btn;
 
@@ -47,6 +48,8 @@ public class Hud : MonoBehaviour
         //Task
         ContentTask = GameObject.Find("HUD_Content_Task");
         ScrollViewTask = GameObject.Find("HUD_ScrollView_Task").GetComponent<ScrollRect>();
+        TaskPool = GameObject.Find("HUD_Task_Pool");
+        TaskPool.SetActive(false);
 
         NameText            = GameObject.Find("HUD_Name").GetComponent<TextMeshProUGUI>();
         LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();;
@@ -160,6 +163,7 @@ public class Hud : MonoBehaviour
         RectTransform taskRT = Task.GetComponent<RectTransform>();
         x = Scale.GetScaledWidth(TaskSize.x);
         taskRT.sizeDelta = new Vector2(x, ((TaskSize.y / TaskSize.x) * x));
+        Task.SetActive(false);
     }
 
     // Update is called once per frame
@@ -228,25 +232,50 @@ public class Hud : MonoBehaviour
         SetSatisfaction(satisfaction);
     }
     // Task ---------------------------------------------------------------------------------------------
-    public void SetTask(Dictionary<string, FnTask> tasks) {
+    public void SetTask(GamePlayController gamePlayController, Dictionary<string, FnTask> tasks) {
         float width = Scale.GetScaledHeight(493);
         float height = Scale.GetScaledHeight(100);
        
         RectTransform contentRect = ContentTask.GetComponent<RectTransform>();
         contentRect.sizeDelta = new Vector2(width, height * tasks.Count);
 
-        //pooling 기능 만들어야 함
-        GameObject prefab = Resources.Load<GameObject>(PrefabTask);
         foreach(var p in tasks) {
-            GameObject obj = Instantiate(prefab);            
-
-            RectTransform rt = obj.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(contentRect.sizeDelta.x, height);
-            obj.transform.SetParent(ContentTask.transform);
-
+                   
+            GameObject obj = AllocTask(gamePlayController, contentRect.sizeDelta.x, height);
+            
             TaskElement te = obj.GetComponent<TaskElement>();
             te.Set(p.Key, p.Value.mInfo.villageLevel.ToString(), p.Value.mTaskDesc);
         }
+        Task.SetActive(true);
+    }
+    //pooling sync가 잘 안맞는 버그!!!!!
+    private GameObject AllocTask(GamePlayController gamePlayController, float width, float height) {
+        GameObject obj;
+        if(mTaskObjectPool.Count > 0) {
+            obj= mTaskObjectPool.Pop();
+        } else {
+            GameObject prefab = Resources.Load<GameObject>(PrefabTask);
+            obj = Instantiate(prefab);     
+            RectTransform rt = obj.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(width, height);
+            TaskElement te = obj.GetComponent<TaskElement>();
+            te.Init(this, gamePlayController);
+
+            Debug.Log("Alloc");
+        }
+        mTaskObjectList.Add(obj);
+        obj.transform.SetParent(ContentTask.transform);
+        return obj;
+    }
+    public void ReleaseTask() {
+        TaskPool.SetActive(true);
+        for(int i = 0; i < mTaskObjectList.Count; i++) {
+            mTaskObjectPool.Push(mTaskObjectList[i]);
+            mTaskObjectList[i].transform.SetParent(TaskPool.transform);
+        }
+        mTaskObjectList.Clear();
+        TaskPool.SetActive(false);
+        Task.SetActive(false);
     }
     // Quest ---------------------------------------------------------------------------------------------
     public void SetQuest(Actor actor, List<string> quests) {
