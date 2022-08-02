@@ -21,7 +21,7 @@ public class QuestElement : MonoBehaviour
     }
 
     private void SetComplete() {
-        Debug.Log(mQuestId);
+        //Debug.Log(mQuestId);
         bool ret = QuestHandler.Instance.Complete(mActor, mQuestId);     
     }
 

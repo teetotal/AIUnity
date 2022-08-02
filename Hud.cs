@@ -25,13 +25,16 @@ public class Hud : MonoBehaviour
 
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
-    private List<GameObject> mTaskObjectList = new List<GameObject>();
+    private List<Transform> mTaskObjectList = new List<Transform>();
     private Stack<GameObject> mTaskObjectPool = new Stack<GameObject>();
+    private int mTaskAllocCount = 0;
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
     private GameObject ContentSatisfaction, ContentTask, TaskPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task;
-    public Button btn;
+    public Button BtnAuto;
+    private bool mIsAuto = false;
+    public Color ColorBtnOn, ColorBtnOff;
 
     private void Awake() {
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
@@ -61,15 +64,23 @@ public class Hud : MonoBehaviour
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
 
-        btn.onClick.AddListener(Onclick);
+        BtnAuto.onClick.AddListener(SetAuto);
         
         Init();
     }
+    public bool IsAuto() {
+        return mIsAuto;
+    }
 
-    void Onclick(){
-        Debug.Log("Onclick");
-        Ask.SetActive(!Ask.activeSelf);
-        Task.SetActive(!Task.activeSelf);
+    void SetAuto(){
+        //Ask.SetActive(!Ask.activeSelf);
+        //Task.SetActive(!Task.activeSelf);
+        mIsAuto = !mIsAuto;
+        if(mIsAuto) {
+            BtnAuto.GetComponent<Image>().color = ColorBtnOn;
+        } else {
+            BtnAuto.GetComponent<Image>().color = ColorBtnOff;
+        }
     }
     // Start is called before the first frame update
     void Init()
@@ -240,16 +251,11 @@ public class Hud : MonoBehaviour
         contentRect.sizeDelta = new Vector2(width, height * tasks.Count);
 
         foreach(var p in tasks) {
-                   
-            GameObject obj = AllocTask(gamePlayController, contentRect.sizeDelta.x, height);
-            
-            TaskElement te = obj.GetComponent<TaskElement>();
-            te.Set(p.Key, p.Value.mInfo.villageLevel.ToString(), p.Value.mTaskDesc);
+            GameObject obj = AllocTask(gamePlayController, contentRect.sizeDelta.x, height, p.Value);
         }
         Task.SetActive(true);
     }
-    //pooling sync가 잘 안맞는 버그!!!!!
-    private GameObject AllocTask(GamePlayController gamePlayController, float width, float height) {
+    private GameObject AllocTask(GamePlayController gamePlayController, float width, float height, FnTask fn) {
         GameObject obj;
         if(mTaskObjectPool.Count > 0) {
             obj= mTaskObjectPool.Pop();
@@ -258,23 +264,23 @@ public class Hud : MonoBehaviour
             obj = Instantiate(prefab);     
             RectTransform rt = obj.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(width, height);
-            TaskElement te = obj.GetComponent<TaskElement>();
-            te.Init(this, gamePlayController);
-
-            Debug.Log("Alloc");
+            obj.GetComponent<TaskElement>().Init(this, gamePlayController);
+            mTaskAllocCount++;
         }
-        mTaskObjectList.Add(obj);
+        TaskElement te = obj.GetComponent<TaskElement>();
+        te.Set(fn);
+
+        mTaskObjectList.Add(obj.transform);
         obj.transform.SetParent(ContentTask.transform);
         return obj;
     }
     public void ReleaseTask() {
-        TaskPool.SetActive(true);
         for(int i = 0; i < mTaskObjectList.Count; i++) {
-            mTaskObjectPool.Push(mTaskObjectList[i]);
-            mTaskObjectList[i].transform.SetParent(TaskPool.transform);
+            mTaskObjectList[i].gameObject.GetComponent<TaskElement>().Release();
+            mTaskObjectPool.Push(mTaskObjectList[i].gameObject);
+            mTaskObjectList[i].SetParent(TaskPool.transform);
         }
         mTaskObjectList.Clear();
-        TaskPool.SetActive(false);
         Task.SetActive(false);
     }
     // Quest ---------------------------------------------------------------------------------------------

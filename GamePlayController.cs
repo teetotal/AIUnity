@@ -111,8 +111,8 @@ public class GamePlayController : MonoBehaviour
                 if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
                     continue;
                 }
-                //Auto인지 확인 추가.   
-                if(FollowActorId == p.Key) {
+                
+                if(!HudInstance.IsAuto() && FollowActorId == p.Key) {
                     actor.Loop_TaskUI();
                 } else if(actor.Loop_TakeTask() == false) {
                     actor.Loop_Ready();
