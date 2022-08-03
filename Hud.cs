@@ -64,6 +64,8 @@ public class Hud : MonoBehaviour
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
 
+        //Auto
+        SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
         
         Init();
@@ -76,6 +78,10 @@ public class Hud : MonoBehaviour
         //Ask.SetActive(!Ask.activeSelf);
         //Task.SetActive(!Task.activeSelf);
         mIsAuto = !mIsAuto;
+        SetAutoBtnColor();
+        
+    }
+    private void SetAutoBtnColor() {
         if(mIsAuto) {
             BtnAuto.GetComponent<Image>().color = ColorBtnOn;
         } else {
