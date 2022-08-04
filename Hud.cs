@@ -14,6 +14,7 @@ public class Hud : MonoBehaviour
     public Vector2 BottomSize = new Vector2(500, 60);
     public Vector2 AskSize = new Vector2(350, 300);
     public Vector2 TaskSize = new Vector2(500, 400);
+    public Vector2 InventorySize = new Vector2(500, 400);
 
     private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText;    
     private TextMeshProUGUI VillageNameText, VillageLevelText;
@@ -27,16 +28,22 @@ public class Hud : MonoBehaviour
     private List<GameObject> mSatisfactionList = new List<GameObject>();
     private List<Transform> mTaskObjectList = new List<Transform>();
     private Stack<GameObject> mTaskObjectPool = new Stack<GameObject>();
+    private List<Transform> mInventoryObjectList = new List<Transform>();
+    private Stack<GameObject> mInventoryObjectPool = new Stack<GameObject>();
+
     private int mTaskAllocCount = 0;
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
-    private GameObject ContentSatisfaction, ContentTask, TaskPool;
-    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task;
-    public Button BtnAuto;
+    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, Inventory;
+    public Button BtnCloseInventory, BtnOpenInventory, BtnAuto;
     private bool mIsAuto = false;
     public Color ColorBtnOn, ColorBtnOff;
+    private GamePlayController mGamePlayController;
 
     private void Awake() {
+        mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
+
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
         TopCenter   = this.transform.Find("Panel_Top_Center").gameObject;
         TopRight    = this.transform.Find("Panel_Top_Right").gameObject;
@@ -45,6 +52,7 @@ public class Hud : MonoBehaviour
         Bottom      = this.transform.Find("Panel_Bottom").gameObject;
         Ask         = this.transform.Find("Panel_Ask").gameObject;
         Task        = this.transform.Find("Panel_Task").gameObject;
+       
         //Satisfaction
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
         ScrollViewSatisfaction = GameObject.Find("HUD_ScrollView_Satisfaction").GetComponent<ScrollRect>();
@@ -63,10 +71,18 @@ public class Hud : MonoBehaviour
         VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<TextMeshProUGUI>();
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
+        //Inventory
+        Inventory           = GameObject.Find("HUD_Inventory");
+        BtnCloseInventory   = GameObject.Find("HUD_Inventory_Close").GetComponent<Button>();
+        BtnOpenInventory    = GameObject.Find("HUD_Inventory_Open").GetComponent<Button>();
+        InventoryPool       = GameObject.Find("HUD_Inventory_Pool");
+        InventoryPool.SetActive(false);
 
         //Auto
         SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
+        BtnCloseInventory.onClick.AddListener(CloseInventory);
+        BtnOpenInventory.onClick.AddListener(OpenInventory);
         
         Init();
     }
@@ -181,6 +197,15 @@ public class Hud : MonoBehaviour
         x = Scale.GetScaledWidth(TaskSize.x);
         taskRT.sizeDelta = new Vector2(x, ((TaskSize.y / TaskSize.x) * x));
         Task.SetActive(false);
+
+        //Inventory
+        RectTransform inventoryRT = Inventory.GetComponent<RectTransform>();
+        x = Scale.GetScaledWidth(InventorySize.x);
+        inventoryRT.sizeDelta = new Vector2(x, ((InventorySize.y / InventorySize.x) * x));
+        Inventory.GetComponent<GridLayoutGroup>().cellSize = new Vector2(inventoryRT.sizeDelta.x / 5, inventoryRT.sizeDelta.y / 5);
+        //close button
+        BtnCloseInventory.transform.position = new Vector3(inventoryRT.position.x + (inventoryRT.sizeDelta.x / 2), inventoryRT.position.y + (inventoryRT.sizeDelta.y / 2),0);
+        CloseInventory();
     }
 
     // Update is called once per frame
@@ -249,7 +274,7 @@ public class Hud : MonoBehaviour
         SetSatisfaction(satisfaction);
     }
     // Task ---------------------------------------------------------------------------------------------
-    public void SetTask(GamePlayController gamePlayController, Dictionary<string, FnTask> tasks) {
+    public void SetTask(Dictionary<string, FnTask> tasks) {
         float width = Scale.GetScaledHeight(493);
         float height = Scale.GetScaledHeight(100);
        
@@ -257,11 +282,11 @@ public class Hud : MonoBehaviour
         contentRect.sizeDelta = new Vector2(width, height * tasks.Count);
 
         foreach(var p in tasks) {
-            GameObject obj = AllocTask(gamePlayController, contentRect.sizeDelta.x, height, p.Value);
+            GameObject obj = AllocTask(contentRect.sizeDelta.x, height, p.Value);
         }
         Task.SetActive(true);
     }
-    private GameObject AllocTask(GamePlayController gamePlayController, float width, float height, FnTask fn) {
+    private GameObject AllocTask(float width, float height, FnTask fn) {
         GameObject obj;
         if(mTaskObjectPool.Count > 0) {
             obj= mTaskObjectPool.Pop();
@@ -270,7 +295,7 @@ public class Hud : MonoBehaviour
             obj = Instantiate(prefab);     
             RectTransform rt = obj.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(width, height);
-            obj.GetComponent<TaskElement>().Init(this, gamePlayController);
+            obj.GetComponent<TaskElement>().Init(this, mGamePlayController);
             mTaskAllocCount++;
         }
         TaskElement te = obj.GetComponent<TaskElement>();
@@ -306,5 +331,48 @@ public class Hud : MonoBehaviour
         }
         return;
     }
+    // Inventory ----------------------------------------------------------------------------------------
+    void OpenInventory() {
+        if(Inventory.activeSelf)
+            return;
+        
+        //Add Inventory.
+        var actor = mGamePlayController.GetFollowActor();
+        if(actor == null)
+            return;
+        Actor.ItemContext itemContext = actor.mActor.GetItemContext();
+        
+        foreach(var item in itemContext.inventory) {
+            AllocInventory(item.Key, item.Value);
+        }
+        Inventory.SetActive(true);
+        BtnCloseInventory.gameObject.SetActive(true);
+    }
+    void CloseInventory() {
+        ReleaseInventory();
+        Inventory.SetActive(false);
+        BtnCloseInventory.gameObject.SetActive(false);
+    }
+    private GameObject AllocInventory(string id, int quantity) {
+        GameObject obj;
+        if(mInventoryObjectPool.Count > 0) {
+            obj= mInventoryObjectPool.Pop();
+        } else {
+            GameObject prefab = Resources.Load<GameObject>("Button");
+            obj = Instantiate(prefab);     
+        }
+        ConfigItem_Detail item = ItemHandler.Instance.GetItemInfo(id);
+        obj.GetComponent<Button>().GetComponentInChildren<TextMeshProUGUI>().text = string.Format("{0}\n{1}", item.name, quantity);
 
+        mInventoryObjectList.Add(obj.transform);
+        obj.transform.SetParent(Inventory.transform);
+        return obj;
+    }
+    public void ReleaseInventory() {
+        for(int i = 0; i < mInventoryObjectList.Count; i++) {
+            mInventoryObjectPool.Push(mInventoryObjectList[i].gameObject);
+            mInventoryObjectList[i].SetParent(InventoryPool.transform);
+        }
+        mTaskObjectList.Clear();
+    }
 }
