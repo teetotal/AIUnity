@@ -14,7 +14,7 @@ public class Hud : MonoBehaviour
     public Vector2 BottomSize = new Vector2(500, 60);
     public Vector2 AskSize = new Vector2(350, 300);
     public Vector2 TaskSize = new Vector2(500, 400);
-    public Vector2 InventorySize = new Vector2(500, 400);
+    public Vector2 InventorySize = new Vector2(600, 500);
 
     private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText;    
     private TextMeshProUGUI VillageNameText, VillageLevelText;
@@ -23,6 +23,7 @@ public class Hud : MonoBehaviour
 
     public string PrefabSatisfaction = "SatisfactionInfo";
     public string PrefabTask = "TaskPanel";
+    public int InventoryCols = 6;
 
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
@@ -34,9 +35,9 @@ public class Hud : MonoBehaviour
     private int mTaskAllocCount = 0;
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
-    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
+    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPanel, InventoryPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, Inventory;
-    public Button BtnCloseInventory, BtnOpenInventory, BtnAuto;
+    public Button BtnCloseInventory, BtnOpenInventory, BtnAuto, BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
     private bool mIsAuto = false;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
@@ -52,6 +53,7 @@ public class Hud : MonoBehaviour
         Bottom      = this.transform.Find("Panel_Bottom").gameObject;
         Ask         = this.transform.Find("Panel_Ask").gameObject;
         Task        = this.transform.Find("Panel_Task").gameObject;
+        InventoryPanel = this.transform.Find("Panel_Inventory").gameObject;
        
         //Satisfaction
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
@@ -76,13 +78,20 @@ public class Hud : MonoBehaviour
         BtnCloseInventory   = GameObject.Find("HUD_Inventory_Close").GetComponent<Button>();
         BtnOpenInventory    = GameObject.Find("HUD_Inventory_Open").GetComponent<Button>();
         InventoryPool       = GameObject.Find("HUD_Inventory_Pool");
+        BtnInvenCategoryItem            = GameObject.Find("HUD_Inventory_Category_Item").GetComponent<Button>();
+        BtnInvenCategoryResource        = GameObject.Find("HUD_Inventory_Category_Resource").GetComponent<Button>();
+        BtnInvenCategoryInstallation    = GameObject.Find("HUD_Inventory_Category_Installation").GetComponent<Button>();
         InventoryPool.SetActive(false);
 
         //Auto
         SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
+        //Inventory
         BtnCloseInventory.onClick.AddListener(CloseInventory);
         BtnOpenInventory.onClick.AddListener(OpenInventory);
+        BtnInvenCategoryItem.onClick.AddListener(OnInventoryCategoryItem);
+        BtnInvenCategoryResource.onClick.AddListener(OnInventoryCategoryResource);
+        BtnInvenCategoryInstallation.onClick.AddListener(OnInventoryCategoryInstallation);
         
         Init();
     }
@@ -199,10 +208,15 @@ public class Hud : MonoBehaviour
         Task.SetActive(false);
 
         //Inventory
-        RectTransform inventoryRT = Inventory.GetComponent<RectTransform>();
+        //Panel size
+        RectTransform inventoryRT = InventoryPanel.GetComponent<RectTransform>();
         x = Scale.GetScaledWidth(InventorySize.x);
         inventoryRT.sizeDelta = new Vector2(x, ((InventorySize.y / InventorySize.x) * x));
-        Inventory.GetComponent<GridLayoutGroup>().cellSize = new Vector2(inventoryRT.sizeDelta.x / 5, inventoryRT.sizeDelta.y / 5);
+        //cell size
+        GridLayoutGroup grid = Inventory.GetComponent<GridLayoutGroup>();
+        grid.constraintCount = InventoryCols;
+        float cellWidth = (inventoryRT.sizeDelta.x - 10) / InventoryCols;
+        grid.cellSize = new Vector2(cellWidth , cellWidth);
         //close button
         BtnCloseInventory.transform.position = new Vector3(inventoryRT.position.x + (inventoryRT.sizeDelta.x / 2), inventoryRT.position.y + (inventoryRT.sizeDelta.y / 2),0);
         CloseInventory();
@@ -244,8 +258,10 @@ public class Hud : MonoBehaviour
         }   
         */
         foreach(var p in satisfaction) {
-            mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
-            i++;
+            if(!SatisfactionDefine.Instance.Get(p.Key).resource) {
+                mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
+                i++;
+            }
         }
         ScrollViewSatisfaction.verticalNormalizedPosition = 1;
     }
@@ -261,6 +277,8 @@ public class Hud : MonoBehaviour
 
         GameObject prefab = Resources.Load<GameObject>(PrefabSatisfaction);
         foreach(var p in satisfaction) {
+            if(SatisfactionDefine.Instance.Get(p.Key).resource) continue;
+
             GameObject obj = Instantiate(prefab);            
 
             RectTransform rt = obj.GetComponent<RectTransform>();
@@ -333,27 +351,73 @@ public class Hud : MonoBehaviour
     }
     // Inventory ----------------------------------------------------------------------------------------
     void OpenInventory() {
-        if(Inventory.activeSelf)
+        if(InventoryPanel.activeSelf)
             return;
         
+        OnInventoryCategoryItem();
+
+        InventoryPanel.SetActive(true);
+        BtnCloseInventory.gameObject.SetActive(true);
+    }
+    void CloseInventory() {
+        InventoryPanel.SetActive(false);
+        BtnCloseInventory.gameObject.SetActive(false);
+    }
+    void OnInventoryCategoryItem() {
+        OnCategory(0);
+        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOn;
+        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOff;
+        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOff;
+    }
+    void OnInventoryCategoryResource() {
+        OnCategory(1);
+        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOff;
+        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOn;
+        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOff;
+    }
+    void OnInventoryCategoryInstallation() {
+        OnCategory(2);
+        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOff;
+        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOff;
+        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOn;
+    }
+    void OnCategory(int type) {
+        ReleaseInventory();
         //Add Inventory.
         var actor = mGamePlayController.GetFollowActor();
         if(actor == null)
             return;
         Actor.ItemContext itemContext = actor.mActor.GetItemContext();
-        
-        foreach(var item in itemContext.inventory) {
-            AllocInventory(item.Key, item.Value);
+
+        switch(type) {
+            case 0: //item
+            foreach(var item in itemContext.inventory) {
+                ConfigItem_Detail i = ItemHandler.Instance.GetItemInfo(item.Key);
+                AllocInventory(i.name, item.Value);
+            }
+            break;
+            case 1: //resource
+            foreach(var s in actor.mActor.GetSatisfactions()) {
+                ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
+                if(r.resource) {
+                    AllocInventory(r.title, s.Value.Value);
+                }
+            }
+            break;
+            case 2: //installation
+            break;
         }
-        Inventory.SetActive(true);
-        BtnCloseInventory.gameObject.SetActive(true);
+        //Scrollview size
+        GridLayoutGroup grid = Inventory.GetComponent<GridLayoutGroup>();
+        int heightCount = (int)(itemContext.inventory.Count / InventoryCols);
+        if(itemContext.inventory.Count % InventoryCols != 0) {
+            heightCount++;
+        }
+        
+        Inventory.GetComponent<RectTransform>().sizeDelta = new Vector2(grid.cellSize.x * InventoryCols - (grid.padding.left + grid.padding.right), 
+            grid.cellSize.y * heightCount + 10);
     }
-    void CloseInventory() {
-        ReleaseInventory();
-        Inventory.SetActive(false);
-        BtnCloseInventory.gameObject.SetActive(false);
-    }
-    private GameObject AllocInventory(string id, int quantity) {
+    private GameObject AllocInventory(string name, float quantity) {
         GameObject obj;
         if(mInventoryObjectPool.Count > 0) {
             obj= mInventoryObjectPool.Pop();
@@ -361,8 +425,8 @@ public class Hud : MonoBehaviour
             GameObject prefab = Resources.Load<GameObject>("Button");
             obj = Instantiate(prefab);     
         }
-        ConfigItem_Detail item = ItemHandler.Instance.GetItemInfo(id);
-        obj.GetComponent<Button>().GetComponentInChildren<TextMeshProUGUI>().text = string.Format("{0}\n{1}", item.name, quantity);
+        
+        obj.GetComponent<Button>().GetComponentInChildren<TextMeshProUGUI>().text = string.Format("{0}\n{1}", name, quantity);
 
         mInventoryObjectList.Add(obj.transform);
         obj.transform.SetParent(Inventory.transform);
@@ -373,6 +437,6 @@ public class Hud : MonoBehaviour
             mInventoryObjectPool.Push(mInventoryObjectList[i].gameObject);
             mInventoryObjectList[i].SetParent(InventoryPool.transform);
         }
-        mTaskObjectList.Clear();
+        mInventoryObjectList.Clear();
     }
 }
