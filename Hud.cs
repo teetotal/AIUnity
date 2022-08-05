@@ -3,11 +3,32 @@ using UnityEngine;
 using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 using TMPro;
+using System.Text;
+public class HUDStateContext {
+    public List<string> queue = new List<string>();
+    public StringBuilder sz = new StringBuilder();
+    public float counter;
+    public const float duration = 5;
+    public const string newline = "\n";
+    public const string mark = "<mark=#00000040 padding=\"5,2,2,5\">";
+    public const string markEnd = "</mark>";
+    public override string ToString() {
+        sz.Clear();
+        sz.Append(mark);
+        for(int i = 0; i < queue.Count; i++) {
+            if(i > 0)
+                sz.Append(newline);
+            sz.Append(queue[i]);
+        }
+        sz.Append(markEnd);
+        return sz.ToString();
+    }
+}
 public class Hud : MonoBehaviour
 {
     public Vector2 Margin = new Vector2(10,10);
-    public Vector2 TopLeftSize = new Vector2(200, 100);
-    public Vector2 TopCenterSize = new Vector2(240, 50);
+    public Vector2 TopLeftSize = new Vector2(200, 60);
+    public Vector2 TopCenterSize = new Vector2(300, 200);
     public Vector2 TopRightSize = new Vector2(200, 40); 
     public float LeftWidth = 240;     
     public float RightWidth = 200;
@@ -41,6 +62,7 @@ public class Hud : MonoBehaviour
     private bool mIsAuto = false;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
+    private HUDStateContext mHUDStateContext = new HUDStateContext();
 
     private void Awake() {
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
@@ -223,6 +245,16 @@ public class Hud : MonoBehaviour
     }
 
     // Update is called once per frame
+    private void Update() {
+        if(mHUDStateContext.queue.Count > 0) {
+            mHUDStateContext.counter += Time.deltaTime;
+            if(mHUDStateContext.counter > HUDStateContext.duration) {
+                mHUDStateContext.queue.RemoveAt(0);
+                mHUDStateContext.counter = 0;
+                StateText.text = mHUDStateContext.ToString();   
+            }
+        }
+    }
     public void SetName(string name) {
         NameText.text = name;
     }
@@ -238,7 +270,8 @@ public class Hud : MonoBehaviour
     }
 
     public void SetState(string sz) {
-        StateText.text = sz;        
+        mHUDStateContext.queue.Add(sz);
+        StateText.text = mHUDStateContext.ToString();        
     }
     public void SetLevelProgress(float v) {
         LevelProgress.value = v;
@@ -293,7 +326,7 @@ public class Hud : MonoBehaviour
     }
     // Task ---------------------------------------------------------------------------------------------
     public void SetTask(Dictionary<string, FnTask> tasks) {
-        float width = Scale.GetScaledHeight(493);
+        float width = ScrollViewTask.gameObject.GetComponent<RectTransform>().sizeDelta.x;
         float height = Scale.GetScaledHeight(100);
        
         RectTransform contentRect = ContentTask.GetComponent<RectTransform>();
@@ -438,5 +471,21 @@ public class Hud : MonoBehaviour
             mInventoryObjectList[i].SetParent(InventoryPool.transform);
         }
         mInventoryObjectList.Clear();
+    }
+    public void ObtainItem(Actor a) {
+        var actor = mGamePlayController.GetFollowActor();
+        if(actor == null || actor.mActor.mUniqueId != a.mUniqueId) {
+            return;
+        }
+        //화면 출력
+        Actor.ItemContext ic = a.GetItemContext();
+        string sz = string.Empty;
+        for(int i = 0; i < ic.mObtainItemList.Count; i++) {
+            if(i > 0)
+                sz += "\n";
+            sz += ItemHandler.Instance.GetItemInfo(ic.mObtainItemList[i].itemId).name;
+        }
+        SetState(sz);
+        ic.mObtainItemList.Clear();
     }
 }

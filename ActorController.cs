@@ -331,7 +331,7 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.LOOP_STATE.DO_TASK:
             {
-                ResetHudState();
+                //ResetHudState();
                 SetLevelProgress();
                 SetHudSatisfaction();
                 SetHudQuest();
@@ -376,6 +376,12 @@ public class ActorController : MonoBehaviour
                 SetHudQuest();
                 SetHudSatisfaction();
             }            
+            break;
+            case Actor.LOOP_STATE.ITEM:
+            {
+                if(mHud != null)
+                    mHud.ObtainItem(mActor);
+            }
             break;
         }
     }

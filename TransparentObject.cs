@@ -75,7 +75,7 @@ public class TransparentObject : MonoBehaviour
 
     public float Angle = 0;
     public float Distance = 10.0f;
-    public float Height = 1.8f;
+    public float Height = 1.0f;
 
     public float InteractionAngle = -45;
     public float InteractionDistance = 8;
