@@ -10,7 +10,7 @@ public class HUDStateContext {
     public float counter;
     public const float duration = 5;
     public const string newline = "\n";
-    public const string mark = "<mark=#00000040 padding=\"5,2,2,5\">";
+    public const string mark = "<mark=#00000040 padding=\"10,2,2,10\">";
     public const string markEnd = "</mark>";
     public override string ToString() {
         sz.Clear();
@@ -24,6 +24,16 @@ public class HUDStateContext {
         return sz.ToString();
     }
 }
+public class HUDItemContext {
+    public string itemId = string.Empty;
+    public Actor actor;
+    public StringBuilder sb = new StringBuilder();
+    public string[] format = {"<size=100%>", "</size><br><size=70%>", "</size>"};
+    public void Set(Actor actor, string itemId) {
+        this.actor = actor;
+        this.itemId = itemId;
+    } 
+}
 public class Hud : MonoBehaviour
 {
     public Vector2 Margin = new Vector2(10,10);
@@ -36,9 +46,9 @@ public class Hud : MonoBehaviour
     public Vector2 AskSize = new Vector2(350, 300);
     public Vector2 TaskSize = new Vector2(500, 400);
     public Vector2 InventorySize = new Vector2(600, 500);
+    public Vector2 ItemSize = new Vector2(200, 300);
 
-    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText;    
-    private TextMeshProUGUI VillageNameText, VillageLevelText;
+    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText, VillageNameText, VillageLevelText, ItemText;    
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
@@ -56,13 +66,16 @@ public class Hud : MonoBehaviour
     private int mTaskAllocCount = 0;
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
-    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPanel, InventoryPool;
-    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, Inventory;
-    public Button BtnCloseInventory, BtnOpenInventory, BtnAuto, BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
+    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel;
+    private Button BtnCloseInventory, BtnOpenInventory, BtnAuto;
+    private Button BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
+    private Button BtnItemUse, BtnItemClose;
     private bool mIsAuto = false;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
+    private HUDItemContext mHUDItemContext = new HUDItemContext();
 
     private void Awake() {
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
@@ -76,6 +89,7 @@ public class Hud : MonoBehaviour
         Ask         = this.transform.Find("Panel_Ask").gameObject;
         Task        = this.transform.Find("Panel_Task").gameObject;
         InventoryPanel = this.transform.Find("Panel_Inventory").gameObject;
+        ItemPanel   = this.transform.Find("Panel_Item").gameObject;
        
         //Satisfaction
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
@@ -87,7 +101,7 @@ public class Hud : MonoBehaviour
         TaskPool.SetActive(false);
 
         NameText            = GameObject.Find("HUD_Name").GetComponent<TextMeshProUGUI>();
-        LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();;
+        LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();
         LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<TextMeshProUGUI>();
         StateText           = GameObject.Find("HUD_State").GetComponent<TextMeshProUGUI>();   
         LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
@@ -95,6 +109,8 @@ public class Hud : MonoBehaviour
         VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<TextMeshProUGUI>();
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
+        //auto
+        BtnAuto             = GameObject.Find("HUD_Auto").GetComponent<Button>();
         //Inventory
         Inventory           = GameObject.Find("HUD_Inventory");
         BtnCloseInventory   = GameObject.Find("HUD_Inventory_Close").GetComponent<Button>();
@@ -104,6 +120,13 @@ public class Hud : MonoBehaviour
         BtnInvenCategoryResource        = GameObject.Find("HUD_Inventory_Category_Resource").GetComponent<Button>();
         BtnInvenCategoryInstallation    = GameObject.Find("HUD_Inventory_Category_Installation").GetComponent<Button>();
         InventoryPool.SetActive(false);
+        //Item
+        ItemText            = GameObject.Find("HUD_Item_Text").GetComponent<TextMeshProUGUI>();
+        BtnItemUse          = GameObject.Find("HUD_Item_Use").GetComponent<Button>();
+        BtnItemClose        = GameObject.Find("HUD_Item_Close").GetComponent<Button>();
+        
+        BtnItemUse.onClick.AddListener(InvokeItem);
+        BtnItemClose.onClick.AddListener(CloseItem);
 
         //Auto
         SetAutoBtnColor();
@@ -242,6 +265,11 @@ public class Hud : MonoBehaviour
         //close button
         BtnCloseInventory.transform.position = new Vector3(inventoryRT.position.x + (inventoryRT.sizeDelta.x / 2), inventoryRT.position.y + (inventoryRT.sizeDelta.y / 2),0);
         CloseInventory();
+
+        //Item
+        ItemPanel.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(ItemSize);
+        ItemPanel.SetActive(false);
+
     }
 
     // Update is called once per frame
@@ -425,15 +453,15 @@ public class Hud : MonoBehaviour
         switch(type) {
             case 0: //item
             foreach(var item in itemContext.inventory) {
-                ConfigItem_Detail i = ItemHandler.Instance.GetItemInfo(item.Key);
-                AllocInventory(i.name, item.Value);
+                if(item.Value > 0)
+                    AllocInventory().GetComponent<ItemElement>().SetItem(actor.mActor, item.Key, item.Value);
             }
             break;
             case 1: //resource
             foreach(var s in actor.mActor.GetSatisfactions()) {
                 ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
-                if(r.resource) {
-                    AllocInventory(r.title, s.Value.Value);
+                if(s.Value.Value > 0 && r.resource) {
+                    AllocInventory().GetComponent<ItemElement>().SetSatisfaction(actor.mActor, s.Key, (int)s.Value.Value);
                 }
             }
             break;
@@ -450,16 +478,14 @@ public class Hud : MonoBehaviour
         Inventory.GetComponent<RectTransform>().sizeDelta = new Vector2(grid.cellSize.x * InventoryCols - (grid.padding.left + grid.padding.right), 
             grid.cellSize.y * heightCount + 10);
     }
-    private GameObject AllocInventory(string name, float quantity) {
+    private GameObject AllocInventory() {
         GameObject obj;
         if(mInventoryObjectPool.Count > 0) {
             obj= mInventoryObjectPool.Pop();
         } else {
-            GameObject prefab = Resources.Load<GameObject>("Button");
+            GameObject prefab = Resources.Load<GameObject>("Item");
             obj = Instantiate(prefab);     
         }
-        
-        obj.GetComponent<Button>().GetComponentInChildren<TextMeshProUGUI>().text = string.Format("{0}\n{1}", name, quantity);
 
         mInventoryObjectList.Add(obj.transform);
         obj.transform.SetParent(Inventory.transform);
@@ -487,5 +513,30 @@ public class Hud : MonoBehaviour
         }
         SetState(sz);
         ic.mObtainItemList.Clear();
+    }
+    // Item ----------------------------------------------------------------
+    public void OpenItemInfo(Actor actor, string itemId) {
+        mHUDItemContext.Set(actor, itemId);
+        
+        ConfigItem_Detail itemInfo = ItemHandler.Instance.GetItemInfo(itemId);
+
+        mHUDItemContext.sb.Clear();
+        mHUDItemContext.sb.Append(mHUDItemContext.format[0]);
+        mHUDItemContext.sb.Append(itemInfo.name);
+        mHUDItemContext.sb.Append(mHUDItemContext.format[1]);
+        mHUDItemContext.sb.Append(itemInfo.desc);
+        mHUDItemContext.sb.Append(mHUDItemContext.format[2]);
+
+        ItemText.text = mHUDItemContext.sb.ToString();
+        ItemPanel.SetActive(true);
+    }
+    private void InvokeItem() {
+        mHUDItemContext.actor.UseItemFromInventory(mHUDItemContext.itemId);
+        CloseItem();
+        OnInventoryCategoryItem();
+        
+    }
+    private void CloseItem() {
+        ItemPanel.SetActive(false);
     }
 }
