@@ -44,7 +44,6 @@ public class ActorControllerApproching {
         time = distance / speed;
     }
 }
-
 public class AnimationContext {
     public string animationName = string.Empty;
     public int count = 0;
@@ -142,8 +141,8 @@ public class ActorController : MonoBehaviour
     private GameObject? mUIObject;
     private BattleActorUI? mUI;
     private GamePlayController mGamePlayController = new GamePlayController();
-    private NavMeshAgent? mAgent;
-    private Animator? mAnimator;
+    private NavMeshAgent mAgent;
+    private Animator mAnimator;
     
     //variable
     private Hud? mHud = null;
@@ -156,7 +155,8 @@ public class ActorController : MonoBehaviour
     private MOVING_STATE mMovingState = MOVING_STATE.IDLE;
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
-    public Actor mActor;        
+    public Actor mActor;      
+    private bool mLazyInitFlag = false;  
     
     public bool Init(string name, Actor actor) {
         if(name == string.Empty || actor == null)
@@ -166,6 +166,15 @@ public class ActorController : MonoBehaviour
         
         return true;
     }
+    public void LazyInit() {
+        var speed = mActor.GetSatisfaction("Speed");
+        if(speed == null) {
+            //speed가 없으면 그냥 기본 설정 speed를 사용한다.
+            return;
+        }
+        SetSpeed(speed.Min, speed.Value);
+        mLazyInitFlag = true;
+    }
     void Start()
     {        
         mAnimationContext.Init(this);        
@@ -173,7 +182,7 @@ public class ActorController : MonoBehaviour
 
         mAgent = gameObject.GetComponent<NavMeshAgent>();
         if(mAgent == null) {
-            Debug.Log("Invalid NavMeshAgent");
+            throw new Exception("Invalid NavMeshAgent");
         }
         mGamePlayController = GameObject.Find(GameController).GetComponent<GamePlayController>();
 
@@ -196,6 +205,10 @@ public class ActorController : MonoBehaviour
         SetHudVillageName();
         SetHudVillageLevel();
         SetHudVillageProgression();
+    }
+    public void SetSpeed(float speed, float acceleration) {
+        mAgent.speed = speed;
+        mAgent.acceleration = acceleration;
     }
     // Actor UI -------------------------------------------------------------
     public void SetVisibleActorUI(bool visible) {
@@ -463,8 +476,8 @@ public class ActorController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {        
-        if(mAgent == null)
-            throw new Exception("mAgent is null");
+        if(!mLazyInitFlag)
+            LazyInit();
 
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
 
@@ -513,11 +526,18 @@ public class ActorController : MonoBehaviour
                 if(mAnimationContext.animationName.Length > 0 && mAnimator != null) {
                     if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.animationName) && 
                         mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
-                    {                        
+                    {  
+                        //앉는 자세 위치 고정을 위해
+                        if(mApprochingContext.enable)        
+                            mApprochingContext.Release();
+
                         if(mAnimationContext.Increase()) {
                             SetAnimation(StopAnimation);                            
                             mMovingState = MOVING_STATE.ANIMATION_STOP; 
                         }
+                    } else if(mApprochingContext.enable) { //앉는 자세 위치를 정교하게 하기 위해
+                        transform.position = mApprochingContext.toPosition;
+                        transform.LookAt(mApprochingContext.lookAt);
                     }
                     return;
                 } 
@@ -579,12 +599,9 @@ public class ActorController : MonoBehaviour
                 transform.LookAt(mApprochingContext.toPosition);
                 if(rate >= 1) {              
                     mTimer = 0;
-                    SetAnimation(StopAnimation);
+                    //SetAnimation(StopAnimation);
                     //SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
-                    transform.position = mApprochingContext.toPosition;
-                    transform.LookAt(mApprochingContext.lookAt);
                     mTarget.Release();
-                    mApprochingContext.Release();
                     mMovingState = MOVING_STATE.IDLE;
                     Arrive(); 
                 }
@@ -631,8 +648,6 @@ public class ActorController : MonoBehaviour
         return SetAnimationContext(task.GetAnimation(), task.mInfo.animationRepeatTime, state);
     }           
     private bool SetApproching() {
-        if(mAgent == null)
-            return false;
         var task = mActor.GetCurrentTask();
         if(task == null)
             return false;

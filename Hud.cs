@@ -327,14 +327,13 @@ public class Hud : MonoBehaviour
         ScrollViewSatisfaction.verticalNormalizedPosition = 1;
     }
     public void InitSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
-        float height = Screen.safeArea.height / 6;     
-        int n = satisfaction.Count;
+        float height = Screen.safeArea.height * 0.5f;     
         //4개씩 보이게끔
-        height = height / 4;
-        float width = (RightWidth / 1334.0f) * Screen.safeArea.width;
+        height = height / satisfaction.Count;
+        float width = Scale.GetScaledWidth(RightWidth);
         width -= 10; //scroll bar width
         RectTransform contentRect = ContentSatisfaction.GetComponent<RectTransform>();
-        contentRect.sizeDelta = new Vector2(width, height * n);
+        contentRect.sizeDelta = new Vector2(width, height * satisfaction.Count);
 
         GameObject prefab = Resources.Load<GameObject>(PrefabSatisfaction);
         foreach(var p in satisfaction) {

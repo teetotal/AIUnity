@@ -30,8 +30,6 @@ public class GamePlayController : MonoBehaviour
     public float Interval = 2;
     //NPC아닌 actor type
     public int ManagedActorType = 1;
-    //NPC아닌 actor의 최소 실행 주기
-    public int ManagedInterval = 2;
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
@@ -108,7 +106,12 @@ public class GamePlayController : MonoBehaviour
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];   
             if(actor.IsAutoTakeable()) {
-                if(actor.mType == ManagedActorType && actor.GetTaskContext().lastCount > 0 && CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount <= ManagedInterval) {                    
+                double duration = CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount;
+                if( actor.mType == ManagedActorType && 
+                    actor.GetTaskContext().lastCount > 0 && 
+                    duration <= actor.mInfo.laziness //check laziness
+                ) {        
+                    //두리번 거리는 animation 실행 하게 해야함.            
                     continue;
                 }
                 
