@@ -41,6 +41,8 @@ public class GamePlayController : MonoBehaviour
 
     public string FollowActorId = string.Empty;
     private Hud HudInstance;
+    private const string L10N_TAX_COLLECTION = "TAX_COLLECTION";
+    private const string L10N_UPDATE_MARKET_PRICE = "UPDATE_MARKET_PRICE";
     
     // Start is called before the first frame update
     void Start()
@@ -96,11 +98,19 @@ public class GamePlayController : MonoBehaviour
         }        
     }    
     private void Next() {
+        //counting
         long counter = CounterHandler.Instance.Next();
+        //discharge
         DischargeHandler.Instance.Discharge(ManagedActorType);
+        //tax collection
         if(ActorHandler.Instance.TaxCollection()) {
             //update
             SetHudVillage();
+        }
+        //update market price
+        if(SatisfactionMarketPrice.Instance.Update()) {
+            if(HudInstance != null)
+                HudInstance.SetState(L10nHandler.Instance.Get(L10N_UPDATE_MARKET_PRICE));
         }
 
         foreach(var p in mActors) {
@@ -139,6 +149,8 @@ public class GamePlayController : MonoBehaviour
         HudInstance.SetVillageName(name);
         HudInstance.SetVillageLevel(level);
         HudInstance.SetVillageLevelProgress(v);
+
+        HudInstance.SetState(L10nHandler.Instance.Get(L10N_TAX_COLLECTION));
     }
     public void SetInteractionCameraAngle(ActorController actor) {
         if(TransparentInstance == null)
@@ -206,9 +218,10 @@ public class GamePlayController : MonoBehaviour
         TextAsset szQuest = Resources.Load<TextAsset>("Config/quest");
         TextAsset szScript = Resources.Load<TextAsset>("Config/script");        
         TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");   
-        TextAsset szVillage = Resources.Load<TextAsset>("Config/village");        
+        TextAsset szVillage = Resources.Load<TextAsset>("Config/village");  
+        TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");        
 
-        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text)) {
+        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }

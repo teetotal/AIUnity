@@ -44,6 +44,7 @@ public class TaskElement : MonoBehaviour
             var actor = mGamePlayController.GetFollowActor();
             if(actor == null)
                 return;
+            mFn.SetTaskString();
             if(!TaskHandler.Instance.CheckSatisfaction(actor.mActor, mFn) || !TaskHandler.Instance.CheckRef(mFn)) {
                 Btn.enabled = false;
                 Text2.text = "<s>" + mFn.mTaskString + "</s>";

@@ -157,6 +157,7 @@ public class ActorController : MonoBehaviour
     private float mTimer = 0;
     public Actor mActor;      
     private bool mLazyInitFlag = false;  
+    private const string L10N_LEVEL_UP = "LEVEL_UP";
     
     public bool Init(string name, Actor actor) {
         if(name == string.Empty || actor == null)
@@ -365,7 +366,7 @@ public class ActorController : MonoBehaviour
                 SetHudLevel();
                 //levelup 모션 처리      
                 SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                SetMessage("LEVEL UP! lv." + actor.level.ToString());                       
+                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));                       
             }            
             break;
             case Actor.LOOP_STATE.REFUSAL:
@@ -389,6 +390,9 @@ public class ActorController : MonoBehaviour
                 SetHudQuest();
                 SetHudSatisfaction();
             }            
+            break;
+            case Actor.LOOP_STATE.TAX_COLLECTION:
+
             break;
             case Actor.LOOP_STATE.ITEM:
             {
