@@ -294,6 +294,9 @@ public class ActorController : MonoBehaviour
             if(mAgent != null && !mActor.mInfo.isFly)
                 mAgent.ResetPath();
             break;            
+            case Actor.LOOP_STATE.CHANGE_SCENE: 
+            mGamePlayController.ChangeScene(mActor, mActor.PopSceneName());
+            break;
             case Actor.LOOP_STATE.TASK_UI:
             if(mIsFollowingActor && mHud != null) {
                 mHud.SetTask(TaskHandler.Instance.GetTasks(actor, false));

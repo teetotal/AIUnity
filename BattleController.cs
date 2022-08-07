@@ -226,7 +226,6 @@ public class BattleController : MonoBehaviour
         }
     }    
     bool Load() {
-        var pLoader = new Loader();
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");
         TextAsset szTask = Resources.Load<TextAsset>("Config/task");
         TextAsset szActor = Resources.Load<TextAsset>("Config/actors");
@@ -238,7 +237,7 @@ public class BattleController : MonoBehaviour
         TextAsset szVillage = Resources.Load<TextAsset>("Config/village");       
         TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");         
 
-        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
+        if(!Loader.Instance.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }

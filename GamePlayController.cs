@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using ENGINE.GAMEPLAY;
 using ENGINE.GAMEPLAY.MOTIVATION;
 #nullable enable
@@ -208,8 +209,30 @@ public class GamePlayController : MonoBehaviour
     public ActorController? GetFollowActor() {
         return mFollowActorObject;
     }
+    //Scene
+    public void ChangeScene(Actor actor, string scene) {
+        var followActor = GetFollowActor();
+        if(followActor != null && followActor.mActor.mUniqueId == actor.mUniqueId) {
+            StartCoroutine(LoadAsyncScene(scene));
+        }
+    }
+    IEnumerator LoadAsyncScene(string scene)
+    {
+        // The Application loads the Scene in the background as the current Scene runs.
+        // This is particularly good for creating loading screens.
+        // You could also load the Scene by using sceneBuildIndex. In this case Scene2 has
+        // a sceneBuildIndex of 1 as shown in Build Settings.
+
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
+
+        // Wait until the asynchronous scene fully loads
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+            Debug.Log(asyncLoad.progress);
+        }
+    }
     private bool Load() {
-        var pLoader = new Loader();
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");
         TextAsset szTask = Resources.Load<TextAsset>("Config/task");
         TextAsset szActor = Resources.Load<TextAsset>("Config/actors");
@@ -221,7 +244,7 @@ public class GamePlayController : MonoBehaviour
         TextAsset szVillage = Resources.Load<TextAsset>("Config/village");  
         TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");        
 
-        if(!pLoader.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
+        if(!Loader.Instance.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }

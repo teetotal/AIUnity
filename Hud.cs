@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
 using TMPro;
 using System.Text;
+using UnityEngine.SceneManagement;
+
 public class HUDStateContext {
     public List<string> queue = new List<string>();
     public StringBuilder sz = new StringBuilder();
@@ -68,7 +70,7 @@ public class Hud : MonoBehaviour
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
     private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel;
-    private Button BtnCloseInventory, BtnOpenInventory, BtnAuto;
+    private Button BtnOpenGallery, BtnCloseInventory, BtnOpenInventory, BtnAuto;
     private Button BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
     private Button BtnItemUse, BtnItemClose;
     private bool mIsAuto = false;
@@ -111,6 +113,8 @@ public class Hud : MonoBehaviour
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
         //auto
         BtnAuto             = GameObject.Find("HUD_Auto").GetComponent<Button>();
+        //Gallery
+        BtnOpenGallery      =   GameObject.Find("HUD_Gallery_Open").GetComponent<Button>();
         //Inventory
         Inventory           = GameObject.Find("HUD_Inventory");
         BtnCloseInventory   = GameObject.Find("HUD_Inventory_Close").GetComponent<Button>();
@@ -131,6 +135,8 @@ public class Hud : MonoBehaviour
         //Auto
         SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
+        //Gallery
+        BtnOpenGallery.onClick.AddListener(OpenGallery);
         //Inventory
         BtnCloseInventory.onClick.AddListener(CloseInventory);
         BtnOpenInventory.onClick.AddListener(OpenInventory);
@@ -408,6 +414,10 @@ public class Hud : MonoBehaviour
             QuestElements[i].SetQuestInfo(actor, info);
         }
         return;
+    }
+    //Gallery
+    void OpenGallery() {
+        SceneManager.LoadScene("Gallery", LoadSceneMode.Single);
     }
     // Inventory ----------------------------------------------------------------------------------------
     void OpenInventory() {
