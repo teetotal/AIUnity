@@ -156,8 +156,10 @@ public class ActorController : MonoBehaviour
     private AnimationContext mAnimationContext = new AnimationContext(); 
     private float mTimer = 0;
     public Actor mActor;      
+    private VehicleController? mVehicleController;
     private bool mLazyInitFlag = false;  
     private const string L10N_LEVEL_UP = "LEVEL_UP";
+    private const string L10N_GET_IN_VEHICLE_FAILURE = "GET_IN_VEHICLE_FAILURE";
     
     public bool Init(string name, Actor actor) {
         if(name == string.Empty || actor == null)
@@ -272,6 +274,10 @@ public class ActorController : MonoBehaviour
         if(mIsFollowingActor && mHud != null)
             mHud.SetState(string.Format("{0}. {1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
     }
+    private void AddHudState(string sz) {
+        if(mIsFollowingActor && mHud != null)
+            mHud.SetState(sz);
+    }
     private void ResetHudState() {
         if(mIsFollowingActor && mHud != null)
             mHud.SetState("...");
@@ -363,6 +369,31 @@ public class ActorController : MonoBehaviour
                 SetHudQuest();
                 actor.Loop_Levelup();
             }            
+            break;
+            case Actor.LOOP_STATE.GET_IN_VEHICLE:
+            {
+                string[] targetArr = mActor.GetTaskContext().target.objectName.Split(':');
+                string vehicle = targetArr[0];
+                string destination = targetArr[1];
+
+                GameObject target = GameObject.Find(vehicle);
+                if(target == null) {        
+                    throw new Exception("Invalid GameObject Name " +vehicle);
+                }
+
+                mVehicleController = target.GetComponent<VehicleController>();
+                if(!mVehicleController.GetIn(this.gameObject, StringToVector3(destination))) {
+                    AddHudState(L10nHandler.Instance.Get(L10N_GET_IN_VEHICLE_FAILURE));
+                    mActor.Loop_Release();
+                }
+            }
+            break;
+            case Actor.LOOP_STATE.GET_OFF_VEHICLE:
+            {
+                if(mVehicleController == null)
+                    throw new Exception("mVehicleController must be assigned");
+                mVehicleController.GetOff();
+            }
             break;
             case Actor.LOOP_STATE.LEVELUP:
             {
@@ -676,4 +707,20 @@ public class ActorController : MonoBehaviour
             mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount(), isOverlap);
         }
     }    
+    private Vector3 StringToVector3(string target) {
+        string[] arr = target.Split('.');
+        if(arr.Length == 1) {
+            return GameObject.Find(arr[0]).transform.position;
+        } else if(arr.Length == 3) {
+            return new Vector3(float.Parse(arr[0]), float.Parse(arr[1]), float.Parse(arr[2]));
+        }
+        throw new Exception("Invalid destination. " + target);
+    }
+    public void OnArriveVehicle() {
+        mActor.Loop_Chain();
+    }
+    public void OnGetOffVehicle() {
+        mVehicleController = null;
+        mActor.Loop_Chain();
+    }
 }

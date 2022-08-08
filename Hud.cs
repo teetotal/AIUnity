@@ -70,7 +70,7 @@ public class Hud : MonoBehaviour
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
     private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel;
-    private Button BtnOpenGallery, BtnCloseInventory, BtnOpenInventory, BtnAuto;
+    private Button Btn_1, BtnOpenGallery, BtnCloseInventory, BtnOpenInventory, BtnAuto;
     private Button BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
     private Button BtnItemUse, BtnItemClose;
     private bool mIsAuto = false;
@@ -113,6 +113,8 @@ public class Hud : MonoBehaviour
         VillageLevelProgress= GameObject.Find("HUD_VillageLevelProgress").GetComponent<Slider>();  
         //auto
         BtnAuto             = GameObject.Find("HUD_Auto").GetComponent<Button>();
+        //Bottom Buttons
+        Btn_1               = GameObject.Find("HUD_BTN_1").GetComponent<Button>();
         //Gallery
         BtnOpenGallery      =   GameObject.Find("HUD_Gallery_Open").GetComponent<Button>();
         //Inventory
@@ -135,6 +137,8 @@ public class Hud : MonoBehaviour
         //Auto
         SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
+        //Buttons ------------------------------------------------------------------------
+        Btn_1.onClick.AddListener(OnBtn1);
         //Gallery
         BtnOpenGallery.onClick.AddListener(OpenGallery);
         //Inventory
@@ -415,9 +419,14 @@ public class Hud : MonoBehaviour
         }
         return;
     }
-    //Gallery
+    //Buttons ------------------------------------------------------------------------------------------
+    void OnBtn1() {
+        //VehicleController p = GameObject.Find("Taxi").GetComponent<VehicleController>();
+        //p.GetIn(mGamePlayController.GetFollowActor().gameObject);
+    }
     void OpenGallery() {
-        SceneManager.LoadScene("Gallery", LoadSceneMode.Single);
+        //VehicleController p = GameObject.Find("Taxi").GetComponent<VehicleController>();
+        //p.GetOff();
     }
     // Inventory ----------------------------------------------------------------------------------------
     void OpenInventory() {
