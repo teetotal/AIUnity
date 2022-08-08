@@ -8,8 +8,9 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 public class GamePlayController : MonoBehaviour
 {
     public enum ANIMATION_ID : int {
-        Invalid = -5,
+        Invalid = -6,
         Min,
+        Laziness,
         Disappointed,
         Levelup,
         Walk,
@@ -118,11 +119,12 @@ public class GamePlayController : MonoBehaviour
             Actor actor = mActors[p.Key];   
             if(actor.IsAutoTakeable()) {
                 double duration = CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount;
-                if( actor.mType == ManagedActorType && 
+                if( //actor.mType == ManagedActorType && 
                     actor.GetTaskContext().lastCount > 0 && 
                     duration <= actor.mInfo.laziness //check laziness
                 ) {        
-                    //두리번 거리는 animation 실행 하게 해야함.            
+                    //두리번 거리는 animation 실행 하게 해야함.    
+                    GetActorController(p.Key).SetAnimation("Laziness");
                     continue;
                 }
                 
@@ -218,11 +220,6 @@ public class GamePlayController : MonoBehaviour
     }
     IEnumerator LoadAsyncScene(string scene)
     {
-        // The Application loads the Scene in the background as the current Scene runs.
-        // This is particularly good for creating loading screens.
-        // You could also load the Scene by using sceneBuildIndex. In this case Scene2 has
-        // a sceneBuildIndex of 1 as shown in Build Settings.
-
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
 
         // Wait until the asynchronous scene fully loads

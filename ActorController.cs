@@ -565,12 +565,10 @@ public class ActorController : MonoBehaviour
             break;
             case MOVING_STATE.READY_MOVING:
             {
-                mTimer += Time.deltaTime;
-                if(mTimer > mDefaultWaitTimeMin) {
+                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName("Idle")) {
                     mAgent.ResetPath();                    
                     mMovingState = MOVING_STATE.MOVING;
                     SetAnimation("Walk");
-                    mTimer = 0;
                 }
             }
             break;
@@ -638,8 +636,8 @@ public class ActorController : MonoBehaviour
     public void SetAnimation(string animation) {     
         if(mGamePlayController != null && mAnimator != null) {
             int id = mGamePlayController.GetAnimationId(animation);   
-            if((int)GamePlayController.ANIMATION_ID.Invalid < id) {            
-                mAnimator.SetInteger(AnimationId, id);                
+            if((int)GamePlayController.ANIMATION_ID.Invalid < id) {              
+                mAnimator.SetInteger(AnimationId, id);
             }
         }        
     }   
