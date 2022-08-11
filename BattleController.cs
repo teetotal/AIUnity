@@ -235,9 +235,20 @@ public class BattleController : MonoBehaviour
         TextAsset szScript = Resources.Load<TextAsset>("Config/script");
         TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");    
         TextAsset szVillage = Resources.Load<TextAsset>("Config/village");       
-        TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");         
+        TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");     
+        TextAsset szVehicle = Resources.Load<TextAsset>("Config/vehicle");        
 
-        if(!Loader.Instance.Load(szSatisfaction.text, szTask.text, szActor.text, szItem.text, szLevel.text, szQuest.text, szScript.text, szScenario.text, szVillage.text, szL10n.text)) {
+        if(!Loader.Instance.Load(   szSatisfaction.text, 
+                                    szTask.text, 
+                                    szActor.text, 
+                                    szItem.text, 
+                                    szLevel.text, 
+                                    szQuest.text, 
+                                    szScript.text, 
+                                    szScenario.text, 
+                                    szVillage.text, 
+                                    szL10n.text,
+                                    szVehicle.text)) {
             Debug.Log("Failure Loading config");
             return false;
         }

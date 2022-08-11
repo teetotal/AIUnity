@@ -322,7 +322,8 @@ public class ActorController : MonoBehaviour
                 //Script
                 SetMessage(GetScript(mActor.GetTargetActor(), mActor.GetCurrentTaskId()));
                 //Animation
-                if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) throw new Exception("SetCurrentTaskAnimation Failure");                                
+                if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) 
+                    throw new Exception("SetCurrentTaskAnimation Failure. " + mActor.mUniqueId);                                
             }
             break;
             case Actor.LOOP_STATE.RESERVED:
@@ -355,19 +356,19 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.DO_TASK:
             {
                 //ResetHudState();
-                SetLevelProgress();
+                //SetLevelProgress();
                 SetHudSatisfaction();
                 SetHudQuest();
-                actor.Loop_Levelup();
+                actor.Loop_Chain();
             }            
             break;
             case Actor.LOOP_STATE.AUTO_DO_TASK:
             {
                 mMovingState = MOVING_STATE.IDLE;
                 SetHudSatisfaction();
-                SetLevelProgress();
+                //SetLevelProgress();
                 SetHudQuest();
-                actor.Loop_Levelup();
+                actor.Loop_Chain();
             }            
             break;
             case Actor.LOOP_STATE.GET_IN_VEHICLE:
@@ -398,9 +399,12 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.LEVELUP:
             {
                 SetHudLevel();
+                
                 //levelup 모션 처리      
                 SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));                       
+                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));      
+                
+                actor.Loop_Release();                 
             }            
             break;
             case Actor.LOOP_STATE.REFUSAL:
@@ -410,6 +414,7 @@ public class ActorController : MonoBehaviour
             break;            
             case Actor.LOOP_STATE.RELEASE:
             {
+                SetHudLevel();
                 mMovingState = MOVING_STATE.IDLE;
                 actor.Loop_Ready();
             }            
