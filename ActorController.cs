@@ -383,7 +383,9 @@ public class ActorController : MonoBehaviour
                 }
 
                 mVehicleController = target.GetComponent<VehicleController>();
-                if(!mVehicleController.GetIn(this.gameObject, StringToVector3(destination))) {
+                Vector3 dest = StringToVector3(destination);
+                if(mVehicleController.CheckDistance(dest)) {
+                    mVehicleController.GetIn(this.gameObject, dest);
                     AddHudState(L10nHandler.Instance.Get(L10N_GET_IN_VEHICLE_FAILURE));
                     mActor.Loop_Release();
                 }
@@ -713,7 +715,7 @@ public class ActorController : MonoBehaviour
         }
     }    
     private Vector3 StringToVector3(string target) {
-        string[] arr = target.Split('.');
+        string[] arr = target.Split(',');
         if(arr.Length == 1) {
             return GameObject.Find(arr[0]).transform.position;
         } else if(arr.Length == 3) {

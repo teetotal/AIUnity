@@ -1,8 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-
+using ENGINE.GAMEPLAY.MOTIVATION;
 public class VehicleController : MonoBehaviour
 {
     private Animator mAnimator;
@@ -28,17 +26,21 @@ public class VehicleController : MonoBehaviour
     {
         if(!mIsIdle) {
             float dist = Vector3.Distance(transform.position, mDestination); 
+            Debug.Log(string.Format("{0} / {1} {2}", dist, mInitDistance, mNavMeshAgent.remainingDistance));
             if (dist < mInitDistance && mNavMeshAgent.remainingDistance == 0) { //Arrived.
                 mIsIdle = true;
                 mNavMeshAgent.ResetPath();
                 mAnimator.SetBool(ANIMATION_KEY, mIsIdle);
-                mActor.GetComponent<ActorController>().OnArriveVehicle();
+                
+                if(mActor != null)
+                    mActor.GetComponent<ActorController>().OnArriveVehicle();
+
+                VehicleHandler.Instance.SetMoving(this.gameObject.name, false);
             } 
         }
     }
-    private bool SetInitDistance(Vector3 target) {
-        mInitDistance = Vector3.Distance(transform.position, target); 
-        if(mInitDistance < 8) {
+    public bool CheckDistance(Vector3 target) {
+        if(Vector3.Distance(gameObject.transform.position, target) < 10) {
             return false;
         }
         return true;
@@ -46,21 +48,21 @@ public class VehicleController : MonoBehaviour
     public void SetDestination(Vector3 target) {
         mIsIdle = false;
         mDestination = target;
+        mInitDistance = Vector3.Distance(transform.position, mDestination); 
 
         mNavMeshAgent.destination = mDestination;
         mAnimator.SetBool(ANIMATION_KEY, mIsIdle);
+
+        VehicleHandler.Instance.SetMoving(this.gameObject.name, true);
     }
 
-    public bool GetIn(GameObject actor, Vector3 target) {
-        if(!SetInitDistance(target)) 
-            return false;
+    public void GetIn(GameObject actor, Vector3 target) {
         mActor = actor;
         mActor.GetComponent<NavMeshAgent>().enabled = false;
         mActor.transform.position = mTransform.position;
         mActor.transform.SetParent(mTransform);
         mActor.SetActive(false);        
         SetDestination(target);
-        return true;
     }
     public void GetOff() {
         mActor.SetActive(true);

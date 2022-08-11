@@ -35,6 +35,7 @@ public class GamePlayController : MonoBehaviour
     private float mTimer = 0;
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
+    private Dictionary<string, VehicleController> mVehicles = new Dictionary<string, VehicleController>();
     private ActorController? mFollowActorObject;
     public float VisibleDistance = 10.0f;
     public float VisibleDistanceBack = 3.0f;
@@ -68,8 +69,11 @@ public class GamePlayController : MonoBehaviour
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
+
+        //Vehicle
+        VehicleHandler.Instance.SetFnHangAround(FnHangAround);
+        CreateVehicles();
     }
-   
     private void Update() {
         float deltaTime = Time.deltaTime;        
         DialogueHandler.Instance.Update(deltaTime);
@@ -114,6 +118,8 @@ public class GamePlayController : MonoBehaviour
             if(HudInstance != null)
                 HudInstance.SetState(L10nHandler.Instance.Get(L10N_UPDATE_MARKET_PRICE));
         }
+        //vehicle
+        VehicleHandler.Instance.Update();
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];   
@@ -211,7 +217,39 @@ public class GamePlayController : MonoBehaviour
     public ActorController? GetFollowActor() {
         return mFollowActorObject;
     }
-    //Scene
+    //Vehicle -------------------------------------------------------------------------
+    private void CreateVehicles() {
+        var vehs = VehicleHandler.Instance.GetAll();
+        foreach(var p in vehs) {
+            GameObject obj = Instantiate(Resources.Load<GameObject>(p.Value.prefab), 
+                        GetPostionFromString(p.Value.positions[0].position), 
+                        GetRotationFromString(p.Value.positions[0].rotation)
+                    );
+            obj.name = p.Value.vehicleId;
+            mVehicles.Add(p.Key, obj.GetComponent<VehicleController>()); 
+        }
+    } 
+    private bool FnHangAround(string vehicleId, string position, string rotation) {
+        Debug.Log("OnHangAround");
+        Vector3 dest = GetPostionFromString(position);
+        if(mVehicles[vehicleId].CheckDistance(dest)) {
+            mVehicles[vehicleId].SetDestination(dest);
+            return true;
+        }
+        else {
+            Debug.Log(string.Format("Vehicle hang around failure {0}, {1} , {2}", vehicleId, position, rotation));
+            return false;
+        }
+    }
+    private Vector3 GetPostionFromString(string sz) {
+        string[] szPosition = sz.Split(',');
+        return new Vector3(float.Parse(szPosition[0]),float.Parse(szPosition[1]), float.Parse(szPosition[2]));
+    }
+    private Quaternion GetRotationFromString(string sz) {
+        string[] szRotation = sz.Split(',');
+        return Quaternion.Euler(float.Parse(szRotation[0]), float.Parse(szRotation[1]), float.Parse(szRotation[2]));
+    }
+    //Scene ---------------------------------------------------------------------------
     public void ChangeScene(Actor actor, string scene) {
         var followActor = GetFollowActor();
         if(followActor != null && followActor.mActor.mUniqueId == actor.mUniqueId) {
