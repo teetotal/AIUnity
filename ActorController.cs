@@ -387,7 +387,6 @@ public class ActorController : MonoBehaviour
                 if(mVehicleController.CheckDistance(dest)) {
                     mVehicleController.GetIn(this.gameObject, dest);
                     AddHudState(L10nHandler.Instance.Get(L10N_GET_IN_VEHICLE_FAILURE));
-                    mActor.Loop_Release();
                 }
             }
             break;

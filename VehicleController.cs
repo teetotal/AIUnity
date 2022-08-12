@@ -26,7 +26,7 @@ public class VehicleController : MonoBehaviour
     {
         if(!mIsIdle) {
             float dist = Vector3.Distance(transform.position, mDestination); 
-            Debug.Log(string.Format("{0} / {1} {2}", dist, mInitDistance, mNavMeshAgent.remainingDistance));
+            //Debug.Log(string.Format("{0} / {1} {2}", dist, mInitDistance, mNavMeshAgent.remainingDistance));
             if (dist < mInitDistance && mNavMeshAgent.remainingDistance == 0) { //Arrived.
                 mIsIdle = true;
                 mNavMeshAgent.ResetPath();
