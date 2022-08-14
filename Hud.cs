@@ -552,7 +552,8 @@ public class Hud : MonoBehaviour
         mHUDItemContext.actor.UseItemFromInventory(mHUDItemContext.itemId);
         CloseItem();
         OnInventoryCategoryItem();
-        
+        //HUD를 통해 invoke하는 경우는 follower밖에 없다.
+        SetSatisfaction(mGamePlayController.GetFollowActor().mActor.GetSatisfactions());
     }
     private void CloseItem() {
         ItemPanel.SetActive(false);

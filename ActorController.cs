@@ -317,7 +317,7 @@ public class ActorController : MonoBehaviour
             {
                 //Script
                 SetMessage(GetScript(mActor.GetTargetActor(), mActor.GetCurrentTaskId()));
-                //Animation
+                //Animation.
                 if(!SetCurrentTaskAnimation(STATE_ANIMATION_CALLBACK.TASK)) 
                     throw new Exception("SetCurrentTaskAnimation Failure. " + mActor.mUniqueId);                                
             }
@@ -398,11 +398,10 @@ public class ActorController : MonoBehaviour
             {
                 SetHudLevel();
                 
-                //levelup 모션 처리      
+                //levelup 모션 처리    
+                mAnimationContext.Reset();  
                 SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));      
-                
-                actor.Loop_Release();                 
+                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));                
             }            
             break;
             case Actor.LOOP_STATE.REFUSAL:
@@ -506,7 +505,7 @@ public class ActorController : MonoBehaviour
             case STATE_ANIMATION_CALLBACK.LEVELUP: 
             {
                 SetHudLevel();                  
-                mActor.Loop_Chain();
+                mActor.Loop_Release();
             }
             break;                      
             case STATE_ANIMATION_CALLBACK.DISAPPOINTED:
