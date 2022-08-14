@@ -125,13 +125,16 @@ public class GamePlayController : MonoBehaviour
             Actor actor = mActors[p.Key];   
             if(actor.IsAutoTakeable()) {
                 double duration = CounterHandler.Instance.GetCount() - actor.GetTaskContext().lastCount;
+                var actorController = GetActorController(p.Key);
                 if( //actor.mType == ManagedActorType && 
                     actor.GetTaskContext().lastCount > 0 && 
                     duration <= actor.mInfo.laziness //check laziness
                 ) {        
                     //두리번 거리는 animation 실행 하게 해야함.    
-                    GetActorController(p.Key).SetAnimation("Laziness");
+                    actorController.SetAnimation("Laziness");
                     continue;
+                } else {
+                    actorController.SetAnimation("Idle");
                 }
                 
                 if(!HudInstance.IsAuto() && FollowActorId == p.Key) {

@@ -32,10 +32,12 @@ public class VehicleController : MonoBehaviour
                 mNavMeshAgent.ResetPath();
                 mAnimator.SetBool(ANIMATION_KEY, mIsIdle);
                 
-                if(mActor != null)
+                if(mActor != null) {
+                    VehicleHandler.Instance.Leave(this.gameObject.name, mActor.name);
                     mActor.GetComponent<ActorController>().OnArriveVehicle();
-
-                VehicleHandler.Instance.SetMoving(this.gameObject.name, false);
+                } else {
+                    VehicleHandler.Instance.Arrive(this.gameObject.name);
+                }
             } 
         }
     }
@@ -53,7 +55,7 @@ public class VehicleController : MonoBehaviour
         mNavMeshAgent.destination = mDestination;
         mAnimator.SetBool(ANIMATION_KEY, mIsIdle);
 
-        VehicleHandler.Instance.SetMoving(this.gameObject.name, true);
+        VehicleHandler.Instance.SetMoving(this.gameObject.name);
     }
 
     public void GetIn(GameObject actor, Vector3 target) {

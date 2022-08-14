@@ -270,10 +270,6 @@ public class ActorController : MonoBehaviour
             SetHudSatisfaction();
         }
     } 
-    private void SetHudState() {
-        if(mIsFollowingActor && mHud != null)
-            mHud.SetState(string.Format("{0}. {1}", mActor.GetCurrentTaskTitle(), mActor.GetTaskString()));
-    }
     private void AddHudState(string sz) {
         if(mIsFollowingActor && mHud != null)
             mHud.SetState(sz);
@@ -386,6 +382,7 @@ public class ActorController : MonoBehaviour
                 Vector3 dest = StringToVector3(destination);
                 if(mVehicleController.CheckDistance(dest)) {
                     mVehicleController.GetIn(this.gameObject, dest);
+                } else {
                     AddHudState(L10nHandler.Instance.Get(L10N_GET_IN_VEHICLE_FAILURE));
                 }
             }
@@ -475,7 +472,7 @@ public class ActorController : MonoBehaviour
             }
             break;
         }
-        SetHudState();
+        AddHudState(mActor.GetCurrentTaskTitle());
     }
     private void Arrive(){
         SetAnimation(StopAnimation);

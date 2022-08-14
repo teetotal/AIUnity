@@ -45,7 +45,7 @@ public class TaskElement : MonoBehaviour
             if(actor == null)
                 return;
             mFn.SetTaskString();
-            if(!TaskHandler.Instance.CheckSatisfaction(actor.mActor, mFn) || !TaskHandler.Instance.CheckRef(mFn)) {
+            if(!TaskHandler.Instance.CheckSatisfaction(actor.mActor, mFn) || !TaskHandler.Instance.CheckRef(mFn) || !TaskHandler.Instance.CheckTarget(mFn, actor.mActor)) {
                 Btn.enabled = false;
                 Text2.text = "<s>" + mFn.mTaskString + "</s>";
                 Btn.GetComponent<Image>().color = colorDisable;
