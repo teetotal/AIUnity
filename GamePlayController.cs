@@ -26,6 +26,7 @@ public class GamePlayController : MonoBehaviour
         Headbang,
         HandUp,
         Sitting,
+        DancingGroup,
         Max
     }
    
@@ -233,14 +234,12 @@ public class GamePlayController : MonoBehaviour
         }
     } 
     private bool FnHangAround(string vehicleId, string position, string rotation) {
-        Debug.Log("OnHangAround");
         Vector3 dest = GetPostionFromString(position);
         if(mVehicles[vehicleId].CheckDistance(dest)) {
             mVehicles[vehicleId].SetDestination(dest);
             return true;
         }
         else {
-            Debug.Log(string.Format("Vehicle hang around failure {0}, {1} , {2}", vehicleId, position, rotation));
             return false;
         }
     }

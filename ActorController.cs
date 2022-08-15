@@ -68,9 +68,9 @@ public class AnimationContext {
         lastTime = DateTime.Now;
         return true;
     }
-    public bool Increase() {
+    public bool Increase(float clipLength) {
         TimeSpan span = DateTime.Now - lastTime;
-        if(span.TotalMilliseconds < 900)
+        if(span.TotalMilliseconds < clipLength * 1000)
             return false;
         count ++;
         lastTime = DateTime.Now;
@@ -107,6 +107,7 @@ public class ActorController : MonoBehaviour
         IDLE,        
         READY_MOVING,
         MOVING,
+        STOP_MOVING,
         APPROCHING,        
         ANIMATION,
         ANIMATION_STOP,
@@ -154,7 +155,6 @@ public class ActorController : MonoBehaviour
     //private Queue<Actor.CALLBACK_TYPE> mCallbackQueue = new Queue<Actor.CALLBACK_TYPE>();    
     private MOVING_STATE mMovingState = MOVING_STATE.IDLE;
     private AnimationContext mAnimationContext = new AnimationContext(); 
-    private float mTimer = 0;
     public Actor mActor;      
     private VehicleController? mVehicleController;
     private bool mLazyInitFlag = false;  
@@ -456,8 +456,7 @@ public class ActorController : MonoBehaviour
                 mTargetPositionRandom = ApprochRange;
                 if(!SetApproching())
                     throw new Exception("SetApproching Failure");
-                mMovingState = MOVING_STATE.APPROCHING;
-                mTimer = 0;                        
+                mMovingState = MOVING_STATE.APPROCHING;                  
             break;
             default:
             { 
@@ -564,14 +563,16 @@ public class ActorController : MonoBehaviour
             case MOVING_STATE.ANIMATION: 
             {
                 if(mAnimationContext.animationName.Length > 0 && mAnimator != null) {
-                    if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(mAnimationContext.animationName) && 
-                        mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) 
+                    AnimatorStateInfo aniInfo = mAnimator.GetCurrentAnimatorStateInfo(0);
+
+                    if( aniInfo.IsName(mAnimationContext.animationName) && 
+                        aniInfo.normalizedTime >= 1f) 
                     {  
                         //앉는 자세 위치 고정을 위해
                         if(mApprochingContext.enable)        
                             mApprochingContext.Release();
 
-                        if(mAnimationContext.Increase()) {
+                        if(mAnimationContext.Increase(aniInfo.length)) {
                             SetAnimation(StopAnimation);                            
                             mMovingState = MOVING_STATE.ANIMATION_STOP; 
                         }
@@ -598,7 +599,7 @@ public class ActorController : MonoBehaviour
             break;
             case MOVING_STATE.READY_MOVING:
             {
-                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName("Idle")) {
+                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation)) {
                     mAgent.ResetPath();                    
                     mMovingState = MOVING_STATE.MOVING;
                     SetAnimation("Walk");
@@ -607,27 +608,32 @@ public class ActorController : MonoBehaviour
             break;
             case MOVING_STATE.MOVING:
             {
-                if(GetDistance() <  mTargetPositionRandom) {
-                    mTimer = 0;         
+                if(GetDistance() <  mTargetPositionRandom) {   
                     mAgent.ResetPath();             
                     mAgent.isStopped = true;
-                    //SetAnimation(StopAnimation);
-                    //mState = STATE.START_TASK;   
+                    
                     if(mTarget.isPositionOnly) {                        
                         if(!SetApproching())
                             throw new Exception("Set Approching Failure");
                         mMovingState = MOVING_STATE.APPROCHING;
-                        mTimer = 0;
                     } else {     
-                        //lookat
-                        transform.LookAt(mTarget.transform);                
-                        mTarget.Release();
-                        mMovingState = MOVING_STATE.IDLE;
-                        Arrive(); 
+                        transform.LookAt(mTarget.transform); 
+                        SetAnimation(StopAnimation);
+                        mMovingState = MOVING_STATE.STOP_MOVING;
                     }                    
                 } else {
                     mAgent.destination = GetDestination();
                 }            
+            }
+            break;
+            case MOVING_STATE.STOP_MOVING:
+            {
+                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation)) {
+                                   
+                    mTarget.Release();
+                    mMovingState = MOVING_STATE.IDLE;
+                    Arrive(); 
+                }
             }
             break;
             case MOVING_STATE.APPROCHING:
@@ -636,12 +642,8 @@ public class ActorController : MonoBehaviour
                 transform.position = Vector3.Lerp(mApprochingContext.fromPosition, mApprochingContext.toPosition, rate);
                 transform.LookAt(mApprochingContext.toPosition);
                 if(rate >= 1) {              
-                    mTimer = 0;
-                    //SetAnimation(StopAnimation);
-                    //SetAnimationContext(StopAnimation, 1, STATE_ANIMATION_CALLBACK.APPROCHING);
-                    mTarget.Release();
-                    mMovingState = MOVING_STATE.IDLE;
-                    Arrive(); 
+                    SetAnimation(StopAnimation);
+                    mMovingState = MOVING_STATE.STOP_MOVING;
                 }
             }
             break;
