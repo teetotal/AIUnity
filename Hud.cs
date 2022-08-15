@@ -49,8 +49,9 @@ public class Hud : MonoBehaviour
     public Vector2 TaskSize = new Vector2(500, 400);
     public Vector2 InventorySize = new Vector2(600, 500);
     public Vector2 ItemSize = new Vector2(200, 300);
+    public float ItemAcquisitionImageSize = 150;
 
-    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText, VillageNameText, VillageLevelText, ItemText;    
+    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
@@ -69,11 +70,14 @@ public class Hud : MonoBehaviour
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
     private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
-    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel, ItemAcquisitionPanel, ItemAcquisitionImage;
+    private Animator ItemAcquisitionAnimator;
     private Button Btn_1, BtnOpenGallery, BtnCloseInventory, BtnOpenInventory, BtnAuto;
     private Button BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
     private Button BtnItemUse, BtnItemClose;
     private bool mIsAuto = false;
+    private bool mItemAcquisitionEnable = false;
+    private float mItemAcquisitionTimer = 0;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
@@ -92,6 +96,7 @@ public class Hud : MonoBehaviour
         Task        = this.transform.Find("Panel_Task").gameObject;
         InventoryPanel = this.transform.Find("Panel_Inventory").gameObject;
         ItemPanel   = this.transform.Find("Panel_Item").gameObject;
+        ItemAcquisitionPanel = this.transform.Find("Panel_Item_Acquisition").gameObject;
        
         //Satisfaction
         ContentSatisfaction = GameObject.Find("HUD_Content_Satisfaction");
@@ -130,6 +135,12 @@ public class Hud : MonoBehaviour
         ItemText            = GameObject.Find("HUD_Item_Text").GetComponent<TextMeshProUGUI>();
         BtnItemUse          = GameObject.Find("HUD_Item_Use").GetComponent<Button>();
         BtnItemClose        = GameObject.Find("HUD_Item_Close").GetComponent<Button>();
+
+        ItemAcquisitionImage = GameObject.Find("HUD_Item_Acquisition_Image");
+        ItemAcquisitionAnimator = ItemAcquisitionImage.GetComponent<Animator>();
+        ItemAcquisitionText  = GameObject.Find("HUD_Item_Acquisition_Text").GetComponent<TextMeshProUGUI>();
+
+        ItemAcquisitionPanel.SetActive(false);
         
         BtnItemUse.onClick.AddListener(InvokeItem);
         BtnItemClose.onClick.AddListener(CloseItem);
@@ -280,6 +291,10 @@ public class Hud : MonoBehaviour
         ItemPanel.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(ItemSize);
         ItemPanel.SetActive(false);
 
+        Vector2 itemAcquisitionSize = Scale.GetScaledSize(new Vector2(ItemAcquisitionImageSize, ItemAcquisitionImageSize));
+        ItemAcquisitionImage.GetComponent<RectTransform>().sizeDelta = itemAcquisitionSize;
+        ItemAcquisitionText.gameObject.GetComponent<RectTransform>().sizeDelta = new Vector2(itemAcquisitionSize.x * 1.2f, itemAcquisitionSize.y * 0.5f);
+        ItemAcquisitionText.gameObject.transform.position += new Vector3(0, itemAcquisitionSize.y * -0.7f, 0); 
     }
 
     // Update is called once per frame
@@ -292,6 +307,16 @@ public class Hud : MonoBehaviour
                 StateText.text = mHUDStateContext.ToString();   
             }
         }
+
+        //Item Acquisition
+        if(mItemAcquisitionEnable) {
+            mItemAcquisitionTimer += Time.deltaTime;
+            if(mItemAcquisitionTimer > 1.5f) {
+                mItemAcquisitionEnable = false;
+                ItemAcquisitionPanel.SetActive(false);
+            }
+        }
+
     }
     public void SetName(string name) {
         NameText.text = name;
@@ -527,9 +552,9 @@ public class Hud : MonoBehaviour
         for(int i = 0; i < ic.mObtainItemList.Count; i++) {
             if(i > 0)
                 sz += "\n";
-            sz += ItemHandler.Instance.GetItemInfo(ic.mObtainItemList[i].itemId).name;
+            sz += string.Format("{0} x{1}", ItemHandler.Instance.GetItemInfo(ic.mObtainItemList[i].itemId).name, ic.mObtainItemList[i].quantity);
         }
-        SetState(sz);
+        OpenItemAcquisition("", sz);
         ic.mObtainItemList.Clear();
     }
     // Item ----------------------------------------------------------------
@@ -557,5 +582,11 @@ public class Hud : MonoBehaviour
     }
     private void CloseItem() {
         ItemPanel.SetActive(false);
+    }
+    private void OpenItemAcquisition(string img, string text) {
+        ItemAcquisitionPanel.SetActive(true);
+        ItemAcquisitionText.text = text;
+        mItemAcquisitionEnable = true;
+        mItemAcquisitionTimer = 0;
     }
 }
