@@ -161,6 +161,11 @@ public class Hud : MonoBehaviour
         
         Init();
     }
+    private void Start() {
+        //village
+        var info = ActorHandler.Instance.GetVillageInfo(mGamePlayController.Village);
+        SetVillageName(info.name);
+    }
     public bool IsAuto() {
         return mIsAuto;
     }

@@ -205,7 +205,6 @@ public class ActorController : MonoBehaviour
         SetHudLevel();
         SetLevelProgress();
 
-        SetHudVillageName();
         SetHudVillageLevel();
         SetHudVillageProgression();
     }
@@ -241,12 +240,6 @@ public class ActorController : MonoBehaviour
     private void SetHudName() {
         if(mIsFollowingActor && mHud != null)
             mHud.SetName(mActor.mInfo.nickname);
-    } 
-    private void SetHudVillageName() {
-        if(mIsFollowingActor && mHud != null) {
-            var info = ActorHandler.Instance.GetVillageInfo(mActor.mInfo.village);
-            mHud.SetVillageName(info.name);
-        }
     } 
     private void SetHudVillageLevel() {
         if(mIsFollowingActor && mHud != null) {
@@ -301,7 +294,7 @@ public class ActorController : MonoBehaviour
             break;
             case Actor.LOOP_STATE.TASK_UI:
             if(mIsFollowingActor && mHud != null) {
-                mHud.SetTask(TaskHandler.Instance.GetTasks(actor, false));
+                mHud.SetTask(TaskHandler.Instance.GetTasks(actor, mGamePlayController.Village, false));
             }
             break;
             case Actor.LOOP_STATE.TAKE_TASK:           

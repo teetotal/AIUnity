@@ -29,7 +29,7 @@ public class GamePlayController : MonoBehaviour
         DancingGroup,
         Max
     }
-   
+    public string Village = "village1";
     public float Interval = 2;
     //NPC아닌 actor type
     public int ManagedActorType = 1;
@@ -71,9 +71,13 @@ public class GamePlayController : MonoBehaviour
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
 
+        //set village to follower
+        ActorHandler.Instance.GetActor(FollowActorId).SetVillage(Village);
+
         //Vehicle
         VehicleHandler.Instance.SetFnHangAround(FnHangAround);
         CreateVehicles();
+
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        
@@ -187,6 +191,9 @@ public class GamePlayController : MonoBehaviour
     }
     private bool CreateActors() {        
         foreach(var p in mActors) {
+            if(p.Value.mInfo.village != string.Empty && p.Value.mInfo.village != Village)
+                continue;
+
             string actorName = p.Key;
             Actor actor = p.Value;
             if(actor.position != null) {
@@ -270,6 +277,9 @@ public class GamePlayController : MonoBehaviour
         }
     }
     private bool Load() {
+        if(Loader.Instance.mInitialized)
+            return true;
+
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");
         TextAsset szTask = Resources.Load<TextAsset>("Config/task");
         TextAsset szActor = Resources.Load<TextAsset>("Config/actors");
