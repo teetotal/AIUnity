@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using ENGINE.GAMEPLAY;
 using ENGINE.GAMEPLAY.MOTIVATION;
 using TMPro;
 using System.Text;
+using System;
 using UnityEngine.SceneManagement;
 
 public class HUDStateContext {
@@ -82,6 +84,7 @@ public class Hud : MonoBehaviour
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
     private HUDItemContext mHUDItemContext = new HUDItemContext();
+    private TextMeshProUGUI mTimer;
 
     private void Awake() {
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
@@ -139,6 +142,8 @@ public class Hud : MonoBehaviour
         ItemAcquisitionImage = GameObject.Find("HUD_Item_Acquisition_Image");
         ItemAcquisitionAnimator = ItemAcquisitionImage.GetComponent<Animator>();
         ItemAcquisitionText  = GameObject.Find("HUD_Item_Acquisition_Text").GetComponent<TextMeshProUGUI>();
+        //Timer
+        mTimer  = GameObject.Find("HUD_Timer").GetComponent<TextMeshProUGUI>();
 
         ItemAcquisitionPanel.SetActive(false);
         
@@ -321,7 +326,14 @@ public class Hud : MonoBehaviour
                 ItemAcquisitionPanel.SetActive(false);
             }
         }
-
+        //timer
+        mTimer.text = GetTimerString();
+    }
+    private string GetTimerString() {
+        long count = CounterHandler.Instance.GetCount();
+        DateTime dt = new DateTime(1000,01,01);
+        dt = dt.AddMinutes(count);
+        return dt.ToShortTimeString();
     }
     public void SetName(string name) {
         NameText.text = name;

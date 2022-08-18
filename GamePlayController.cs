@@ -27,6 +27,9 @@ public class GamePlayController : MonoBehaviour
         HandUp,
         Sitting,
         DancingGroup,
+        Plant,
+        Harvest,
+        Tillage,
         Max
     }
     public string Village = "village1";
@@ -37,6 +40,8 @@ public class GamePlayController : MonoBehaviour
     private Dictionary<string, Actor> mActors = new Dictionary<string, Actor>();
     private Dictionary<string, ActorController> mActorObjects = new Dictionary<string, ActorController>();    
     private Dictionary<string, VehicleController> mVehicles = new Dictionary<string, VehicleController>();
+    //Farming
+    private Dictionary<string, GameObject> mFarmingObjects = new Dictionary<string, GameObject>();
     private ActorController? mFollowActorObject;
     public float VisibleDistance = 10.0f;
     public float VisibleDistanceBack = 3.0f;
@@ -82,7 +87,7 @@ public class GamePlayController : MonoBehaviour
         var farms = FarmingHandler.Instance.GetFarms(Village);
         if(farms != null)
             CreateFarms(farms);
-        FarmingHandler.Instance.SetCallback(OnFarmingPlant, OnFarmingComplete);
+        FarmingHandler.Instance.SetCallback(OnFarmingCallback);
 
     }
     private void Update() {
@@ -275,11 +280,32 @@ public class GamePlayController : MonoBehaviour
             obj.name = farm.farmId;
         }
     }
-    private void OnFarmingPlant(string farmId, string fieldId, string seedId) {
-        GameObject obj = Util.CreateChildObjectFromPrefab("Farming/TomatoPlant", fieldId);
-    }
-    private void OnFarmingComplete(string farmId, string fieldId, string seedId) {
-        Debug.Log("OnFarmComplete." + fieldId + seedId);
+    private void OnFarmingCallback(FarmingHandler.CALLBACK_TYPE type, string farmId, string fieldId, string seedId) {
+        ConfigFarming_Seed seed = FarmingHandler.Instance.GetSeedInfo(seedId);
+        switch(type) {
+            case FarmingHandler.CALLBACK_TYPE.PLANT: {
+                GameObject obj = Util.CreateChildObjectFromPrefab(seed.prefabPlant, fieldId);
+                mFarmingObjects[fieldId] = obj;
+                break;
+            }
+            case FarmingHandler.CALLBACK_TYPE.COMPLETE: {
+                mFarmingObjects[fieldId].transform.parent = null;
+                Destroy(mFarmingObjects[fieldId]);
+                mFarmingObjects.Remove(fieldId);
+                GameObject obj = Util.CreateChildObjectFromPrefab(seed.prefabIngredient, fieldId);
+                mFarmingObjects[fieldId] = obj;
+                break;
+            }
+            case FarmingHandler.CALLBACK_TYPE.HARVEST: {
+                mFarmingObjects[fieldId].transform.parent = null;
+                Destroy(mFarmingObjects[fieldId]);
+                mFarmingObjects.Remove(fieldId);
+                break;
+            }
+            default:
+                break;
+        }
+        
     }
     //Scene ---------------------------------------------------------------------------
     public void ChangeScene(Actor actor, string scene) {
