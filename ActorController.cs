@@ -130,7 +130,7 @@ public class ActorController : MonoBehaviour
     
     //config    
     public string UIPrefab = "ActorUI";    
-    public float ApprochRange = 3f;
+    public float ApprochRange = 1f;
     public string AnimationId = "AnimationId";
     public string StopAnimation = "Idle";
     public string DisappointedAnimation = "Disappointed";
@@ -372,7 +372,7 @@ public class ActorController : MonoBehaviour
                 }
 
                 mVehicleController = target.GetComponent<VehicleController>();
-                Vector3 dest = StringToVector3(destination);
+                Vector3 dest = Util.StringToVector3(destination);
                 if(mVehicleController.CheckDistance(dest)) {
                     mVehicleController.GetIn(this.gameObject, dest);
                 } else {
@@ -439,17 +439,37 @@ public class ActorController : MonoBehaviour
             case Actor.TASKCONTEXT_TARGET_TYPE.NON_TARGET:
             Arrive();
             break;
-            case Actor.TASKCONTEXT_TARGET_TYPE.POSITION:                        
+            case Actor.TASKCONTEXT_TARGET_TYPE.POSITION:      
+            {
+                if(p.position == null) {
+                    //포지션 할당
+                    Transform tf = GameObject.Find(p.objectName).transform;
+                    p.position = new Position(tf.position.x, tf.position.y, tf.position.z);
+                    p.lookAt = p.position;
+                }
                 mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
                 mTargetPositionRandom = ApprochRange;
-                mMovingState = MOVING_STATE.READY_MOVING;
+                if(GetDistance() < mTargetPositionRandom) {
+                    Arrive();
+                } else {
+                    mMovingState = MOVING_STATE.READY_MOVING;
+                }
+            }        
             break;
-            case Actor.TASKCONTEXT_TARGET_TYPE.FLY:
+            case Actor.TASKCONTEXT_TARGET_TYPE.FLY: {
+                if(p.position == null) {
+                    //포지션 할당
+                    Transform tf = GameObject.Find(p.objectName).transform;
+                    p.position = new Position(tf.position.x, tf.position.y, tf.position.z);
+                    p.lookAt = p.position;
+                }
+
                 mTarget.SetPostion(new Vector3(p.position.x, p.position.y, p.position.z));
                 mTargetPositionRandom = ApprochRange;
                 if(!SetApproching())
                     throw new Exception("SetApproching Failure");
                 mMovingState = MOVING_STATE.APPROCHING;                  
+            }
             break;
             default:
             { 
@@ -458,8 +478,12 @@ public class ActorController : MonoBehaviour
                     throw new Exception("Invalid GameObject Name " + p.objectName);
                 }
                 mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);                          
-                mTarget.SetTransform(target.transform);             
-                mMovingState = MOVING_STATE.READY_MOVING;
+                mTarget.SetTransform(target.transform);          
+                if(GetDistance() < mTargetPositionRandom) {
+                    Arrive();
+                } else {
+                    mMovingState = MOVING_STATE.READY_MOVING;
+                }
             }
             break;
         }
@@ -704,15 +728,7 @@ public class ActorController : MonoBehaviour
             mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount(), isOverlap);
         }
     }    
-    private Vector3 StringToVector3(string target) {
-        string[] arr = target.Split(',');
-        if(arr.Length == 1) {
-            return GameObject.Find(arr[0]).transform.position;
-        } else if(arr.Length == 3) {
-            return new Vector3(float.Parse(arr[0]), float.Parse(arr[1]), float.Parse(arr[2]));
-        }
-        throw new Exception("Invalid destination. " + target);
-    }
+    
     public void OnArriveVehicle() {
         mActor.Loop_Chain();
     }

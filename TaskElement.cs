@@ -45,7 +45,12 @@ public class TaskElement : MonoBehaviour
             if(actor == null)
                 return;
             mFn.SetTaskString();
-            if(!TaskHandler.Instance.CheckSatisfaction(actor.mActor, mFn) || !TaskHandler.Instance.CheckRef(mFn) || !TaskHandler.Instance.CheckTarget(mFn, actor.mActor)) {
+            if( !TaskHandler.Instance.CheckSatisfaction(actor.mActor, mFn) || 
+                !TaskHandler.Instance.CheckRef(mFn) || 
+                !TaskHandler.Instance.CheckTarget(mFn, actor.mActor) ||
+                !TaskHandler.Instance.CheckMaterialItems(actor.mActor, mFn) ||
+                !TaskHandler.Instance.CheckIntegrtion(actor.mActor, mFn)
+            ) {
                 Btn.enabled = false;
                 Text2.text = "<s>" + mFn.mTaskString + "</s>";
                 Btn.GetComponent<Image>().color = colorDisable;

@@ -78,6 +78,12 @@ public class GamePlayController : MonoBehaviour
         VehicleHandler.Instance.Init(FnHangAround, Village);
         CreateVehicles();
 
+        //Farming
+        var farms = FarmingHandler.Instance.GetFarms(Village);
+        if(farms != null)
+            CreateFarms(farms);
+        FarmingHandler.Instance.SetCallback(OnFarmingPlant, OnFarmingComplete);
+
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        
@@ -125,6 +131,8 @@ public class GamePlayController : MonoBehaviour
         }
         //vehicle
         VehicleHandler.Instance.Update();
+        //farming
+        FarmingHandler.Instance.Update(Village);
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];   
@@ -258,6 +266,21 @@ public class GamePlayController : MonoBehaviour
         string[] szRotation = sz.Split(',');
         return Quaternion.Euler(float.Parse(szRotation[0]), float.Parse(szRotation[1]), float.Parse(szRotation[2]));
     }
+    //Farming -------------------------------------------------------------------------
+    private void CreateFarms(List<ConfigFarming_Detail> p) {
+        for(int i = 0; i < p.Count; i++) {
+            ConfigFarming_Detail farm = p[i];
+            string[] position_rotation = farm.position.Split(':');
+            var obj = Util.CreateObjectFromPrefab(farm.prefab, Util.StringToVector3(position_rotation[0]), Util.StringToVector3(position_rotation[1]));
+            obj.name = farm.farmId;
+        }
+    }
+    private void OnFarmingPlant(string farmId, string fieldId, string seedId) {
+        GameObject obj = Util.CreateChildObjectFromPrefab("Farming/TomatoPlant", fieldId);
+    }
+    private void OnFarmingComplete(string farmId, string fieldId, string seedId) {
+        Debug.Log("OnFarmComplete." + fieldId + seedId);
+    }
     //Scene ---------------------------------------------------------------------------
     public void ChangeScene(Actor actor, string scene) {
         var followActor = GetFollowActor();
@@ -290,7 +313,9 @@ public class GamePlayController : MonoBehaviour
         TextAsset szScenario = Resources.Load<TextAsset>("Config/scenario");   
         TextAsset szVillage = Resources.Load<TextAsset>("Config/village");  
         TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");   
-        TextAsset szVehicle = Resources.Load<TextAsset>("Config/vehicle");          
+        TextAsset szVehicle = Resources.Load<TextAsset>("Config/vehicle");     
+        TextAsset szFarming = Resources.Load<TextAsset>("Config/farming");       
+        TextAsset szSeed = Resources.Load<TextAsset>("Config/seed");          
 
         if(!Loader.Instance.Load(   szSatisfaction.text, 
                                     szTask.text, 
@@ -302,7 +327,9 @@ public class GamePlayController : MonoBehaviour
                                     szScenario.text, 
                                     szVillage.text, 
                                     szL10n.text,
-                                    szVehicle.text
+                                    szVehicle.text,
+                                    szFarming.text,
+                                    szSeed.text
                                 )) {
             Debug.Log("Failure Loading config");
             return false;

@@ -226,6 +226,7 @@ public class BattleController : MonoBehaviour
         }
     }    
     bool Load() {
+        /*
         TextAsset szSatisfaction = Resources.Load<TextAsset>("Config/satisfactions");
         TextAsset szTask = Resources.Load<TextAsset>("Config/task");
         TextAsset szActor = Resources.Load<TextAsset>("Config/actors");
@@ -252,6 +253,7 @@ public class BattleController : MonoBehaviour
             Debug.Log("Failure Loading config");
             return false;
         }
+        */
         return true;
     }
 }
