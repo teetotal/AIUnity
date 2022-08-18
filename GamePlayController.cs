@@ -75,7 +75,7 @@ public class GamePlayController : MonoBehaviour
         ActorHandler.Instance.GetActor(FollowActorId).SetVillage(Village);
 
         //Vehicle
-        VehicleHandler.Instance.SetFnHangAround(FnHangAround);
+        VehicleHandler.Instance.Init(FnHangAround, Village);
         CreateVehicles();
 
     }
@@ -230,14 +230,14 @@ public class GamePlayController : MonoBehaviour
     }
     //Vehicle -------------------------------------------------------------------------
     private void CreateVehicles() {
-        var vehs = VehicleHandler.Instance.GetAll();
-        foreach(var p in vehs) {
-            GameObject obj = Instantiate(Resources.Load<GameObject>(p.Value.prefab), 
-                        GetPostionFromString(p.Value.positions[0].position), 
-                        GetRotationFromString(p.Value.positions[0].rotation)
+        var vehs = VehicleHandler.Instance.GetAll(Village);
+        for(int i = 0; i < vehs.Count; i++) {
+            GameObject obj = Instantiate(Resources.Load<GameObject>(vehs[i].prefab), 
+                        GetPostionFromString(vehs[i].positions[0].position), 
+                        GetRotationFromString(vehs[i].positions[0].rotation)
                     );
-            obj.name = p.Value.vehicleId;
-            mVehicles.Add(p.Key, obj.GetComponent<VehicleController>()); 
+            obj.name = vehs[i].vehicleId;
+            mVehicles.Add(vehs[i].vehicleId, obj.GetComponent<VehicleController>()); 
         }
     } 
     private bool FnHangAround(string vehicleId, string position, string rotation) {

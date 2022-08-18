@@ -21,17 +21,17 @@ public class TaskElement : MonoBehaviour
         Btn.onClick.AddListener(OnClick);
     }
     void OnClick() {
-        //Debug.Log("Task OnClick. " + mTaskId);
-        mHud.ReleaseTask();
+        //Debug.Log("Task OnClick. " + mFn.mTaskId);
         var actor = mGamePlayController.GetFollowActor();
         if(actor != null) {
             Actor.SET_TASK_ERROR err = actor.mActor.Loop_SetTask(mFn.mTaskId);
             switch(err) {
                 case Actor.SET_TASK_ERROR.SUCCESS:
-                break;
+                mHud.ReleaseTask();
+                return;
                 default:
                 Debug.Log(err);
-                actor.mActor.Loop_TaskUI();
+                //actor.mActor.Loop_TaskUI();
                 break;
             }
         }
