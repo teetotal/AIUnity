@@ -160,6 +160,8 @@ public class ActorController : MonoBehaviour
     private bool mLazyInitFlag = false;  
     private const string L10N_LEVEL_UP = "LEVEL_UP";
     private const string L10N_GET_IN_VEHICLE_FAILURE = "GET_IN_VEHICLE_FAILURE";
+    private const string L10N_STOCK_SELL = "STOCK_SELL";
+    private const string L10N_STOCK_BUY = "STOCK_BUY";
     
     public bool Init(string name, Actor actor) {
         if(name == string.Empty || actor == null)
@@ -428,6 +430,12 @@ public class ActorController : MonoBehaviour
                 if(mHud != null)
                     mHud.ObtainItem(mActor);
             }
+            break;
+            case Actor.LOOP_STATE.STOCK_SELL:
+                AddHudState(L10nHandler.Instance.Get(L10N_STOCK_SELL));
+            break;
+            case Actor.LOOP_STATE.STOCK_BUY:
+                AddHudState(L10nHandler.Instance.Get(L10N_STOCK_BUY));
             break;
         }
     }

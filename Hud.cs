@@ -40,6 +40,9 @@ public class HUDItemContext {
 }
 public class Hud : MonoBehaviour
 {
+    public bool HideQuest = false;
+    public bool HideSatisfaction = false;
+    public bool HideTask = false;
     public Vector2 Margin = new Vector2(10,10);
     public Vector2 TopLeftSize = new Vector2(200, 60);
     public Vector2 TopCenterSize = new Vector2(300, 200);
@@ -223,6 +226,8 @@ public class Hud : MonoBehaviour
         RectTransform leftRT = Left.GetComponent<RectTransform>();
         leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + Margin.y);
         leftRT.sizeDelta = new Vector2(Scale.GetScaledWidth(LeftWidth), safe.height - (Margin.y * 2));
+        if(HideQuest)
+            Left.SetActive(false);
 
         /*
         Right
@@ -232,6 +237,8 @@ public class Hud : MonoBehaviour
         float ActualRightWidth = Scale.GetScaledWidth(RightWidth);
         RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, safe.y + Margin.y);
         RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height - (Margin.y * 2));
+        if(HideSatisfaction)
+            Right.SetActive(false);
 
         /*
         Top Left
@@ -463,10 +470,7 @@ public class Hud : MonoBehaviour
     }
     //Buttons ------------------------------------------------------------------------------------------
     void OnBtn1() {
-        Actor actor = mGamePlayController.GetFollowActor().mActor;
-        StockActorOrder order = new StockActorOrder();
-        order.Set(false, actor, "Resource2", 10, 9);
-        StockMarketHandler.Instance.Order(order);
+        
     }
     void OpenGallery() {
         //VehicleController p = GameObject.Find("Taxi").GetComponent<VehicleController>();

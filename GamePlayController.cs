@@ -161,7 +161,8 @@ public class GamePlayController : MonoBehaviour
                 }
                 
                 if(!HudInstance.IsAuto() && FollowActorId == p.Key) {
-                    actor.Loop_TaskUI();
+                    if(!HudInstance.HideTask)
+                        actor.Loop_TaskUI();
                 } else if(actor.Loop_TakeTask() == false) {
                     actor.Loop_Ready();
                 }   
