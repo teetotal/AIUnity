@@ -89,6 +89,9 @@ public class GamePlayController : MonoBehaviour
             CreateFarms(farms);
         FarmingHandler.Instance.SetCallback(OnFarmingCallback);
 
+        //Stock
+        StockMarketHandler.Instance.Init();
+
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        
@@ -138,6 +141,8 @@ public class GamePlayController : MonoBehaviour
         VehicleHandler.Instance.Update();
         //farming
         FarmingHandler.Instance.Update(Village);
+        //Stock
+        StockMarketHandler.Instance.Update();
 
         foreach(var p in mActors) {
             Actor actor = mActors[p.Key];   

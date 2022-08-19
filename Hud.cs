@@ -463,8 +463,10 @@ public class Hud : MonoBehaviour
     }
     //Buttons ------------------------------------------------------------------------------------------
     void OnBtn1() {
-        //VehicleController p = GameObject.Find("Taxi").GetComponent<VehicleController>();
-        //p.GetIn(mGamePlayController.GetFollowActor().gameObject);
+        Actor actor = mGamePlayController.GetFollowActor().mActor;
+        StockActorOrder order = new StockActorOrder();
+        order.Set(false, actor, "Resource2", 10, 9);
+        StockMarketHandler.Instance.Order(order);
     }
     void OpenGallery() {
         //VehicleController p = GameObject.Find("Taxi").GetComponent<VehicleController>();
