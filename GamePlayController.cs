@@ -54,13 +54,16 @@ public class GamePlayController : MonoBehaviour
     private const string L10N_UPDATE_MARKET_PRICE = "UPDATE_MARKET_PRICE";
     
     // Start is called before the first frame update
+    private void Awake() {
+        if(!Load()) {
+            throw new System.Exception("Loading Failure");            
+        }
+    }
     void Start()
     {
         HudInstance = this.GetComponent<Hud>();
         
-        if(!Load()) {
-            throw new System.Exception("Loading Failure");            
-        }
+        
         //Actor생성
         mActors = ActorHandler.Instance.GetActors();
         if(mActors == null) {

@@ -43,6 +43,7 @@ public class Hud : MonoBehaviour
     public bool HideQuest = false;
     public bool HideSatisfaction = false;
     public bool HideTask = false;
+    public bool HideMenu = false;
     public Vector2 Margin = new Vector2(10,10);
     public Vector2 TopLeftSize = new Vector2(200, 60);
     public Vector2 TopCenterSize = new Vector2(300, 200);
@@ -216,6 +217,9 @@ public class Hud : MonoBehaviour
         float x = Scale.GetScaledWidth(BottomSize.x);
         bottomRT.sizeDelta = new Vector2(x, ((BottomSize.y / BottomSize.x) * x));
         bottomRT.anchoredPosition = new Vector2(0, safe.y);
+        if(HideMenu) {
+            Bottom.SetActive(false);
+        }
 
         /*
         Left

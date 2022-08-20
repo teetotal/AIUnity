@@ -30,4 +30,12 @@ public class Util {
         }
         return obj;
     }
+    public static GameObject CreateChildObjectFromPrefabUI(string prefabPath, GameObject parent) {
+        GameObject prefab = Resources.Load<GameObject>(prefabPath);
+        if(prefab == null) 
+            throw new Exception("Invalid prefab." + prefabPath);
+        GameObject obj = UnityEngine.Object.Instantiate(prefab);
+        obj.transform.SetParent(parent.transform);
+        return obj;
+    }
 }
