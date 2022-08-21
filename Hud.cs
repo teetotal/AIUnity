@@ -44,21 +44,23 @@ public class Hud : MonoBehaviour
     public bool HideSatisfaction = false;
     public bool HideTask = false;
     public bool HideMenu = false;
-    public bool HideSystem = false;
+    public bool HideCurrency = false;
     public Vector2 Margin = new Vector2(10,10);
-    public Vector2 TopLeftSize = new Vector2(200, 100);
-    public Vector2 TopCenterSize = new Vector2(300, 200);
-    public Vector2 TopRightSize = new Vector2(200, 40); 
+    public Vector2 TopLeftSize = new Vector2(200, 50);
+    public Vector2 TopCenterSize = new Vector2(300, 50);
+    public Vector2 TopRightSize = new Vector2(200, 50); 
     public float LeftWidth = 240;     
     public float RightWidth = 200;
     public Vector2 BottomSize = new Vector2(500, 60);
+    public Vector2 AlertSize = new Vector2(200, 80);
     public Vector2 AskSize = new Vector2(350, 300);
     public Vector2 TaskSize = new Vector2(500, 400);
     public Vector2 InventorySize = new Vector2(600, 500);
     public Vector2 ItemSize = new Vector2(200, 300);
+    public Vector2 TimerSize = new Vector2(200, 100);
     public float ItemAcquisitionImageSize = 150;
 
-    private TextMeshProUGUI NameText, LevelText, LevelProgressText, CurrencyText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
+    private TextMeshProUGUI NameText, LevelText, CurrencyText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
@@ -117,7 +119,6 @@ public class Hud : MonoBehaviour
 
         NameText            = GameObject.Find("HUD_Name").GetComponent<TextMeshProUGUI>();
         LevelText           = GameObject.Find("HUD_Level").GetComponent<TextMeshProUGUI>();
-        LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<TextMeshProUGUI>();
         StateText           = GameObject.Find("HUD_State").GetComponent<TextMeshProUGUI>();   
         LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
         CurrencyText        = GameObject.Find("HUD_Currency").GetComponent<TextMeshProUGUI>();  
@@ -230,7 +231,7 @@ public class Hud : MonoBehaviour
         = (240 / 1334) * w
         */
         RectTransform leftRT = Left.GetComponent<RectTransform>();
-        leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y + Margin.y);
+        leftRT.anchoredPosition = new Vector2(safe.x + Margin.x, safe.y);
         leftRT.sizeDelta = new Vector2(Scale.GetScaledWidth(LeftWidth), safe.height - (Margin.y * 2));
         if(HideQuest)
             Left.SetActive(false);
@@ -241,8 +242,8 @@ public class Hud : MonoBehaviour
         */
         RectTransform RightRT = Right.GetComponent<RectTransform>();
         float ActualRightWidth = Scale.GetScaledWidth(RightWidth);
-        RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, safe.y + Margin.y);
-        RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height - (Margin.y * 2));
+        RightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - ActualRightWidth, safe.y);
+        RightRT.sizeDelta = new Vector2(ActualRightWidth, safe.height - (Margin.y * 2) );
         if(HideSatisfaction)
             Right.SetActive(false);
 
@@ -265,6 +266,8 @@ public class Hud : MonoBehaviour
         topCenterRT.anchoredPosition = new Vector2(0, safe.y + safe.height - Margin.y);
         topCenterRT.sizeDelta = Scale.GetScaledSize(TopCenterSize);
 
+        GameObject.Find("HUD_VillageInfo").GetComponent<RectTransform>().sizeDelta = topCenterRT.sizeDelta;
+
         /*
         Top Right
         Left-Bottom
@@ -274,8 +277,11 @@ public class Hud : MonoBehaviour
         RectTransform topRightRT = TopRight.GetComponent<RectTransform>();
         topRightRT.sizeDelta = Scale.GetScaledSize(TopRightSize);
         topRightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - topRightRT.sizeDelta.x, safe.y + safe.height - Margin.y);
-        if(HideSystem)
+        if(HideCurrency)
             TopRight.SetActive(false);
+
+        //HUD Alert
+        GameObject.Find("HUD_Alert").GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(AlertSize);
         
         /*
         Ask
@@ -320,6 +326,11 @@ public class Hud : MonoBehaviour
         ItemAcquisitionImage.GetComponent<RectTransform>().sizeDelta = itemAcquisitionSize;
         ItemAcquisitionText.gameObject.GetComponent<RectTransform>().sizeDelta = new Vector2(itemAcquisitionSize.x * 1.2f, itemAcquisitionSize.y * 0.5f);
         ItemAcquisitionText.gameObject.transform.position += new Vector3(0, itemAcquisitionSize.y * -0.7f, 0); 
+
+        //Timer
+        RectTransform timerPanel  = this.transform.Find("Panel_Timer").gameObject.GetComponent<RectTransform>();;
+        timerPanel.anchoredPosition = new Vector2(safe.x, safe.y);
+        timerPanel.sizeDelta = Scale.GetScaledSize(TimerSize);
     }
 
     // Update is called once per frame
@@ -348,7 +359,7 @@ public class Hud : MonoBehaviour
         long count = CounterHandler.Instance.GetCount();
         DateTime dt = new DateTime(1000,01,01);
         dt = dt.AddMinutes(count);
-        return dt.ToShortTimeString();
+        return dt.ToLongTimeString();
     }
     public void SetName(string name) {
         NameText.text = name;
@@ -370,7 +381,6 @@ public class Hud : MonoBehaviour
     }
     public void SetLevelProgress(float v) {
         LevelProgress.value = v;
-        LevelProgressText.text = string.Format("{0}%", (int)(v * 100));
     }
     public void SetVillageLevelProgress(float v) {
         VillageLevelProgress.value = v;
@@ -386,8 +396,7 @@ public class Hud : MonoBehaviour
         var listCurrency = SatisfactionDefine.Instance.Get(SATISFACTION_TYPE.CURRENCY);
         CurrencyText.text = string.Empty;
         for(int i = 0; i < listCurrency.Count; i++) {
-            CurrencyText.text = string.Format("{0} {1}", 
-                                                listCurrency[i].title,
+            CurrencyText.text = string.Format("{0:#,0} <sup>+</sup>", 
                                                 satisfaction[listCurrency[i].satisfactionId].Value
                                             ); 
         }

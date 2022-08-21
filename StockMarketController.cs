@@ -3,25 +3,36 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+public class StockMarketContext {
+    public bool isSell;
+    public string resourceId = string.Empty;
+    public int quantity;
+    public float bid;
+    public void Reset() {
+        resourceId = string.Empty;
+        quantity = -1;
+        bid = -1;
+    }
+}
 public class StockMarketController : MonoBehaviour
 {
     public GamePlayController GamePlayController;
     public TextMeshProUGUI Txt, TxtPurchased, TxtSold;
-    public Button Sell;
-    public Button Buy;
     public GameObject STOCK_Scroll_Panel, STOCK_Gold_Info;
     public Vector2 STOCK_Gold_Info_Size = new Vector2(300, 100);
     public GameObject STOCK_Market_Price;
     public Vector2 STOCK_Market_Price_Size = new Vector2(600, 400);
     public GameObject STOCK_Order, STOCK_Order_Background;
 
-    public Button STOCK_Btn_Order_Cancel;
+    public Button STOCK_Btn_Order_Submit, STOCK_Btn_Order_Cancel;
     public Vector2 STOCK_Order_Size = new Vector2(300, 300);
     public TextMeshProUGUI TxtOrderName;
     public TMP_Dropdown DropOrderPrice, DropOrderQuantity;
-    public string GoldName = "Gold";
-    public TextMeshProUGUI TxtGold, TxtDeposit;
+    public TextMeshProUGUI TxtDeposit;
+    public GameObject STOCK_Receive;
+    public Button STOCK_Btn_Receive;
     private Actor mActor;
+    private StockMarketContext mStockMarketContext = new StockMarketContext();
     // Start is called before the first frame update
     void Start()
     {
@@ -30,13 +41,11 @@ public class StockMarketController : MonoBehaviour
         STOCK_Order.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(STOCK_Order_Size);
         OnClickCloseOrder();
 
-        
-
         //OnClick
+        STOCK_Btn_Order_Submit.onClick.AddListener(OnClickOrderSubmit);
         STOCK_Btn_Order_Cancel.onClick.AddListener(OnClickCloseOrder);
-
-        Sell.onClick.AddListener(OnClickSell);
-        Buy.onClick.AddListener(OnClickBuy);
+        STOCK_Btn_Receive.onClick.AddListener(OnClickOpenReceive);
+        OnClickCloseReceive();
     }
 
     // Update is called once per frame
@@ -55,8 +64,7 @@ public class StockMarketController : MonoBehaviour
             }
         }
             
-        //Gold 
-        TxtGold.text = mActor.GetSatisfaction(GoldName).Value.ToString();
+        
         string actorId = GamePlayController.GetFollowActor().mActor.mUniqueId;
         string sz = string.Empty;
         var list = StockMarketHandler.Instance.GetMarketPrices();
@@ -89,23 +97,42 @@ public class StockMarketController : MonoBehaviour
         
         TxtPurchased.text = sz;
     }
-    void OnClickSell() {
+    void Sell() {
         Actor actor = GamePlayController.GetFollowActor().mActor;
         StockActorOrder order = new StockActorOrder();
-        order.Set(true, actor, "Resource2", 2, 7);
+        order.Set(true, actor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
         StockMarketHandler.Instance.Order(order);
     }
-    void OnClickBuy() {
+    void Buy() {
         Actor actor = GamePlayController.GetFollowActor().mActor;
         StockActorOrder order = new StockActorOrder();
-        order.Set(false, actor, "Resource2", 2, 8);
+        order.Set(false, actor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
         StockMarketHandler.Instance.Order(order);
+    }
+    void OnClickOrderSubmit() {
+        mStockMarketContext.quantity = int.Parse(DropOrderQuantity.options[DropOrderQuantity.value].text);
+        mStockMarketContext.bid = int.Parse(DropOrderPrice.options[DropOrderPrice.value].text);
+        if(mStockMarketContext.isSell) {
+            Sell();
+        } else {
+            Buy();
+        }
+        OnClickCloseOrder();
     }
     void OnClickCloseOrder() {
+        mStockMarketContext.Reset();
         STOCK_Order_Background.SetActive(false);
     }
-    public void OpenOrder(bool isSell, string name, float marketPrice) {
+    public void OpenOrder(bool isSell, string resourceId, string name, float marketPrice) {
         TxtOrderName.text = string.Format("{0} <size=70%><i>{1}</i></size><br>{2:F2}", name, isSell ? "매도" : "매수", marketPrice);
         STOCK_Order_Background.SetActive(true);
+        mStockMarketContext.isSell = isSell;
+        mStockMarketContext.resourceId = resourceId;
+    }
+    void OnClickOpenReceive() {
+        STOCK_Receive.SetActive(true);
+    }
+    void OnClickCloseReceive() {
+        STOCK_Receive.SetActive(false);
     }
 }

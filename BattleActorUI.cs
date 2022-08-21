@@ -47,12 +47,12 @@ public class BattleActorUI : MonoBehaviour
     {
         _name.text = name;
     }
-    public void SetMessage(string msg, int order, bool isOverlap = true) 
+    public void SetMessage(string msg, bool isOverlap = true) 
     {
         if(!isOverlap && mIseSetMSG)
             return;
             
-        _canvas.sortingOrder = order;
+        //_canvas.sortingOrder = order;
         _canvas.enabled = true;
         _canvas.enabled = false;
         mIseSetMSG = true;        

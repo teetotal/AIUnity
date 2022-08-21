@@ -735,7 +735,7 @@ public class ActorController : MonoBehaviour
     }
     public void SetMessage(string msg, bool isOverlap = true) {
         if(mUI != null) {
-            mUI.SetMessage(msg, (int)CounterHandler.Instance.GetCount(), isOverlap);
+            mUI.SetMessage(msg, isOverlap);
         }
     }    
     

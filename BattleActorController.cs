@@ -72,7 +72,7 @@ public class BattleActorController : MonoBehaviour
         mUI.SetHP(amount);
     }
     void SetMessage(string message) {        
-        mUI.SetMessage(message, (int)CounterHandler.Instance.GetCount());
+        mUI.SetMessage(message);
     }
     void SetActionType(BATTLE_ACTOR_ACTION_TYPE type) {
         mCurrActionType = type;

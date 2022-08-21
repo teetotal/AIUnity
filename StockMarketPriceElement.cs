@@ -49,11 +49,11 @@ public class StockMarketPriceElement : MonoBehaviour
         mResourceName = SatisfactionDefine.Instance.GetTitle(mResourceId);
     }
     void OnClickBuy() {
-        mStockMarketController.OpenOrder(false, mResourceName, marketPrice);
+        mStockMarketController.OpenOrder(false, mResourceId, mResourceName, marketPrice);
 
     }
     void OnClickSell() {
-        mStockMarketController.OpenOrder(true, mResourceName, marketPrice);
+        mStockMarketController.OpenOrder(true, mResourceId, mResourceName, marketPrice);
     }
 
 }
