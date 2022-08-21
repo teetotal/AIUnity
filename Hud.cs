@@ -265,9 +265,6 @@ public class Hud : MonoBehaviour
         RectTransform topCenterRT = TopCenter.GetComponent<RectTransform>();
         topCenterRT.anchoredPosition = new Vector2(0, safe.y + safe.height - Margin.y);
         topCenterRT.sizeDelta = Scale.GetScaledSize(TopCenterSize);
-
-        GameObject.Find("HUD_VillageInfo").GetComponent<RectTransform>().sizeDelta = topCenterRT.sizeDelta;
-
         /*
         Top Right
         Left-Bottom
