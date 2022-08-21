@@ -288,8 +288,10 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.INVALID:
             break;
             case Actor.LOOP_STATE.READY:
+            /*
             if(mAgent != null && !mActor.mInfo.isFly)
                 mAgent.ResetPath();
+            */
             break;            
             case Actor.LOOP_STATE.CHANGE_SCENE: 
             mGamePlayController.ChangeScene(mActor, mActor.PopSceneName());

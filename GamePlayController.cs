@@ -135,11 +135,6 @@ public class GamePlayController : MonoBehaviour
             //update
             SetHudVillage();
         }
-        //update market price
-        if(SatisfactionMarketPrice.Instance.Update()) {
-            if(HudInstance != null)
-                HudInstance.SetState(L10nHandler.Instance.Get(L10N_UPDATE_MARKET_PRICE));
-        }
         //vehicle
         VehicleHandler.Instance.Update();
         //farming

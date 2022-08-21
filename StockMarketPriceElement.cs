@@ -25,7 +25,7 @@ public class StockMarketPriceElement : MonoBehaviour
     // Update is called once per frame
     void Update() {
         TxtName.text = mResourceName;
-        var list = StockMarketHandler.Instance.GetMarketPrice(mResourceId);
+        var list = StockMarketHandler.Instance.GetMarketPrices(mResourceId);
         marketPrice = list[StockMarketHandler.Instance.CAPACITY-1];
         TxtPriceInfo.text = string.Format("{0:F2}<br><size=80%><color={1}>{2:F2} | {3:F2}%</color></size>", 
                                             marketPrice,

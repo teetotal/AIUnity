@@ -44,8 +44,9 @@ public class Hud : MonoBehaviour
     public bool HideSatisfaction = false;
     public bool HideTask = false;
     public bool HideMenu = false;
+    public bool HideSystem = false;
     public Vector2 Margin = new Vector2(10,10);
-    public Vector2 TopLeftSize = new Vector2(200, 60);
+    public Vector2 TopLeftSize = new Vector2(200, 100);
     public Vector2 TopCenterSize = new Vector2(300, 200);
     public Vector2 TopRightSize = new Vector2(200, 40); 
     public float LeftWidth = 240;     
@@ -57,7 +58,7 @@ public class Hud : MonoBehaviour
     public Vector2 ItemSize = new Vector2(200, 300);
     public float ItemAcquisitionImageSize = 150;
 
-    private TextMeshProUGUI NameText,LevelText, LevelProgressText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
+    private TextMeshProUGUI NameText, LevelText, LevelProgressText, CurrencyText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
@@ -119,6 +120,7 @@ public class Hud : MonoBehaviour
         LevelProgressText   = GameObject.Find("HUD_LevelProgressText").GetComponent<TextMeshProUGUI>();
         StateText           = GameObject.Find("HUD_State").GetComponent<TextMeshProUGUI>();   
         LevelProgress       = GameObject.Find("HUD_LevelProgress").GetComponent<Slider>();   
+        CurrencyText        = GameObject.Find("HUD_Currency").GetComponent<TextMeshProUGUI>();  
 
         VillageNameText     = GameObject.Find("HUD_VillageName").GetComponent<TextMeshProUGUI>();
         VillageLevelText    = GameObject.Find("HUD_VillageLevel").GetComponent<TextMeshProUGUI>();
@@ -272,6 +274,8 @@ public class Hud : MonoBehaviour
         RectTransform topRightRT = TopRight.GetComponent<RectTransform>();
         topRightRT.sizeDelta = Scale.GetScaledSize(TopRightSize);
         topRightRT.anchoredPosition = new Vector2(safe.x + safe.width - Margin.x - topRightRT.sizeDelta.x, safe.y + safe.height - Margin.y);
+        if(HideSystem)
+            TopRight.SetActive(false);
         
         /*
         Ask
@@ -373,21 +377,20 @@ public class Hud : MonoBehaviour
     }
     // Satisfaction ---------------------------------------------------------------------------------------------
     public void SetSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
-        int i = 0;
-        /*
-        foreach(var p in satisfaction.OrderBy( i => (i.Value.Value / i.Value.Max))) {
-            //p.value 적용            
-            mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
-            i++;
-        }   
-        */
-        foreach(var p in satisfaction) {
-            if(!SatisfactionDefine.Instance.Get(p.Key).resource) {
-                mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(p.Value);
-                i++;
-            }
+        var list = SatisfactionDefine.Instance.Get(SATISFACTION_TYPE.SATISFACTION);
+        for(int i = 0; i < list.Count; i++) {
+           mSatisfactionList[i].GetComponent<SatisfactionElement>().SetSatisfaction(satisfaction[list[i].satisfactionId]);
         }
         ScrollViewSatisfaction.verticalNormalizedPosition = 1;
+        //currency
+        var listCurrency = SatisfactionDefine.Instance.Get(SATISFACTION_TYPE.CURRENCY);
+        CurrencyText.text = string.Empty;
+        for(int i = 0; i < listCurrency.Count; i++) {
+            CurrencyText.text = string.Format("{0} {1}", 
+                                                listCurrency[i].title,
+                                                satisfaction[listCurrency[i].satisfactionId].Value
+                                            ); 
+        }
     }
     public void InitSatisfaction(Dictionary<string, ENGINE.GAMEPLAY.MOTIVATION.Satisfaction> satisfaction) {
         float height = Screen.safeArea.height * 0.5f;     
@@ -400,7 +403,7 @@ public class Hud : MonoBehaviour
 
         GameObject prefab = Resources.Load<GameObject>(PrefabSatisfaction);
         foreach(var p in satisfaction) {
-            if(SatisfactionDefine.Instance.Get(p.Key).resource) continue;
+            if(SatisfactionDefine.Instance.Get(p.Key).type != SATISFACTION_TYPE.SATISFACTION) continue;
 
             GameObject obj = Instantiate(prefab);            
 
@@ -530,7 +533,7 @@ public class Hud : MonoBehaviour
             case 1: //resource
             foreach(var s in actor.mActor.GetSatisfactions()) {
                 ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
-                if(s.Value.Value > 0 && r.resource) {
+                if(s.Value.Value > 0 && r.type == SATISFACTION_TYPE.RESOURCE) {
                     AllocInventory().GetComponent<ItemElement>().SetSatisfaction(actor.mActor, s.Key, (int)s.Value.Value);
                 }
             }
