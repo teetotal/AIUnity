@@ -15,7 +15,7 @@ public class UI_Resizing : MonoBehaviour
     [SerializeField]
     private Vector2 PaddingLeftRightPercent = new Vector2(5, 5);
     [SerializeField]
-    private Vector2 PaddingTopBottomPercent = new Vector2(5, 5);
+    private Vector2 PaddingTopBottomPercent = new Vector2(1, 1);
     private bool lazyInit = false;
 
     // Start is called before the first frame update

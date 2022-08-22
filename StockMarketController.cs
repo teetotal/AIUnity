@@ -32,10 +32,11 @@ public class StockMarketController : MonoBehaviour
     public TMP_Dropdown DropOrderPrice, DropOrderQuantity;
     public TextMeshProUGUI TxtDeposit;
     public GameObject STOCK_Receive;
-    public Button STOCK_Btn_Receive, STOCK_Btn_Receive_Close;
+    public Button STOCK_Btn_Receive, STOCK_Btn_Receive_Detail, STOCK_Btn_Receive_Close;
     public Vector2 STOCK_Receive_Size = new Vector2(300, 300);
 
     private Actor mActor;
+    public string CurrencyId = "Gold";
     private StockMarketContext mStockMarketContext = new StockMarketContext();
     private Dictionary<string, float> mTempSold = new Dictionary<string, float>();
     private StringBuilder mTempStringBuilder = new StringBuilder();
@@ -55,7 +56,8 @@ public class StockMarketController : MonoBehaviour
         //OnClick
         STOCK_Btn_Order_Submit.onClick.AddListener(OnClickOrderSubmit);
         STOCK_Btn_Order_Cancel.onClick.AddListener(OnClickCloseOrder);
-        STOCK_Btn_Receive.onClick.AddListener(OnClickOpenReceive);
+        STOCK_Btn_Receive.onClick.AddListener(OnClickReceive);
+        STOCK_Btn_Receive_Detail.onClick.AddListener(OnClickOpenReceiveDetail);
         STOCK_Btn_Receive_Close.onClick.AddListener(OnClickCloseReceive);
         OnClickCloseReceive();
     }
@@ -95,7 +97,7 @@ public class StockMarketController : MonoBehaviour
         TxtSold.text += GetPurchasedListText(GetPurchased(actorId));
     }
     void SetDeposit() {
-        string actorId = GamePlayController.GetFollowActor().mActor.mUniqueId;
+        string actorId = mActor.mUniqueId;
         float depositSold = GetDeposit(GetSold(actorId), mFee);
         float depositPurchased = GetDeposit(GetPurchased(actorId), 0);
         TxtDeposit.text = string.Format("{0:N}", depositSold + depositPurchased);
@@ -198,7 +200,23 @@ public class StockMarketController : MonoBehaviour
         mStockMarketContext.isSell = isSell;
         mStockMarketContext.resourceId = resourceId;
     }
-    void OnClickOpenReceive() {
+    void OnClickReceive() {
+        string actorId = mActor.mUniqueId;
+        float depositSold = GetDeposit(GetSold(actorId), mFee);
+        var purchase = GetPurchased(actorId);
+        float depositPurchased = GetDeposit(purchase, 0);
+        float total = depositSold + depositPurchased;
+
+        //리소스 수령 기능 만들어야 함.
+
+        if(total > 0) {
+            mActor.ApplySatisfaction(CurrencyId, total, 0, null, true);
+            StockMarketHandler.Instance.RemoveActorOrder(mActor.mUniqueId);
+            mActor.CallCallback(Actor.LOOP_STATE.STOCK_CALCULATE);
+        }
+        
+    }
+    void OnClickOpenReceiveDetail() {
         STOCK_Receive.SetActive(true);
     }
     void OnClickCloseReceive() {

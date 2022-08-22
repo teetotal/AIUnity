@@ -18,6 +18,15 @@ public class UI_ImageTextBox : MonoBehaviour
    
     private void Update() {
         if(!lazyInit) {
+
+            ImageObject.anchorMin = new Vector2(0, 0.5f);
+            ImageObject.anchorMax = new Vector2(0, 0.5f);
+            ImageObject.pivot = new Vector2(0, 0.5f);
+
+            TextObject.anchorMin = new Vector2(0, 0.5f);
+            TextObject.anchorMax = new Vector2(0, 0.5f);
+            TextObject.pivot = new Vector2(0, 0.5f);
+
             RectTransform rect = this.gameObject.GetComponent<RectTransform>();
             float w = rect.sizeDelta.x;
             float h = rect.sizeDelta.y;

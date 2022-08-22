@@ -393,7 +393,7 @@ public class Hud : MonoBehaviour
         var listCurrency = SatisfactionDefine.Instance.Get(SATISFACTION_TYPE.CURRENCY);
         CurrencyText.text = string.Empty;
         for(int i = 0; i < listCurrency.Count; i++) {
-            CurrencyText.text = string.Format("{0:#,0} <sup>+</sup>", 
+            CurrencyText.text = string.Format("{0:F} <sup>+</sup>", 
                                                 satisfaction[listCurrency[i].satisfactionId].Value
                                             ); 
         }

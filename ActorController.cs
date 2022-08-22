@@ -439,6 +439,9 @@ public class ActorController : MonoBehaviour
             case Actor.LOOP_STATE.STOCK_BUY:
                 AddHudState(L10nHandler.Instance.Get(L10N_STOCK_BUY));
             break;
+            case Actor.LOOP_STATE.STOCK_CALCULATE:
+                SetHudSatisfaction();
+            break;
         }
     }
     private void SetMoving() {     
