@@ -15,6 +15,8 @@ public class StockMarketPriceElement : MonoBehaviour
     private string mResourceId = string.Empty;
     private string mResourceName = string.Empty;
     private float marketPrice = 0;
+    private Actor mActor;
+    private long mLastUpdate;
     // Start is called before the first frame update
     void Start()
     {
@@ -24,15 +26,25 @@ public class StockMarketPriceElement : MonoBehaviour
 
     // Update is called once per frame
     void Update() {
-        TxtName.text = mResourceName;
-        var list = StockMarketHandler.Instance.GetMarketPrices(mResourceId);
-        marketPrice = list[StockMarketHandler.Instance.CAPACITY-1];
-        TxtPriceInfo.text = string.Format("{0:F2}<br><size=80%><color={1}>{2:F2} | {3:F2}%</color></size>", 
-                                            marketPrice,
-                                            GetColor(list),
-                                            marketPrice - list[StockMarketHandler.Instance.CAPACITY-2],
-                                            -(100 - (marketPrice / list[StockMarketHandler.Instance.CAPACITY-2] * 100)) 
-                                        );
+        if(mActor != null) {
+            long last = StockMarketHandler.Instance.GetLastUpdate();
+            if(last == mLastUpdate) 
+                return;
+            
+            mLastUpdate = last;
+
+            var quantity = mActor.GetSatisfaction(mResourceId);
+            TxtName.text = string.Format("{0}<br><size=70%>{1}</size>", mResourceName, quantity == null ? string.Empty : quantity.Value);
+
+            var list = StockMarketHandler.Instance.GetMarketPrices(mResourceId);
+            marketPrice = list[StockMarketHandler.Instance.CAPACITY-1];
+            TxtPriceInfo.text = string.Format("{0:F2}<br><size=80%><color={1}>{2:F2} | {3:F2}%</color></size>", 
+                                                marketPrice,
+                                                GetColor(list),
+                                                marketPrice - list[StockMarketHandler.Instance.CAPACITY-2],
+                                                -(100 - (marketPrice / list[StockMarketHandler.Instance.CAPACITY-2] * 100)) 
+                                            );
+        }
     }
     string GetColor(List<float> list) {
         if(list[StockMarketHandler.Instance.CAPACITY-1] > list[StockMarketHandler.Instance.CAPACITY-2])
@@ -42,11 +54,12 @@ public class StockMarketPriceElement : MonoBehaviour
         else 
             return ColorNormal;
     }
-    public void Set(StockMarketController p, string resourceId)
+    public void Set(StockMarketController p, string resourceId, Actor actor)
     {
         mStockMarketController = p;
         mResourceId = resourceId;
         mResourceName = SatisfactionDefine.Instance.GetTitle(mResourceId);
+        mActor = actor;
     }
     void OnClickBuy() {
         mStockMarketController.OpenOrder(false, mResourceId, mResourceName, marketPrice);

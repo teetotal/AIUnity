@@ -19,7 +19,7 @@ public class StockMarketContext {
 public class StockMarketController : MonoBehaviour
 {
     public GamePlayController GamePlayController;
-    public TextMeshProUGUI Txt, TxtSold;
+    public TextMeshProUGUI TxtSold;
     public GameObject STOCK_Scroll_Panel, STOCK_Gold_Info;
     public Vector2 STOCK_Gold_Info_Size = new Vector2(300, 100);
     public GameObject STOCK_Market_Price;
@@ -34,6 +34,11 @@ public class StockMarketController : MonoBehaviour
     public GameObject STOCK_Receive;
     public Button STOCK_Btn_Receive, STOCK_Btn_Receive_Detail, STOCK_Btn_Receive_Close;
     public Vector2 STOCK_Receive_Size = new Vector2(300, 300);
+    public GameObject STOCK_Order_Status_BG, STOCK_Order_Status;
+    public Vector2 STOCK_Order_Status_Size = new Vector2(400, 300);
+    public Button STOCK_Btn_Order_Status, STOCK_Btn_Order_Status_Close;
+    public GameObject STOCK_Order_Status_Scroll;
+    public float STOCK_Order_Status_Element_Height = 100;
 
     private Actor mActor;
     public string CurrencyId = "Gold";
@@ -41,6 +46,8 @@ public class StockMarketController : MonoBehaviour
     private Dictionary<string, float> mTempSold = new Dictionary<string, float>();
     private StringBuilder mTempStringBuilder = new StringBuilder();
     private float mFee = 0.15f;
+    private List<GameObject> mOrderObjectList = new List<GameObject>();
+    private long mLastUpdate; 
     // Start is called before the first frame update
     void Start()
     {
@@ -53,12 +60,17 @@ public class StockMarketController : MonoBehaviour
         STOCK_Receive.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(STOCK_Receive_Size);
         OnClickCloseOrder();
 
+        STOCK_Order_Status.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(STOCK_Order_Status_Size);
+        OnClickCloseOrderStatus();
+
         //OnClick
         STOCK_Btn_Order_Submit.onClick.AddListener(OnClickOrderSubmit);
         STOCK_Btn_Order_Cancel.onClick.AddListener(OnClickCloseOrder);
         STOCK_Btn_Receive.onClick.AddListener(OnClickReceive);
         STOCK_Btn_Receive_Detail.onClick.AddListener(OnClickOpenReceiveDetail);
         STOCK_Btn_Receive_Close.onClick.AddListener(OnClickCloseReceive);
+        STOCK_Btn_Order_Status.onClick.AddListener(OnClickOpenOrderStatus);
+        STOCK_Btn_Order_Status_Close.onClick.AddListener(OnClickCloseOrderStatus);
         OnClickCloseReceive();
     }
 
@@ -72,34 +84,22 @@ public class StockMarketController : MonoBehaviour
             int cnt = marketPrices.Count;
             STOCK_Scroll_Panel.GetComponent<RectTransform>().sizeDelta = new Vector2(0, cnt * Scale.GetScaledHeight(100));
             foreach(var p in marketPrices) {
-                GameObject obj = Util.CreateChildObjectFromPrefabUI("Stock_Element", 
+                GameObject obj = Util.CreateChildObjectFromPrefabUI("StockElement", 
                                                                     STOCK_Scroll_Panel);
-                obj.GetComponent<StockMarketPriceElement>().Set(this, p.Key);
+                obj.GetComponent<StockMarketPriceElement>().Set(this, p.Key, mActor);
             }
         }
             
-        
-        string actorId = GamePlayController.GetFollowActor().mActor.mUniqueId;
-        SetDeposit();
-
-        string sz = string.Empty;
-        var list = StockMarketHandler.Instance.GetMarketPrices();
-        foreach(var p in list) {
-            sz += StockMarketHandler.Instance.Print(p.Key);
-            sz += '\n';
+        long last = StockMarketHandler.Instance.GetLastUpdate();
+        if(last != mLastUpdate) {
+            SetDeposit();
+            mLastUpdate = last;
         }
-        Txt.text = sz;
-
-        //sold
-        TxtSold.text = GetSoldListText(GetSold(actorId));
-
-        //buy
-        TxtSold.text += GetPurchasedListText(GetPurchased(actorId));
     }
     void SetDeposit() {
         string actorId = mActor.mUniqueId;
         float depositSold = GetDeposit(GetSold(actorId), mFee);
-        float depositPurchased = GetDeposit(GetPurchased(actorId), 0);
+        float depositPurchased = GetDeposit(GetPurchasedRemains(actorId), 0);
         TxtDeposit.text = string.Format("{0:N}", depositSold + depositPurchased);
     }
     float GetDeposit(Dictionary<string, float> list, float fee) {
@@ -121,7 +121,8 @@ public class StockMarketController : MonoBehaviour
         } 
         return mTempSold;
     }
-    Dictionary<string, float> GetPurchased(string actorId) {
+    //구매 후 잔액
+    Dictionary<string, float> GetPurchasedRemains(string actorId) {
         var buy = StockMarketHandler.Instance.GetActorPuchased(actorId);
         mTempSold.Clear();
         if(buy != null) {
@@ -129,6 +130,19 @@ public class StockMarketController : MonoBehaviour
                 if(!mTempSold.ContainsKey(p.resourceId))
                     mTempSold[p.resourceId] = 0;
                 mTempSold[p.resourceId] += p.bid - p.purchasedPrice;
+            }
+        }
+        return mTempSold;
+    }
+    //구매 자원
+    Dictionary<string, float> GetPurchasedResources(string actorId) {
+        var buy = StockMarketHandler.Instance.GetActorPuchased(actorId);
+        mTempSold.Clear();
+        if(buy != null) {
+            foreach(var p in buy) {
+                if(!mTempSold.ContainsKey(p.resourceId))
+                    mTempSold[p.resourceId] = 0;
+                mTempSold[p.resourceId] += 1;
             }
         }
         return mTempSold;
@@ -169,15 +183,26 @@ public class StockMarketController : MonoBehaviour
         return mTempStringBuilder.ToString();
     }
     void Sell() {
-        Actor actor = GamePlayController.GetFollowActor().mActor;
+        //수량 체크는 order UI에서 하고 들어 와야 한다.
+        if(mActor.GetSatisfaction(mStockMarketContext.resourceId).Value < mStockMarketContext.quantity)
+            throw new System.Exception("Invalid Quanity");
+
+        mActor.ApplySatisfaction(mStockMarketContext.resourceId, -mStockMarketContext.quantity, 0, null, true);
         StockActorOrder order = new StockActorOrder();
-        order.Set(true, actor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
+        order.Set(true, mActor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
         StockMarketHandler.Instance.Order(order);
     }
     void Buy() {
-        Actor actor = GamePlayController.GetFollowActor().mActor;
+        float amount = mStockMarketContext.quantity * mStockMarketContext.bid;
+        //수량 체크는 order UI에서 하고 들어 와야 한다.
+        if(mActor.GetSatisfaction(CurrencyId).Value < amount)
+            throw new System.Exception("Invalid Quanity");
+
+        mActor.ApplySatisfaction(CurrencyId, -(mStockMarketContext.quantity * mStockMarketContext.bid), 0, null, true);
+        mActor.CallCallback(Actor.LOOP_STATE.STOCK_CALCULATE);
+
         StockActorOrder order = new StockActorOrder();
-        order.Set(false, actor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
+        order.Set(false, mActor, mStockMarketContext.resourceId, mStockMarketContext.quantity, mStockMarketContext.bid);
         StockMarketHandler.Instance.Order(order);
     }
     void OnClickOrderSubmit() {
@@ -193,8 +218,10 @@ public class StockMarketController : MonoBehaviour
     void OnClickCloseOrder() {
         mStockMarketContext.Reset();
         STOCK_Order_Background.SetActive(false);
+        StockMarketHandler.Instance.Resume();
     }
     public void OpenOrder(bool isSell, string resourceId, string name, float marketPrice) {
+        StockMarketHandler.Instance.Pause();
         TxtOrderName.text = string.Format("{0} <size=70%><i>{1}</i></size><br>{2:F2}", name, isSell ? "매도" : "매수", marketPrice);
         STOCK_Order_Background.SetActive(true);
         mStockMarketContext.isSell = isSell;
@@ -203,23 +230,81 @@ public class StockMarketController : MonoBehaviour
     void OnClickReceive() {
         string actorId = mActor.mUniqueId;
         float depositSold = GetDeposit(GetSold(actorId), mFee);
-        var purchase = GetPurchased(actorId);
-        float depositPurchased = GetDeposit(purchase, 0);
+        float depositPurchased = GetDeposit(GetPurchasedRemains(actorId), 0);
+        
         float total = depositSold + depositPurchased;
 
-        //리소스 수령 기능 만들어야 함.
+        //리소스 수령
+        var list = GetPurchasedResources(actorId);
+        bool isCallback = false;
+        if(list.Count > 0 || total > 0)
+            isCallback = true;
+
+        foreach(var resource in list) {
+            mActor.ApplySatisfaction(resource.Key, resource.Value, 0, null, true);
+        }
 
         if(total > 0) {
             mActor.ApplySatisfaction(CurrencyId, total, 0, null, true);
+        }
+
+        if(isCallback) {
             StockMarketHandler.Instance.RemoveActorOrder(mActor.mUniqueId);
             mActor.CallCallback(Actor.LOOP_STATE.STOCK_CALCULATE);
         }
         
     }
     void OnClickOpenReceiveDetail() {
+        StockMarketHandler.Instance.Pause();
+        //sold
+        TxtSold.text = GetSoldListText(GetSold(mActor.mUniqueId));
+
+        //buy
+        TxtSold.text += GetPurchasedListText(GetPurchasedRemains(mActor.mUniqueId));
         STOCK_Receive.SetActive(true);
     }
     void OnClickCloseReceive() {
         STOCK_Receive.SetActive(false);
+        StockMarketHandler.Instance.Resume();
+    }
+    void OnClickOpenOrderStatus() {
+        StockMarketHandler.Instance.Pause();
+        STOCK_Order_Status_BG.SetActive(true);
+
+        var sells = StockMarketHandler.Instance.GetActorSellOrders(mActor.mUniqueId);
+        var buys = StockMarketHandler.Instance.GetActorBuyOrders(mActor.mUniqueId);
+        int cnt = 0;
+        if(sells != null) {
+            foreach(var p in sells) {
+                for(int i = 0; i < p.Value.Count; i ++) {
+                    GameObject obj = Util.CreateChildObjectFromPrefabUI("StockOrderElement", STOCK_Order_Status_Scroll);
+                    obj.GetComponent<StockMarketOrderElement>().Set(p.Value[i], i, this);
+                    mOrderObjectList.Add(obj);
+                    cnt++;
+                }
+            }
+        }
+        
+        if(buys != null) {
+            for(int i = 0; i < buys.Count; i++) {
+                GameObject obj = Util.CreateChildObjectFromPrefabUI("StockOrderElement", STOCK_Order_Status_Scroll);
+                obj.GetComponent<StockMarketOrderElement>().Set(buys[i], i, this);
+                mOrderObjectList.Add(obj);
+                cnt++;
+            }
+        }
+        
+        STOCK_Order_Status_Scroll.GetComponent<RectTransform>().sizeDelta = new Vector2(0, cnt * Scale.GetScaledHeight(STOCK_Order_Status_Element_Height));
+        
+    }
+    public void OnClickCloseOrderStatus() {
+        STOCK_Order_Status_BG.SetActive(false);
+        for(int i = 0; i < mOrderObjectList.Count; i++) {
+            mOrderObjectList[i].transform.SetParent(null);
+            Destroy(mOrderObjectList[i]);
+        }
+
+        mOrderObjectList.Clear();
+        StockMarketHandler.Instance.Resume();
     }
 }

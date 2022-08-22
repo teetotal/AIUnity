@@ -45,6 +45,7 @@ public class Hud : MonoBehaviour
     public bool HideTask = false;
     public bool HideMenu = false;
     public bool HideCurrency = false;
+    public bool HideAlert = false;
     public Vector2 Margin = new Vector2(10,10);
     public Vector2 TopLeftSize = new Vector2(200, 50);
     public Vector2 TopCenterSize = new Vector2(300, 50);
@@ -278,8 +279,11 @@ public class Hud : MonoBehaviour
             TopRight.SetActive(false);
 
         //HUD Alert
-        GameObject.Find("HUD_Alert").GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(AlertSize);
-        
+        GameObject HUD_Alert = GameObject.Find("HUD_Alert");
+        HUD_Alert.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(AlertSize);
+        if(HideAlert)
+            HUD_Alert.SetActive(false);
+
         /*
         Ask
         Center-Middle
