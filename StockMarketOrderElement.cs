@@ -34,5 +34,6 @@ public class StockMarketOrderElement : MonoBehaviour
     void OnClick() {
         StockMarketHandler.Instance.CancelActorOrder(mOrder, mIdx);
         mStockMarketController.OnClickCloseOrderStatus();
+        mStockMarketController.OnClickOpenOrderStatus();
     }
 }

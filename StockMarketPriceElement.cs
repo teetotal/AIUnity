@@ -33,6 +33,7 @@ public class StockMarketPriceElement : MonoBehaviour
             
             mLastUpdate = last;
 
+            float myMoney = mActor.GetSatisfaction(StockMarketHandler.Instance.CURRENCY).Value;
             var quantity = mActor.GetSatisfaction(mResourceId);
             TxtName.text = string.Format("{0}<br><size=70%>{1}</size>", mResourceName, quantity == null ? string.Empty : quantity.Value);
 
@@ -44,6 +45,9 @@ public class StockMarketPriceElement : MonoBehaviour
                                                 marketPrice - list[StockMarketHandler.Instance.CAPACITY-2],
                                                 -(100 - (marketPrice / list[StockMarketHandler.Instance.CAPACITY-2] * 100)) 
                                             );
+            
+            BtnBuy.gameObject.SetActive(myMoney >= marketPrice);
+            BtnSell.gameObject.SetActive(quantity != null && quantity.Value > 0);
         }
     }
     string GetColor(List<float> list) {

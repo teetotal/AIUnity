@@ -91,10 +91,6 @@ public class GamePlayController : MonoBehaviour
         if(farms != null)
             CreateFarms(farms);
         FarmingHandler.Instance.SetCallback(OnFarmingCallback);
-
-        //Stock
-        StockMarketHandler.Instance.Init();
-
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        
@@ -345,7 +341,8 @@ public class GamePlayController : MonoBehaviour
         TextAsset szL10n = Resources.Load<TextAsset>("Config/l10n");   
         TextAsset szVehicle = Resources.Load<TextAsset>("Config/vehicle");     
         TextAsset szFarming = Resources.Load<TextAsset>("Config/farming");       
-        TextAsset szSeed = Resources.Load<TextAsset>("Config/seed");          
+        TextAsset szSeed = Resources.Load<TextAsset>("Config/seed");   
+        TextAsset szStockMarket = Resources.Load<TextAsset>("Config/stockmarket");          
 
         if(!Loader.Instance.Load(   szSatisfaction.text, 
                                     szTask.text, 
@@ -359,7 +356,8 @@ public class GamePlayController : MonoBehaviour
                                     szL10n.text,
                                     szVehicle.text,
                                     szFarming.text,
-                                    szSeed.text
+                                    szSeed.text,
+                                    szStockMarket.text
                                 )) {
             Debug.Log("Failure Loading config");
             return false;
