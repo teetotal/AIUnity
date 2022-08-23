@@ -39,4 +39,9 @@ public class Util {
         obj.transform.SetParent(parent.transform);
         return obj;
     }
+    public static GameObject CreateChildObjectFromUIObject(GameObject obj, GameObject parent) {
+        GameObject p = UnityEngine.Object.Instantiate(obj);
+        p.transform.SetParent(parent.transform);
+        return p;
+    }
 }
