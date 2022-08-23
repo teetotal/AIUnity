@@ -14,7 +14,7 @@ public class HUDStateContext {
     public float counter;
     public const float duration = 5;
     public const string newline = "\n";
-    public const string mark = "<mark=#00000040 padding=\"10,2,2,10\">";
+    public const string mark = "<mark=#00000090 padding=\"10,2,2,10\">";
     public const string markEnd = "</mark>";
     public override string ToString() {
         sz.Clear();

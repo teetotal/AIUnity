@@ -211,15 +211,12 @@ public class GamePlayController : MonoBehaviour
             Actor actor = p.Value;
             if(actor.position != null) {
                 Vector3 position = new Vector3(actor.position.x, actor.position.y, actor.position.z);
+                Quaternion rotation = Quaternion.Euler(actor.rotation.x, actor.rotation.y, actor.rotation.z);
                 GameObject prefab = Resources.Load<GameObject>(actor.mInfo.prefab);
                 if(prefab == null) 
                     continue;
-                Quaternion rotation = Quaternion.identity;
-                if(actor.mInfo.rotation != null) {
-                    rotation = Quaternion.Euler(actor.mInfo.rotation[0], actor.mInfo.rotation[1], actor.mInfo.rotation[2]);
-                }
+
                 GameObject obj = Instantiate(prefab, position, rotation);
-                
                 
                 ActorController actorController = obj.GetComponent<ActorController>();
                 if(!actorController.Init(actorName, actor))
@@ -322,7 +319,7 @@ public class GamePlayController : MonoBehaviour
         while (!asyncLoad.isDone)
         {
             yield return null;
-            Debug.Log(asyncLoad.progress);
+            //Debug.Log(asyncLoad.progress);
         }
     }
     private bool Load() {

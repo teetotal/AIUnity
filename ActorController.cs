@@ -491,8 +491,9 @@ public class ActorController : MonoBehaviour
                     throw new Exception("Invalid GameObject Name " + p.objectName);
                 }
                 mTargetPositionRandom = UnityEngine.Random.Range(ApprochRange, ApprochRange * 2f);                          
-                mTarget.SetTransform(target.transform);          
-                if(GetDistance() < mTargetPositionRandom) {
+                mTarget.SetTransform(target.transform);      
+                float distance = GetDistance(); 
+                if(distance < mTargetPositionRandom) {
                     Arrive();
                 } else {
                     mMovingState = MOVING_STATE.READY_MOVING;
@@ -549,6 +550,7 @@ public class ActorController : MonoBehaviour
             LazyInit();
 
         mActor.SetPosition(transform.position.x, transform.position.y, transform.position.z);
+        mActor.SetRotation(transform.rotation.eulerAngles.x, transform.rotation.eulerAngles.y, transform.rotation.eulerAngles.z);
 
         switch(mMovingState) {
             case MOVING_STATE.IDLE: 
@@ -629,7 +631,8 @@ public class ActorController : MonoBehaviour
             break;
             case MOVING_STATE.READY_MOVING:
             {
-                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation)) {
+                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation) && 
+                    mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) {
                     mAgent.ResetPath();                    
                     mMovingState = MOVING_STATE.MOVING;
                     SetAnimation("Walk");
@@ -658,7 +661,8 @@ public class ActorController : MonoBehaviour
             break;
             case MOVING_STATE.STOP_MOVING:
             {
-                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation)) {
+                if( mAnimator.GetCurrentAnimatorStateInfo(0).IsName(StopAnimation) && 
+                    mAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f) {
                                    
                     mTarget.Release();
                     mMovingState = MOVING_STATE.IDLE;
