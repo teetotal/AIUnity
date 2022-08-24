@@ -20,8 +20,6 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField]
     private float RatioClose = 0.08f;
     [SerializeField]
-    private string Format = "{0}<br>({1:F})";
-    [SerializeField]
     private float SizeItemHeight = 100;
 
     private Button TemplateTapBtn, TemplateItemBtn, TemplateCloseBtn;
@@ -36,7 +34,7 @@ public class UI_Inventory : MonoBehaviour
     private RectTransform Close;
 
     //data
-    private Dictionary<string, List<Config_KV_SF>> mData;
+    private Dictionary<string, List<Config_KV_SF>> mData = new Dictionary<string, List<Config_KV_SF>>();
     private Dictionary<string, string> mTapInfo;
 
     //objects
@@ -48,15 +46,37 @@ public class UI_Inventory : MonoBehaviour
     private string mCurrentItemId = string.Empty;
 
     //delegate
+    public delegate string FnGetTitle(string tap, string key, float amount);
+    private FnGetTitle mFnGetTitle;
+    public delegate string FnGetDesc(string tap, string key, float amount);
+    private FnGetDesc mFnGetDesc;
     public delegate void FnSubmit(string itemId); 
     private FnSubmit mFnSubmit;
     
     // public --------------------------
+    public void Init(Dictionary<string, string> tapInfo, FnGetTitle fnTitle, FnGetDesc fnDesc, FnSubmit fnSubmit) {
+        mFnGetTitle = fnTitle;
+        mFnGetDesc = fnDesc;
+        mFnSubmit = fnSubmit;
+        ResetData(tapInfo);
+    }
+    public void ResetData(Dictionary<string, string> tapInfo) {
+        mTapInfo = tapInfo;
+        if(mData.Count > 0)
+            mData.Clear();
+        SetTap();
+    }
+    public void AddData(string tap, string key, float amount) {
+        if(!mData.ContainsKey(tap))
+            mData[tap] = new List<Config_KV_SF>();
+        
+        Config_KV_SF p = new Config_KV_SF();
+        p.key = key;
+        p.value = amount;
+        mData[tap].Add(p);
+    }
     public void SetSubmitBtnText(string sz) {
         Submit.GetComponentInChildren<TextMeshProUGUI>().text = sz;
-    }
-    public void SetCallback(FnSubmit fn) {
-        mFnSubmit = fn;
     }
     // private -------------------------
     void Awake() {
@@ -109,6 +129,7 @@ public class UI_Inventory : MonoBehaviour
             Tap.sizeDelta = new Vector2(Parent.sizeDelta.x * RatioTap.x, Parent.sizeDelta.y * RatioTap.y);
 
         //example ---------
+        /*
         Dictionary<string, List<Config_KV_SF>> p =new Dictionary<string, List<Config_KV_SF>>();
         p.Add("Tap1", new List<Config_KV_SF>());
         p.Add("Tap2", new List<Config_KV_SF>());
@@ -129,6 +150,7 @@ public class UI_Inventory : MonoBehaviour
         OnTap("Tap1");
 
         SetSubmitBtnText("판매");
+        */
     }
 
     void SetData(Dictionary<string, List<Config_KV_SF>> data, Dictionary<string, string> tapInfo) {
@@ -152,6 +174,9 @@ public class UI_Inventory : MonoBehaviour
     public void OnClose() {
         Parent.gameObject.SetActive(false);
     }
+    public void OnOpen() {
+        Parent.gameObject.SetActive(true);
+    }
     // Tap --------------------------
     void SetTap() {
         mTapButtons.Clear();
@@ -160,9 +185,9 @@ public class UI_Inventory : MonoBehaviour
             tr.SetParent(null);
             Destroy(tr.gameObject);
         }
-        foreach(var p in mData) {
+        foreach(var p in mTapInfo) {
             GameObject tapBtn = Util.CreateChildObjectFromUIObject(TemplateTapBtn.gameObject, Tap.gameObject);
-            tapBtn.GetComponentInChildren<TextMeshProUGUI>().text = mTapInfo[p.Key];
+            tapBtn.GetComponentInChildren<TextMeshProUGUI>().text = p.Value;
             Button btn = tapBtn.GetComponent<Button>();
             mTapButtons.Add(p.Key, btn);
             btn.onClick.AddListener(() => OnTap(p.Key));
@@ -186,6 +211,8 @@ public class UI_Inventory : MonoBehaviour
             bool b = btn.Key != key;
             btn.Value.interactable = b;
         }
+        if(!mData.ContainsKey(key))
+            return;
         //grid size
         List<Config_KV_SF> list = mData[key];
         
@@ -207,19 +234,22 @@ public class UI_Inventory : MonoBehaviour
             } else {
                 itemBtn = Util.CreateChildObjectFromUIObject(TemplateItemBtn.gameObject, Content.gameObject);
             }
-            itemBtn.GetComponentInChildren<TextMeshProUGUI>().text = string.Format(Format, list[i].key, list[i].value);
+            itemBtn.GetComponentInChildren<TextMeshProUGUI>().text = mFnGetTitle(key, list[i].key, list[i].value);
             
             //onclick
             Config_KV_SF item = list[i];
-            itemBtn.GetComponent<Button>().onClick.AddListener(() => OnItem(item.key, item.value));
+            itemBtn.GetComponent<Button>().onClick.AddListener(() => OnItem(key, item.key, item.value));
             mAlloc.Add(itemBtn);
         }
     }
     // OnItem -----------------
-    void OnItem(string itemId, float amount) {
+    void OnItem(string tap, string itemId, float amount) {
         Submit.interactable = true;
         mCurrentItemId = itemId;
-        TxtDesc.text = itemId;
+        TxtDesc.text = mFnGetDesc(tap, itemId, amount);
+    }
+    public void SetDisableSubmit() {
+        Submit.interactable = false;
     }
     // OnSubmit ----------------
     void OnSubmit() {

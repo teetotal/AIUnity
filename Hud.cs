@@ -94,6 +94,8 @@ public class Hud : MonoBehaviour
     private HUDItemContext mHUDItemContext = new HUDItemContext();
     private TextMeshProUGUI mTimer;
 
+    public UI_Inventory Inven;
+
     private void Awake() {
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
 
@@ -175,6 +177,7 @@ public class Hud : MonoBehaviour
         Init();
     }
     private void Start() {
+        Inven.OnClose();
         //village
         var info = ActorHandler.Instance.GetVillageInfo(mGamePlayController.Village);
         SetVillageName(info.name);
@@ -495,6 +498,7 @@ public class Hud : MonoBehaviour
     }
     // Inventory ----------------------------------------------------------------------------------------
     void OpenInventory() {
+        /*
         if(InventoryPanel.activeSelf)
             return;
         
@@ -502,7 +506,72 @@ public class Hud : MonoBehaviour
 
         InventoryPanel.SetActive(true);
         BtnCloseInventory.gameObject.SetActive(true);
+        */
+        
+        var actor = mGamePlayController.GetFollowActor();
+        if(actor == null)
+            return;
+        Actor.ItemContext itemContext = actor.mActor.GetItemContext();
+        Dictionary<string, string> tapInfo = new Dictionary<string, string>() {
+            {"Item", "아이템"},
+            {"Resource", "자원"},
+            {"Installation", "착용"}
+        };
+        Inven.Init(tapInfo, InvenGetTitle, InvenGetDesc, InvenSubmit);
+
+        foreach(var item in itemContext.inventory) {
+            Inven.AddData("Item", item.Key, item.Value);
+        }
+        foreach(var s in actor.mActor.GetSatisfactions()) {
+            ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
+            if(s.Value.Value > 0 && r.type == SATISFACTION_TYPE.RESOURCE) 
+                Inven.AddData("Resource", s.Key, s.Value.Value);
+        }
+
+        Inven.OnOpen();
+        Inven.OnTap("Item");
     }
+    string InvenGetTitle(string tap, string key, float amount) {
+        switch(tap) {
+            case "Item":
+            return string.Format("{0}\n{1:#,###}", ItemHandler.Instance.GetItemInfo(key).name, amount);
+            case "Resource":
+            return string.Format("{0}\n{1:#,###}", SatisfactionDefine.Instance.GetTitle(key), amount);
+            default:
+            return key;
+        }
+    }
+    string InvenGetDesc(string tap, string key, float amount) {
+        switch(tap) {
+            case "Item":
+            {
+                var detail = ItemHandler.Instance.GetItemInfo(key);
+                string txt = string.Empty;
+                switch(detail.category) {
+                    case ITEM_CATEGORY.SATISFACTION_ONLY:
+                    txt = "사용";
+                    break;
+                    default:
+                    txt = "버리기";
+                    break;
+                }
+                Inven.SetSubmitBtnText(txt);
+                return string.Format("{0}\n<size=70%>{1}</size>", detail.name, detail.desc);
+            }
+            case "Resource": {
+                Inven.SetSubmitBtnText(string.Empty);
+                Inven.SetDisableSubmit();
+                var detail = SatisfactionDefine.Instance.Get(key);
+                return string.Format("{0}\n<size=70%>{1}</size>", detail.title, detail.desc);
+            }
+            default:
+            return key;
+        }
+    }
+    void InvenSubmit(string itemId) {
+
+    }
+
     void CloseInventory() {
         InventoryPanel.SetActive(false);
         BtnCloseInventory.gameObject.SetActive(false);
