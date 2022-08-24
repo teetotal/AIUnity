@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ENGINE.GAMEPLAY.MOTIVATION;
+using ENGINE;
 using TMPro;
 
 public class UI_Inventory : MonoBehaviour
@@ -42,15 +43,20 @@ public class UI_Inventory : MonoBehaviour
     private Stack<GameObject> mPool = new Stack<GameObject>();
     private List<GameObject> mAlloc = new List<GameObject>(); 
 
+    //data pool
+    private ObjectPool<Config_KV_SF> mDataPool = new ObjectPool<Config_KV_SF>();
+
     //context
     private string mCurrentItemId = string.Empty;
+    private string mCurrentTap = string.Empty;
+    private float mCurrentAmount;
 
     //delegate
     public delegate string FnGetTitle(string tap, string key, float amount);
     private FnGetTitle mFnGetTitle;
     public delegate string FnGetDesc(string tap, string key, float amount);
     private FnGetDesc mFnGetDesc;
-    public delegate void FnSubmit(string itemId); 
+    public delegate void FnSubmit(string tap, string key, float amount); 
     private FnSubmit mFnSubmit;
     
     // public --------------------------
@@ -58,19 +64,26 @@ public class UI_Inventory : MonoBehaviour
         mFnGetTitle = fnTitle;
         mFnGetDesc = fnDesc;
         mFnSubmit = fnSubmit;
-        ResetData(tapInfo);
-    }
-    public void ResetData(Dictionary<string, string> tapInfo) {
         mTapInfo = tapInfo;
-        if(mData.Count > 0)
-            mData.Clear();
         SetTap();
+    }
+    public bool IsOpen() {
+        return Parent.gameObject.activeSelf;
+    }
+    public void ResetData() {
+        foreach(var list in mData) {
+            for(int i = 0; i < list.Value.Count; i++) {
+                Config_KV_SF p = list.Value[i];
+                mDataPool.Release(p);
+            }
+        }
+        mData.Clear();
     }
     public void AddData(string tap, string key, float amount) {
         if(!mData.ContainsKey(tap))
             mData[tap] = new List<Config_KV_SF>();
         
-        Config_KV_SF p = new Config_KV_SF();
+        Config_KV_SF p = mDataPool.Alloc();
         p.key = key;
         p.value = amount;
         mData[tap].Add(p);
@@ -179,12 +192,14 @@ public class UI_Inventory : MonoBehaviour
     }
     // Tap --------------------------
     void SetTap() {
+        //tap은 초화때 한번만 
+        /*
         mTapButtons.Clear();
         for(int i = 0; i < Tap.transform.childCount; i++) {
             Transform tr = Tap.transform.GetChild(i);
             tr.SetParent(null);
             Destroy(tr.gameObject);
-        }
+        }*/
         foreach(var p in mTapInfo) {
             GameObject tapBtn = Util.CreateChildObjectFromUIObject(TemplateTapBtn.gameObject, Tap.gameObject);
             tapBtn.GetComponentInChildren<TextMeshProUGUI>().text = p.Value;
@@ -194,8 +209,10 @@ public class UI_Inventory : MonoBehaviour
         }
     }
     public void OnTap(string key) {
+        mCurrentTap = key;
         mCurrentItemId = string.Empty;
         TxtDesc.text = string.Empty;
+        SetSubmitBtnText(string.Empty);
         Submit.interactable = false;
         
         //release
@@ -246,6 +263,7 @@ public class UI_Inventory : MonoBehaviour
     void OnItem(string tap, string itemId, float amount) {
         Submit.interactable = true;
         mCurrentItemId = itemId;
+        mCurrentAmount = amount;
         TxtDesc.text = mFnGetDesc(tap, itemId, amount);
     }
     public void SetDisableSubmit() {
@@ -255,6 +273,6 @@ public class UI_Inventory : MonoBehaviour
     void OnSubmit() {
         //Debug.Log(mCurrentItemId);
         if(mFnSubmit != null)
-            mFnSubmit(mCurrentItemId);
+            mFnSubmit(mCurrentTap, mCurrentItemId, mCurrentAmount);
     }
 }

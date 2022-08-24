@@ -51,7 +51,6 @@ public class GamePlayController : MonoBehaviour
     public string FollowActorId = string.Empty;
     private Hud HudInstance;
     private const string L10N_TAX_COLLECTION = "TAX_COLLECTION";
-    private const string L10N_UPDATE_MARKET_PRICE = "UPDATE_MARKET_PRICE";
     
     // Start is called before the first frame update
     private void Awake() {

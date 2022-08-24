@@ -28,16 +28,6 @@ public class HUDStateContext {
         return sz.ToString();
     }
 }
-public class HUDItemContext {
-    public string itemId = string.Empty;
-    public Actor actor;
-    public StringBuilder sb = new StringBuilder();
-    public string[] format = {"<size=100%>", "</size><br><size=70%>", "</size>"};
-    public void Set(Actor actor, string itemId) {
-        this.actor = actor;
-        this.itemId = itemId;
-    } 
-}
 public class Hud : MonoBehaviour
 {
     public bool HideQuest = false;
@@ -56,25 +46,20 @@ public class Hud : MonoBehaviour
     public Vector2 AlertSize = new Vector2(200, 80);
     public Vector2 AskSize = new Vector2(350, 300);
     public Vector2 TaskSize = new Vector2(500, 400);
-    public Vector2 InventorySize = new Vector2(600, 500);
-    public Vector2 ItemSize = new Vector2(200, 300);
     public Vector2 TimerSize = new Vector2(200, 100);
     public float ItemAcquisitionImageSize = 150;
 
-    private TextMeshProUGUI NameText, LevelText, CurrencyText, StateText, VillageNameText, VillageLevelText, ItemText, ItemAcquisitionText;    
+    private TextMeshProUGUI NameText, LevelText, CurrencyText, StateText, VillageNameText, VillageLevelText, ItemAcquisitionText;    
     private Slider LevelProgress, VillageLevelProgress;
     public QuestElement[] QuestElements = new QuestElement[3];
 
     public string PrefabSatisfaction = "SatisfactionInfo";
     public string PrefabTask = "TaskPanel";
-    public int InventoryCols = 6;
 
     private string mPrefixLevel = "Lv.";
     private List<GameObject> mSatisfactionList = new List<GameObject>();
     private List<Transform> mTaskObjectList = new List<Transform>();
     private Stack<GameObject> mTaskObjectPool = new Stack<GameObject>();
-    private List<Transform> mInventoryObjectList = new List<Transform>();
-    private Stack<GameObject> mInventoryObjectPool = new Stack<GameObject>();
 
     private int mTaskAllocCount = 0;
 
@@ -82,19 +67,19 @@ public class Hud : MonoBehaviour
     private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel, ItemAcquisitionPanel, ItemAcquisitionImage;
     private Animator ItemAcquisitionAnimator;
-    private Button Btn_1, BtnOpenGallery, BtnCloseInventory, BtnOpenInventory, BtnAuto;
-    private Button BtnInvenCategoryItem, BtnInvenCategoryResource, BtnInvenCategoryInstallation;
-    private Button BtnItemUse, BtnItemClose;
+    private Button Btn_1, BtnOpenGallery, BtnOpenInventory, BtnAuto;
     private bool mIsAuto = false;
     private bool mItemAcquisitionEnable = false;
     private float mItemAcquisitionTimer = 0;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
-    private HUDItemContext mHUDItemContext = new HUDItemContext();
     private TextMeshProUGUI mTimer;
 
     public UI_Inventory Inven;
+    private string[] InvenTapKeys = { "Item", "Resource", "Installation" };
+    public string InventoryTitleFormat = "{0}<br>{1:#,###}";
+    public string InventoryDescFormat = "{0}<br><br><size=70%>{1}</size>";
 
     private void Awake() {
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
@@ -107,8 +92,6 @@ public class Hud : MonoBehaviour
         Bottom      = this.transform.Find("Panel_Bottom").gameObject;
         Ask         = this.transform.Find("Panel_Ask").gameObject;
         Task        = this.transform.Find("Panel_Task").gameObject;
-        InventoryPanel = this.transform.Find("Panel_Inventory").gameObject;
-        ItemPanel   = this.transform.Find("Panel_Item").gameObject;
         ItemAcquisitionPanel = this.transform.Find("Panel_Item_Acquisition").gameObject;
        
         //Satisfaction
@@ -135,20 +118,7 @@ public class Hud : MonoBehaviour
         Btn_1               = GameObject.Find("HUD_BTN_1").GetComponent<Button>();
         //Gallery
         BtnOpenGallery      =   GameObject.Find("HUD_Gallery_Open").GetComponent<Button>();
-        //Inventory
-        Inventory           = GameObject.Find("HUD_Inventory");
-        BtnCloseInventory   = GameObject.Find("HUD_Inventory_Close").GetComponent<Button>();
-        BtnOpenInventory    = GameObject.Find("HUD_Inventory_Open").GetComponent<Button>();
-        InventoryPool       = GameObject.Find("HUD_Inventory_Pool");
-        BtnInvenCategoryItem            = GameObject.Find("HUD_Inventory_Category_Item").GetComponent<Button>();
-        BtnInvenCategoryResource        = GameObject.Find("HUD_Inventory_Category_Resource").GetComponent<Button>();
-        BtnInvenCategoryInstallation    = GameObject.Find("HUD_Inventory_Category_Installation").GetComponent<Button>();
-        InventoryPool.SetActive(false);
-        //Item
-        ItemText            = GameObject.Find("HUD_Item_Text").GetComponent<TextMeshProUGUI>();
-        BtnItemUse          = GameObject.Find("HUD_Item_Use").GetComponent<Button>();
-        BtnItemClose        = GameObject.Find("HUD_Item_Close").GetComponent<Button>();
-
+        //Item Acquisition 
         ItemAcquisitionImage = GameObject.Find("HUD_Item_Acquisition_Image");
         ItemAcquisitionAnimator = ItemAcquisitionImage.GetComponent<Animator>();
         ItemAcquisitionText  = GameObject.Find("HUD_Item_Acquisition_Text").GetComponent<TextMeshProUGUI>();
@@ -156,9 +126,6 @@ public class Hud : MonoBehaviour
         mTimer  = GameObject.Find("HUD_Timer").GetComponent<TextMeshProUGUI>();
 
         ItemAcquisitionPanel.SetActive(false);
-        
-        BtnItemUse.onClick.AddListener(InvokeItem);
-        BtnItemClose.onClick.AddListener(CloseItem);
 
         //Auto
         SetAutoBtnColor();
@@ -168,15 +135,22 @@ public class Hud : MonoBehaviour
         //Gallery
         BtnOpenGallery.onClick.AddListener(OpenGallery);
         //Inventory
-        BtnCloseInventory.onClick.AddListener(CloseInventory);
+        BtnOpenInventory = GameObject.Find("HUD_Inventory_Open").GetComponent<Button>();
         BtnOpenInventory.onClick.AddListener(OpenInventory);
-        BtnInvenCategoryItem.onClick.AddListener(OnInventoryCategoryItem);
-        BtnInvenCategoryResource.onClick.AddListener(OnInventoryCategoryResource);
-        BtnInvenCategoryInstallation.onClick.AddListener(OnInventoryCategoryInstallation);
         
         Init();
     }
     private void Start() {
+        var actor = mGamePlayController.GetFollowActor();
+        if(actor == null)
+            return;
+        
+        Dictionary<string, string> tapInfo = new Dictionary<string, string>() {
+            {   InvenTapKeys[0],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_ITEM) },
+            {   InvenTapKeys[1],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_RESOURCE)},
+            {   InvenTapKeys[2],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_INSTALLATION)}
+        };
+        Inven.Init(tapInfo, InvenGetTitle, InvenGetDesc, InvenSubmit);
         Inven.OnClose();
         //village
         var info = ActorHandler.Instance.GetVillageInfo(mGamePlayController.Village);
@@ -308,24 +282,7 @@ public class Hud : MonoBehaviour
         taskRT.sizeDelta = new Vector2(x, ((TaskSize.y / TaskSize.x) * x));
         Task.SetActive(false);
 
-        //Inventory
-        //Panel size
-        RectTransform inventoryRT = InventoryPanel.GetComponent<RectTransform>();
-        x = Scale.GetScaledWidth(InventorySize.x);
-        inventoryRT.sizeDelta = new Vector2(x, ((InventorySize.y / InventorySize.x) * x));
-        //cell size
-        GridLayoutGroup grid = Inventory.GetComponent<GridLayoutGroup>();
-        grid.constraintCount = InventoryCols;
-        float cellWidth = (inventoryRT.sizeDelta.x - 10) / InventoryCols;
-        grid.cellSize = new Vector2(cellWidth , cellWidth);
-        //close button
-        BtnCloseInventory.transform.position = new Vector3(inventoryRT.position.x + (inventoryRT.sizeDelta.x / 2), inventoryRT.position.y + (inventoryRT.sizeDelta.y / 2),0);
-        CloseInventory();
-
-        //Item
-        ItemPanel.GetComponent<RectTransform>().sizeDelta = Scale.GetScaledSize(ItemSize);
-        ItemPanel.SetActive(false);
-
+        //Item Acquisition
         Vector2 itemAcquisitionSize = Scale.GetScaledSize(new Vector2(ItemAcquisitionImageSize, ItemAcquisitionImageSize));
         ItemAcquisitionImage.GetComponent<RectTransform>().sizeDelta = itemAcquisitionSize;
         ItemAcquisitionText.gameObject.GetComponent<RectTransform>().sizeDelta = new Vector2(itemAcquisitionSize.x * 1.2f, itemAcquisitionSize.y * 0.5f);
@@ -507,148 +464,75 @@ public class Hud : MonoBehaviour
         InventoryPanel.SetActive(true);
         BtnCloseInventory.gameObject.SetActive(true);
         */
-        
+        if(Inven.IsOpen())
+            return;
+
+        Inven.OnOpen();
+        LoadInventory(InvenTapKeys[0]);
+
+    }
+    void LoadInventory(string tap) {
         var actor = mGamePlayController.GetFollowActor();
         if(actor == null)
             return;
+        Inven.ResetData();
         Actor.ItemContext itemContext = actor.mActor.GetItemContext();
-        Dictionary<string, string> tapInfo = new Dictionary<string, string>() {
-            {"Item", "아이템"},
-            {"Resource", "자원"},
-            {"Installation", "착용"}
-        };
-        Inven.Init(tapInfo, InvenGetTitle, InvenGetDesc, InvenSubmit);
-
         foreach(var item in itemContext.inventory) {
-            Inven.AddData("Item", item.Key, item.Value);
+            Inven.AddData(InvenTapKeys[0], item.Key, item.Value);
         }
         foreach(var s in actor.mActor.GetSatisfactions()) {
             ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
             if(s.Value.Value > 0 && r.type == SATISFACTION_TYPE.RESOURCE) 
-                Inven.AddData("Resource", s.Key, s.Value.Value);
-        }
-
-        Inven.OnOpen();
-        Inven.OnTap("Item");
-    }
-    string InvenGetTitle(string tap, string key, float amount) {
-        switch(tap) {
-            case "Item":
-            return string.Format("{0}\n{1:#,###}", ItemHandler.Instance.GetItemInfo(key).name, amount);
-            case "Resource":
-            return string.Format("{0}\n{1:#,###}", SatisfactionDefine.Instance.GetTitle(key), amount);
-            default:
-            return key;
-        }
-    }
-    string InvenGetDesc(string tap, string key, float amount) {
-        switch(tap) {
-            case "Item":
-            {
-                var detail = ItemHandler.Instance.GetItemInfo(key);
-                string txt = string.Empty;
-                switch(detail.category) {
-                    case ITEM_CATEGORY.SATISFACTION_ONLY:
-                    txt = "사용";
-                    break;
-                    default:
-                    txt = "버리기";
-                    break;
-                }
-                Inven.SetSubmitBtnText(txt);
-                return string.Format("{0}\n<size=70%>{1}</size>", detail.name, detail.desc);
-            }
-            case "Resource": {
-                Inven.SetSubmitBtnText(string.Empty);
-                Inven.SetDisableSubmit();
-                var detail = SatisfactionDefine.Instance.Get(key);
-                return string.Format("{0}\n<size=70%>{1}</size>", detail.title, detail.desc);
-            }
-            default:
-            return key;
-        }
-    }
-    void InvenSubmit(string itemId) {
-
-    }
-
-    void CloseInventory() {
-        InventoryPanel.SetActive(false);
-        BtnCloseInventory.gameObject.SetActive(false);
-    }
-    void OnInventoryCategoryItem() {
-        OnCategory(0);
-        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOn;
-        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOff;
-        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOff;
-    }
-    void OnInventoryCategoryResource() {
-        OnCategory(1);
-        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOff;
-        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOn;
-        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOff;
-    }
-    void OnInventoryCategoryInstallation() {
-        OnCategory(2);
-        BtnInvenCategoryItem.GetComponent<Image>().color = ColorBtnOff;
-        BtnInvenCategoryResource.GetComponent<Image>().color = ColorBtnOff;
-        BtnInvenCategoryInstallation.GetComponent<Image>().color = ColorBtnOn;
-    }
-    void OnCategory(int type) {
-        ReleaseInventory();
-        //Add Inventory.
-        var actor = mGamePlayController.GetFollowActor();
-        if(actor == null)
-            return;
-        Actor.ItemContext itemContext = actor.mActor.GetItemContext();
-
-        switch(type) {
-            case 0: //item
-            foreach(var item in itemContext.inventory) {
-                if(item.Value > 0)
-                    AllocInventory().GetComponent<ItemElement>().SetItem(actor.mActor, item.Key, item.Value);
-            }
-            break;
-            case 1: //resource
-            foreach(var s in actor.mActor.GetSatisfactions()) {
-                ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
-                if(s.Value.Value > 0 && r.type == SATISFACTION_TYPE.RESOURCE) {
-                    AllocInventory().GetComponent<ItemElement>().SetSatisfaction(actor.mActor, s.Key, (int)s.Value.Value);
-                }
-            }
-            break;
-            case 2: //installation
-            break;
-        }
-        //Scrollview size
-        GridLayoutGroup grid = Inventory.GetComponent<GridLayoutGroup>();
-        int heightCount = (int)(itemContext.inventory.Count / InventoryCols);
-        if(itemContext.inventory.Count % InventoryCols != 0) {
-            heightCount++;
+                Inven.AddData(InvenTapKeys[1], s.Key, s.Value.Value);
         }
         
-        Inventory.GetComponent<RectTransform>().sizeDelta = new Vector2(grid.cellSize.x * InventoryCols - (grid.padding.left + grid.padding.right), 
-            grid.cellSize.y * heightCount + 10);
+        Inven.OnTap(tap);
     }
-    private GameObject AllocInventory() {
-        GameObject obj;
-        if(mInventoryObjectPool.Count > 0) {
-            obj= mInventoryObjectPool.Pop();
+    string InvenGetTitle(string tap, string key, float amount) {
+        if(tap == InvenTapKeys[0]) 
+            return string.Format(InventoryTitleFormat, ItemHandler.Instance.GetItemInfo(key).name, amount);
+        else if(tap == InvenTapKeys[1])
+            return string.Format(InventoryTitleFormat, SatisfactionDefine.Instance.GetTitle(key), amount);
+        else
+            return key;
+    }
+    string InvenGetDesc(string tap, string key, float amount) {
+        if(tap == InvenTapKeys[0]) {
+            var detail = ItemHandler.Instance.GetItemInfo(key);
+            string txt = string.Empty;
+            switch(detail.category) {
+                case ITEM_CATEGORY.SATISFACTION_ONLY:
+                txt = L10nHandler.Instance.Get(L10nCode.UI_INVEN_USE);
+                break;
+                default:
+                txt = L10nHandler.Instance.Get(L10nCode.UI_INVEN_ABANDON);
+                break;
+            }
+            Inven.SetSubmitBtnText(txt);
+            return string.Format(InventoryDescFormat, detail.name, detail.desc);
+        } else if(tap == InvenTapKeys[1]) {
+            Inven.SetSubmitBtnText(string.Empty);
+            Inven.SetDisableSubmit();
+            var detail = SatisfactionDefine.Instance.Get(key);
+            return string.Format(InventoryDescFormat, detail.title, detail.desc);
         } else {
-            GameObject prefab = Resources.Load<GameObject>("Item");
-            obj = Instantiate(prefab);     
+            return key;
         }
-
-        mInventoryObjectList.Add(obj.transform);
-        obj.transform.SetParent(Inventory.transform);
-        return obj;
     }
-    public void ReleaseInventory() {
-        for(int i = 0; i < mInventoryObjectList.Count; i++) {
-            mInventoryObjectPool.Push(mInventoryObjectList[i].gameObject);
-            mInventoryObjectList[i].SetParent(InventoryPool.transform);
+    void InvenSubmit(string tap, string key, float amount) {
+        if(tap == InvenTapKeys[0]) {
+            var detail = ItemHandler.Instance.GetItemInfo(key);
+            var actor = mGamePlayController.GetFollowActor().mActor;
+            switch(detail.category) {
+                case ITEM_CATEGORY.SATISFACTION_ONLY:
+                    actor.UseItemFromInventory(key);
+                    break;
+                    default:
+                    actor.DecreaseQuantityInInventory(key, (int)amount);
+                    break;
+            }
+            LoadInventory(tap);
         }
-        mInventoryObjectList.Clear();
     }
     public void ObtainItem(Actor a) {
         var actor = mGamePlayController.GetFollowActor();
@@ -663,35 +547,10 @@ public class Hud : MonoBehaviour
                 sz += "\n";
             sz += string.Format("{0} x{1}", ItemHandler.Instance.GetItemInfo(ic.mObtainItemList[i].itemId).name, ic.mObtainItemList[i].quantity);
         }
-        OpenItemAcquisition("", sz);
+        OpenItemAcquisition(string.Empty, sz);
         ic.mObtainItemList.Clear();
     }
     // Item ----------------------------------------------------------------
-    public void OpenItemInfo(Actor actor, string itemId) {
-        mHUDItemContext.Set(actor, itemId);
-        
-        ConfigItem_Detail itemInfo = ItemHandler.Instance.GetItemInfo(itemId);
-
-        mHUDItemContext.sb.Clear();
-        mHUDItemContext.sb.Append(mHUDItemContext.format[0]);
-        mHUDItemContext.sb.Append(itemInfo.name);
-        mHUDItemContext.sb.Append(mHUDItemContext.format[1]);
-        mHUDItemContext.sb.Append(itemInfo.desc);
-        mHUDItemContext.sb.Append(mHUDItemContext.format[2]);
-
-        ItemText.text = mHUDItemContext.sb.ToString();
-        ItemPanel.SetActive(true);
-    }
-    private void InvokeItem() {
-        mHUDItemContext.actor.UseItemFromInventory(mHUDItemContext.itemId);
-        CloseItem();
-        OnInventoryCategoryItem();
-        //HUD를 통해 invoke하는 경우는 follower밖에 없다.
-        SetSatisfaction(mGamePlayController.GetFollowActor().mActor.GetSatisfactions());
-    }
-    private void CloseItem() {
-        ItemPanel.SetActive(false);
-    }
     private void OpenItemAcquisition(string img, string text) {
         ItemAcquisitionPanel.SetActive(true);
         ItemAcquisitionText.text = text;
