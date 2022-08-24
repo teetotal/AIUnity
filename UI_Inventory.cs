@@ -22,18 +22,24 @@ public class UI_Inventory : MonoBehaviour
     private float RatioClose = 0.08f;
     [SerializeField]
     private float SizeItemHeight = 100;
-
+    [SerializeField]
     private Button TemplateTapBtn, TemplateItemBtn, TemplateCloseBtn;
+    [SerializeField]
     private TextMeshProUGUI TxtDesc;
+    [SerializeField]
     private Transform Pool;
+    [SerializeField]
     private Button Submit;
-    
-    private RectTransform Parent;
+    [SerializeField]
     private RectTransform Tap;
+    [SerializeField]
     private RectTransform Main;
+    [SerializeField]
     private RectTransform Scroll, Desc, Content;
+    [SerializeField]
     private RectTransform Close;
 
+    private RectTransform Parent;
     //data
     private Dictionary<string, List<Config_KV_SF>> mData = new Dictionary<string, List<Config_KV_SF>>();
     private Dictionary<string, string> mTapInfo;
@@ -94,7 +100,7 @@ public class UI_Inventory : MonoBehaviour
     // private -------------------------
     void Awake() {
         Parent  =   GetComponent<RectTransform>();
-
+        /*
         Tap     =   transform.Find("UI_INVEN_Panel_Tap").GetComponent<RectTransform>();
         Main    =   transform.Find("UI_INVEN_Panel_Main").GetComponent<RectTransform>();
         Close   =   transform.Find("UI_INVEN_Panel_Close").GetComponent<RectTransform>();
@@ -106,8 +112,6 @@ public class UI_Inventory : MonoBehaviour
         TxtDesc =   GameObject.Find("UI_INVEN_Description").GetComponent<TextMeshProUGUI>();
         Submit  =   GameObject.Find("UI_INVEN_Submit").GetComponent<Button>();
 
-        Submit.onClick.AddListener(OnSubmit);
-
         //template
         Transform template  =  transform.Find("Template").gameObject.transform;
         TemplateTapBtn      =  template.Find("TapBtn").GetComponent<Button>();
@@ -116,6 +120,8 @@ public class UI_Inventory : MonoBehaviour
 
         //Pool
         Pool    = transform.Find("UI_INVEN_Pool").transform;
+        */
+        Submit.onClick.AddListener(OnSubmit);
     }
     void Start() {
         Parent.sizeDelta = Scale.GetScaledSize(Size);

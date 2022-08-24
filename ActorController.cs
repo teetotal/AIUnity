@@ -158,10 +158,6 @@ public class ActorController : MonoBehaviour
     public Actor mActor;      
     private VehicleController? mVehicleController;
     private bool mLazyInitFlag = false;  
-    private const string L10N_LEVEL_UP = "LEVEL_UP";
-    private const string L10N_GET_IN_VEHICLE_FAILURE = "GET_IN_VEHICLE_FAILURE";
-    private const string L10N_STOCK_SELL = "STOCK_SELL";
-    private const string L10N_STOCK_BUY = "STOCK_BUY";
     
     public bool Init(string name, Actor actor) {
         if(name == string.Empty || actor == null)
@@ -380,7 +376,7 @@ public class ActorController : MonoBehaviour
                 if(mVehicleController.CheckDistance(dest)) {
                     mVehicleController.GetIn(this.gameObject, dest);
                 } else {
-                    AddHudState(L10nHandler.Instance.Get(L10N_GET_IN_VEHICLE_FAILURE));
+                    AddHudState(L10nHandler.Instance.Get(L10nCode.GET_IN_VEHICLE_FAILURE));
                 }
             }
             break;
@@ -398,7 +394,7 @@ public class ActorController : MonoBehaviour
                 //levelup 모션 처리    
                 mAnimationContext.Reset();  
                 SetAnimationContext("Levelup", 1, STATE_ANIMATION_CALLBACK.LEVELUP);      
-                SetMessage(L10nHandler.Instance.Get(L10N_LEVEL_UP));                
+                SetMessage(L10nHandler.Instance.Get(L10nCode.LEVEL_UP));                
             }            
             break;
             case Actor.LOOP_STATE.REFUSAL:
@@ -434,10 +430,10 @@ public class ActorController : MonoBehaviour
             }
             break;
             case Actor.LOOP_STATE.STOCK_SELL:
-                AddHudState(L10nHandler.Instance.Get(L10N_STOCK_SELL));
+                AddHudState(L10nHandler.Instance.Get(L10nCode.STOCK_SELL));
             break;
             case Actor.LOOP_STATE.STOCK_BUY:
-                AddHudState(L10nHandler.Instance.Get(L10N_STOCK_BUY));
+                AddHudState(L10nHandler.Instance.Get(L10nCode.STOCK_BUY));
             break;
             case Actor.LOOP_STATE.STOCK_CALCULATE:
                 SetHudSatisfaction();

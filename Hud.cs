@@ -454,7 +454,7 @@ public class Hud : MonoBehaviour
         //p.GetOff();
     }
     // Inventory ----------------------------------------------------------------------------------------
-    void OpenInventory() {
+    public void OpenInventory() {
         /*
         if(InventoryPanel.activeSelf)
             return;

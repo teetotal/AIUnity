@@ -3,8 +3,6 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-
-
 public class StockMarketOrderElement : MonoBehaviour
 {
     [SerializeField]
