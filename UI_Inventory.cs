@@ -242,12 +242,13 @@ public class UI_Inventory : MonoBehaviour
         GridLayoutGroup grid = Content.GetComponent<GridLayoutGroup>();
         int cols = grid.constraintCount;
         float itemHeight = Scale.GetScaledHeight(SizeItemHeight);
-        grid.cellSize = new Vector2((Scroll.sizeDelta.x - 10)/ cols, itemHeight);
+        float itemWidth = (Scroll.sizeDelta.x - (grid.padding.left + grid.padding.right + (grid.spacing.x * cols-1)) ) / cols;
+        grid.cellSize = new Vector2(itemWidth, itemHeight);
 
         int row = (list.Count / cols);
         if(list.Count % cols > 0)
             row++;
-        Content.sizeDelta = new Vector2(0, itemHeight * row);
+        Content.sizeDelta = new Vector2(0, (itemHeight * row) + grid.padding.top + grid.padding.bottom + (grid.spacing.y * (row-1)));
 
         for(int i = 0; i < list.Count; i++) {
             GameObject itemBtn;

@@ -223,7 +223,7 @@ public class ActorController : MonoBehaviour
         mHud = hud;
 
         if(mIsFollowingActor && mHud != null) {
-            mHud.InitSatisfaction(mActor.GetSatisfactions());
+            //mHud.InitSatisfaction(mActor.GetSatisfactions());
             SetHudQuest();
         }
     }

@@ -27,7 +27,8 @@ public class ShopController : MonoBehaviour
 
         var items = ItemHandler.Instance.GetAll();
         foreach(var item in items) {
-            ShopUI.AddData( item.Value.category.ToString(), item.Key, item.Value.cost);
+            if(item.Value.purchasable)
+                ShopUI.AddData( item.Value.category.ToString(), item.Key, item.Value.price);
         }
         ShopUI.OnTap(ITEM_CATEGORY.SATISFACTION_ONLY.ToString());
     }
