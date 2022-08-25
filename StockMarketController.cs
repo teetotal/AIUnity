@@ -95,7 +95,7 @@ public class StockMarketController : MonoBehaviour
     void Update()
     {
         if(mActor == null) {
-            mActor = GamePlayController.GetFollowActor().mActor;
+            mActor = GamePlayController.FollowActor;
             //Add Scroll
             var marketPrices = StockMarketHandler.Instance.GetMarketPrices();
             int cnt = marketPrices.Count;
