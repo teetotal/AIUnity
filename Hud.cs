@@ -141,10 +141,6 @@ public class Hud : MonoBehaviour
         Init();
     }
     private void Start() {
-        var actor = mGamePlayController.GetFollowActor();
-        if(actor == null)
-            return;
-        
         Dictionary<string, string> tapInfo = new Dictionary<string, string>() {
             {   InvenTapKeys[0],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_ITEM) },
             {   InvenTapKeys[1],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_RESOURCE)},
@@ -472,15 +468,15 @@ public class Hud : MonoBehaviour
 
     }
     void LoadInventory(string tap) {
-        var actor = mGamePlayController.GetFollowActor();
+        var actor = ActorHandler.Instance.GetActor(mGamePlayController.FollowActorId);
         if(actor == null)
             return;
         Inven.ResetData();
-        Actor.ItemContext itemContext = actor.mActor.GetItemContext();
+        Actor.ItemContext itemContext = actor.GetItemContext();
         foreach(var item in itemContext.inventory) {
             Inven.AddData(InvenTapKeys[0], item.Key, item.Value);
         }
-        foreach(var s in actor.mActor.GetSatisfactions()) {
+        foreach(var s in actor.GetSatisfactions()) {
             ConfigSatisfaction_Define r = SatisfactionDefine.Instance.Get(s.Key);
             if(s.Value.Value > 0 && r.type == SATISFACTION_TYPE.RESOURCE) 
                 Inven.AddData(InvenTapKeys[1], s.Key, s.Value.Value);
@@ -522,7 +518,7 @@ public class Hud : MonoBehaviour
     void InvenSubmit(string tap, string key, float amount) {
         if(tap == InvenTapKeys[0]) {
             var detail = ItemHandler.Instance.GetItemInfo(key);
-            var actor = mGamePlayController.GetFollowActor().mActor;
+            var actor = ActorHandler.Instance.GetActor(mGamePlayController.FollowActorId);
             switch(detail.category) {
                 case ITEM_CATEGORY.SATISFACTION_ONLY:
                     actor.UseItemFromInventory(key);
@@ -535,8 +531,8 @@ public class Hud : MonoBehaviour
         }
     }
     public void ObtainItem(Actor a) {
-        var actor = mGamePlayController.GetFollowActor();
-        if(actor == null || actor.mActor.mUniqueId != a.mUniqueId) {
+        var actor = ActorHandler.Instance.GetActor(mGamePlayController.FollowActorId);
+        if(actor == null || actor.mUniqueId != a.mUniqueId) {
             return;
         }
         //화면 출력

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,6 +33,7 @@ public class GamePlayController : MonoBehaviour
         Tillage,
         Max
     }
+    public bool HideActors = false;
     public string Village = "village1";
     public float Interval = 2;
     //NPC아닌 actor type
@@ -42,15 +44,15 @@ public class GamePlayController : MonoBehaviour
     private Dictionary<string, VehicleController> mVehicles = new Dictionary<string, VehicleController>();
     //Farming
     private Dictionary<string, GameObject> mFarmingObjects = new Dictionary<string, GameObject>();
-    private ActorController? mFollowActorObject;
     public float VisibleDistance = 10.0f;
     public float VisibleDistanceBack = 3.0f;
     private Dictionary<string, int> mDicAnimation = new Dictionary<string, int>();    
     public TransparentObject TransparentInstance;
 
     public string FollowActorId = string.Empty;
+    public Actor FollowActor;
+    private ActorController? mFollowActorObject;
     private Hud HudInstance;
-    private const string L10N_TAX_COLLECTION = "TAX_COLLECTION";
     
     // Start is called before the first frame update
     private void Awake() {
@@ -61,26 +63,12 @@ public class GamePlayController : MonoBehaviour
     void Start()
     {
         HudInstance = this.GetComponent<Hud>();
-        
-        
-        //Actor생성
-        mActors = ActorHandler.Instance.GetActors();
-        if(mActors == null) {
-            throw new System.Exception("Loading Actor Failure");
-        }
-        if(!CreateActors()) {
-            throw new System.Exception("Creating Actors Failure");
-        }
 
         ActorHandler.Instance.PostInit(VillageLevelUpCallback);
 
         for(int i = (int)ANIMATION_ID.Min; i < (int)ANIMATION_ID.Max; i++ ) {
             mDicAnimation.Add(((ANIMATION_ID)i).ToString(), i);
         }
-
-        //set village to follower
-        ActorHandler.Instance.GetActor(FollowActorId).SetVillage(Village);
-
         //Vehicle
         VehicleHandler.Instance.Init(FnHangAround, Village);
         CreateVehicles();
@@ -90,6 +78,35 @@ public class GamePlayController : MonoBehaviour
         if(farms != null)
             CreateFarms(farms);
         FarmingHandler.Instance.SetCallback(OnFarmingCallback);
+
+        //set village to follower
+        var actor = ActorHandler.Instance.GetActor(FollowActorId);
+        if(actor == null)
+            throw new Exception("GamePlayController. Invalid FollwActorId");
+
+        FollowActor = actor;
+        FollowActor.SetVillage(Village);
+
+        //set hud village
+        SetHudVillage();
+        //set hud actor 
+        HudInstance.SetName(FollowActor.mInfo.nickname);
+        HudInstance.SetLevel(LevelHandler.Instance.Get(FollowActor.mType, FollowActor.level).title);
+        HudInstance.SetLevelProgress(FollowActor.GetLevelUpProgress());
+        HudInstance.InitSatisfaction(FollowActor.GetSatisfactions());
+
+        if(HideActors)
+            return;
+
+        //Actor생성
+        mActors = ActorHandler.Instance.GetActors();
+        if(mActors == null) {
+            throw new System.Exception("Loading Actor Failure");
+        }
+
+        if(!CreateActors()) {
+            throw new System.Exception("Creating Actors Failure");
+        }
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        
@@ -167,19 +184,15 @@ public class GamePlayController : MonoBehaviour
         SetHudVillage();
     }
     private void SetHudVillage() {
-        string actorId = TransparentInstance.GetFollowingActorId();
-        Actor actor = ActorHandler.Instance.GetActor(actorId);
-        string village = actor.mInfo.village;
-
-        string name = ActorHandler.Instance.GetVillageInfo(village).name;
-        int level = ActorHandler.Instance.GetVillageLevel(village);
-        float v = ActorHandler.Instance.GetVillageProgression(village);
+        string name = ActorHandler.Instance.GetVillageInfo(Village).name;
+        int level = ActorHandler.Instance.GetVillageLevel(Village);
+        float v = ActorHandler.Instance.GetVillageProgression(Village);
 
         HudInstance.SetVillageName(name);
         HudInstance.SetVillageLevel(level);
         HudInstance.SetVillageLevelProgress(v);
 
-        HudInstance.SetState(L10nHandler.Instance.Get(L10N_TAX_COLLECTION));
+        HudInstance.SetState(L10nHandler.Instance.Get(L10nCode.TAX_COLLECTION));
     }
     public void SetInteractionCameraAngle(ActorController actor) {
         if(TransparentInstance == null)

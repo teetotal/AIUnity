@@ -202,9 +202,10 @@ public class ActorController : MonoBehaviour
         SetHudName();
         SetHudLevel();
         SetLevelProgress();
-
+        /*
         SetHudVillageLevel();
         SetHudVillageProgression();
+        */
     }
     public void SetSpeed(float speed, float acceleration) {
         mAgent.speed = speed;
@@ -239,6 +240,7 @@ public class ActorController : MonoBehaviour
         if(mIsFollowingActor && mHud != null)
             mHud.SetName(mActor.mInfo.nickname);
     } 
+    /*
     private void SetHudVillageLevel() {
         if(mIsFollowingActor && mHud != null) {
             int level = ActorHandler.Instance.GetVillageLevel(mActor.mInfo.village);
@@ -251,7 +253,7 @@ public class ActorController : MonoBehaviour
             mHud.SetVillageLevelProgress(v);
         }
     }
-
+    */
     private void SetHudLevel() {
         if(mIsFollowingActor && mHud != null) {
             var p = LevelHandler.Instance.Get(mActor.mType, mActor.level);

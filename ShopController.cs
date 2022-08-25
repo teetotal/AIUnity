@@ -8,6 +8,8 @@ public class ShopController : MonoBehaviour
     private UI_Inventory ShopUI;
     [SerializeField]
     private Hud hud;
+    [SerializeField]
+    private GamePlayController gamePlayController;
     // Start is called before the first frame update
     void Start()
     {
@@ -23,18 +25,11 @@ public class ShopController : MonoBehaviour
         InvenSubmit
         );
 
-
         var items = ItemHandler.Instance.GetAll();
         foreach(var item in items) {
             ShopUI.AddData( item.Value.category.ToString(), item.Key, item.Value.cost);
         }
         ShopUI.OnTap(ITEM_CATEGORY.SATISFACTION_ONLY.ToString());
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     private string InvenGetTitle(string tap, string key, float amount) {
@@ -49,6 +44,7 @@ public class ShopController : MonoBehaviour
                             );
     }
     private void InvenSubmit(string tap, string key, float amount) {
+        hud.SetSatisfaction(gamePlayController.FollowActor.GetSatisfactions());
         hud.OpenInventory();
     }
 
