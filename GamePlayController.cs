@@ -99,7 +99,9 @@ public class GamePlayController : MonoBehaviour
             return;
 
         //Actor생성
-        mActors = ActorHandler.Instance.GetActors();
+        mActors = ActorHandler.Instance.GetActors(Village);
+        if(!mActors.ContainsKey(FollowActor.mUniqueId))
+            mActors.Add(FollowActor.mUniqueId, FollowActor); //follow actor 추가
         if(mActors == null) {
             throw new System.Exception("Loading Actor Failure");
         }
@@ -143,10 +145,7 @@ public class GamePlayController : MonoBehaviour
         //discharge
         DischargeHandler.Instance.Discharge(ManagedActorType);
         //tax collection
-        if(ActorHandler.Instance.TaxCollection()) {
-            //update
-            SetHudVillage();
-        }
+        ActorHandler.Instance.TaxCollection();
         //vehicle
         VehicleHandler.Instance.Update();
         //farming
@@ -216,9 +215,6 @@ public class GamePlayController : MonoBehaviour
     }
     private bool CreateActors() {        
         foreach(var p in mActors) {
-            if(p.Value.mInfo.village != string.Empty && p.Value.mInfo.village != Village)
-                continue;
-
             string actorName = p.Key;
             Actor actor = p.Value;
             if(actor.position != null) {

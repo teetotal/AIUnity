@@ -87,7 +87,6 @@ public class TransparentObject : MonoBehaviour
     private Dictionary<string, RenderObj> mDictShader = new Dictionary<string, RenderObj>();
     private float mCounter = 0;
     private Transform mTransform;
-    private bool mIsTargeted = false;
 
     private CameraContext mContext = new CameraContext();
 
@@ -106,10 +105,9 @@ public class TransparentObject : MonoBehaviour
         mTargetObject = GameObject.Find(mFollowActorId);
         if(mTargetObject == null) {
             //Debug.Log("Invalid Target Object " + mFollowActorId);
-            mIsTargeted = false;
             return false;
         }
-        mIsTargeted = true;
+        
         return true;
     }
     public string GetFollowingActorId() {
@@ -119,8 +117,9 @@ public class TransparentObject : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(!mIsTargeted) {
-            SetTargetObject();
+        if(mTargetObject == null) {
+            if(!SetTargetObject())
+                return;
         }
         Recovery();
 
@@ -149,6 +148,9 @@ public class TransparentObject : MonoBehaviour
     }
     void LateUpdate()
     {        
+        if(mTargetObject == null)
+            return;
+
         mContext.Check(Time.deltaTime);
         CameraContext.Context context = mContext.GetContext();
         

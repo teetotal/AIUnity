@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine.SceneManagement;
 
 public class StockMarketContext {
     public bool isSell;
@@ -38,6 +39,7 @@ public class StockMarketController : MonoBehaviour
     public GameObject STOCK_Market_Price;
     public Vector2 STOCK_Market_Price_Size = new Vector2(600, 400);
     public float STOCK_Market_Price_Element_Height = 100;
+    public Button STOCK_Market_Close;
     public GameObject STOCK_Order, STOCK_Order_Background;
     public Button STOCK_Btn_Order_Submit, STOCK_Btn_Order_Cancel;
     public Vector2 STOCK_Order_Size = new Vector2(300, 300);
@@ -78,6 +80,7 @@ public class StockMarketController : MonoBehaviour
         OnClickCloseOrderStatus();
 
         //OnClick
+        STOCK_Market_Close.onClick.AddListener(OnClose);
         STOCK_Btn_Order_Submit.onClick.AddListener(OnClickOrderSubmit);
         STOCK_Btn_Order_Cancel.onClick.AddListener(OnClickCloseOrder);
         STOCK_Btn_Receive.onClick.AddListener(OnClickReceive);
@@ -104,6 +107,8 @@ public class StockMarketController : MonoBehaviour
                 GameObject obj = Util.CreateChildObjectFromPrefabUI("StockElement", STOCK_Scroll_Panel);
                 obj.GetComponent<StockMarketPriceElement>().Set(this, p.Key, mActor);
             }
+
+            GamePlayController.GetFollowActor().transform.position = new Vector3(3, 0.15f, -4);
         }
 
         long last = StockMarketHandler.Instance.GetLastUpdate();
@@ -410,5 +415,17 @@ public class StockMarketController : MonoBehaviour
 
         mOrderObjectList.Clear();
         StockMarketHandler.Instance.Resume();
+    }
+    void OnClose() {
+        StartCoroutine(LoadAsyncScene("Demo"));
+    }
+    System.Collections.IEnumerator LoadAsyncScene(string scene)
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
+
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
     }
 }
