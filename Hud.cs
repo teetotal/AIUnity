@@ -64,8 +64,8 @@ public class Hud : MonoBehaviour
     private int mTaskAllocCount = 0;
 
     private ScrollRect ScrollViewSatisfaction, ScrollViewTask;
-    private GameObject ContentSatisfaction, ContentTask, TaskPool, InventoryPool;
-    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, Inventory, ItemPanel, ItemAcquisitionPanel, ItemAcquisitionImage;
+    private GameObject ContentSatisfaction, ContentTask, TaskPool;
+    private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, ItemAcquisitionPanel, ItemAcquisitionImage;
     private Animator ItemAcquisitionAnimator;
     private Button Btn_1, BtnOpenGallery, BtnOpenInventory, BtnAuto;
     private bool mIsAuto = false;
@@ -135,6 +135,7 @@ public class Hud : MonoBehaviour
         //Gallery
         BtnOpenGallery.onClick.AddListener(OpenGallery);
         //Inventory
+        InventoryPanel = transform.Find("Panel_Inventory").gameObject;
         BtnOpenInventory = GameObject.Find("HUD_Inventory_Open").GetComponent<Button>();
         BtnOpenInventory.onClick.AddListener(OpenInventory);
         
@@ -146,8 +147,9 @@ public class Hud : MonoBehaviour
             {   InvenTapKeys[1],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_RESOURCE)},
             {   InvenTapKeys[2],    L10nHandler.Instance.Get(L10nCode.UI_INVEN_TAP_INSTALLATION)}
         };
-        Inven.Init(tapInfo, InvenGetTitle, InvenGetDesc, InvenSubmit);
+        Inven.Init(tapInfo, InvenGetTitle, InvenGetDesc, InvenSubmit, InvenClose);
         Inven.OnClose();
+        InventoryPanel.SetActive(false);
         //village
         var info = ActorHandler.Instance.GetVillageInfo(mGamePlayController.Village);
         SetVillageName(info.name);
@@ -451,21 +453,12 @@ public class Hud : MonoBehaviour
     }
     // Inventory ----------------------------------------------------------------------------------------
     public void OpenInventory() {
-        /*
-        if(InventoryPanel.activeSelf)
-            return;
-        
-        OnInventoryCategoryItem();
-
-        InventoryPanel.SetActive(true);
-        BtnCloseInventory.gameObject.SetActive(true);
-        */
         if(Inven.IsOpen())
             return;
 
         Inven.OnOpen();
         LoadInventory(InvenTapKeys[0]);
-
+        InventoryPanel.SetActive(true);
     }
     void LoadInventory(string tap) {
         var actor = ActorHandler.Instance.GetActor(mGamePlayController.FollowActorId);
@@ -529,6 +522,9 @@ public class Hud : MonoBehaviour
             }
             LoadInventory(tap);
         }
+    }
+    void InvenClose() {
+        InventoryPanel.SetActive(false);
     }
     public void ObtainItem(Actor a) {
         var actor = ActorHandler.Instance.GetActor(mGamePlayController.FollowActorId);

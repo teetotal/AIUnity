@@ -64,13 +64,18 @@ public class UI_Inventory : MonoBehaviour
     private FnGetDesc mFnGetDesc;
     public delegate void FnSubmit(string tap, string key, float amount); 
     private FnSubmit mFnSubmit;
+    public delegate void FnOn();
+    private FnOn mFnClose;
     
     // public --------------------------
-    public void Init(Dictionary<string, string> tapInfo, FnGetTitle fnTitle, FnGetDesc fnDesc, FnSubmit fnSubmit) {
+    public void Init(Dictionary<string, string> tapInfo, FnGetTitle fnTitle, FnGetDesc fnDesc, FnSubmit fnSubmit, FnOn fnClose) {
         mFnGetTitle = fnTitle;
         mFnGetDesc = fnDesc;
         mFnSubmit = fnSubmit;
+        mFnClose = fnClose;
+
         mTapInfo = tapInfo;
+
         SetTap();
     }
     public bool IsOpen() {
@@ -192,6 +197,7 @@ public class UI_Inventory : MonoBehaviour
     }
     public void OnClose() {
         Parent.gameObject.SetActive(false);
+        mFnClose();
     }
     public void OnOpen() {
         Parent.gameObject.SetActive(true);
@@ -242,6 +248,7 @@ public class UI_Inventory : MonoBehaviour
         GridLayoutGroup grid = Content.GetComponent<GridLayoutGroup>();
         int cols = grid.constraintCount;
         float itemHeight = Scale.GetScaledHeight(SizeItemHeight);
+        
         float itemWidth = (Scroll.sizeDelta.x - (grid.padding.left + grid.padding.right + (grid.spacing.x * cols-1)) ) / cols;
         grid.cellSize = new Vector2(itemWidth, itemHeight);
 

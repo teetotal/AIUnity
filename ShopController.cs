@@ -1,6 +1,8 @@
 using ENGINE.GAMEPLAY.MOTIVATION;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ShopController : MonoBehaviour
 {
@@ -22,7 +24,8 @@ public class ShopController : MonoBehaviour
         }, 
         InvenGetTitle,
         InvenGetDesc,
-        InvenSubmit
+        InvenSubmit,
+        InvenClose
         );
 
         var items = ItemHandler.Instance.GetAll();
@@ -47,6 +50,18 @@ public class ShopController : MonoBehaviour
     private void InvenSubmit(string tap, string key, float amount) {
         hud.SetSatisfaction(gamePlayController.FollowActor.GetSatisfactions());
         hud.OpenInventory();
+    }
+    private void InvenClose() {
+        StartCoroutine(LoadAsyncScene("Demo"));
+    }
+    IEnumerator LoadAsyncScene(string scene)
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
+
+        while (!asyncLoad.isDone)
+        {
+            yield return null;
+        }
     }
 
 }
