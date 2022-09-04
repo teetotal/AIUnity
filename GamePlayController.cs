@@ -109,6 +109,8 @@ public class GamePlayController : MonoBehaviour
         if(!CreateActors()) {
             throw new System.Exception("Creating Actors Failure");
         }
+        //Init Dialog
+        DialogueHandler.Instance.Init(HudInstance, this); 
     }
     private void Update() {
         float deltaTime = Time.deltaTime;        

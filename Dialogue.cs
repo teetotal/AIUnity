@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using ENGINE.GAMEPLAY.MOTIVATION;
+using ENGINE;
 
 public class ScenarioNode {
     public float time;
@@ -13,37 +14,13 @@ public class ScenarioNode {
     }
 }
 //ScenarioNode 인스턴스를 관리하기 위한 pool
-public class ScenarioNodePool {
-    private Stack<ScenarioNode> mPool = new Stack<ScenarioNode>();
-    private static readonly Lazy<ScenarioNodePool> instance =
-                        new Lazy<ScenarioNodePool>(() => new ScenarioNodePool());
-    public static ScenarioNodePool Instance {
-        get {
-            return instance.Value;
-        }
-    }
-    private ScenarioNodePool() { }
-    public ScenarioNodePool(int initInstances = 3) {
-        for(int i = 0; i < initInstances; i++) {
-            ReleaeScenarioNode(AllocScenarioNode());
-        }
-    }    
-
-    public ScenarioNode GetScenarioNode() {
-        if(mPool.Count > 0)
-            return mPool.Pop();
-        
-        return AllocScenarioNode();
-    }
-    public void ReleaeScenarioNode(ScenarioNode p) {
-        mPool.Push(p);
-    }
-
-    private ScenarioNode AllocScenarioNode() {
-        return new ScenarioNode();
+public class ScenarioNodePool : Singleton<ScenarioNodePool> {
+    private ObjectPool<ScenarioNode> mPool = new ObjectPool<ScenarioNode>();
+    public ScenarioNodePool() { }
+    public ObjectPool<ScenarioNode> GetPool() {
+        return mPool;
     }
 }
-
 //Dialogue를 실행하는 본체
 public class Dialogue {
     public string uniqueId { get; set; }
@@ -84,18 +61,19 @@ public class Dialogue {
         //시나리오 만들기
         ConfigScenario_Detail info = ScenarioInfoHandler.Instance.mInfo.ContainsKey(taskId) ? ScenarioInfoHandler.Instance.mInfo[taskId] : ScenarioInfoHandler.Instance.mInfo[DEFAULT];
         for(int i = 0; i < info.from.Count; i++) {
-            ScenarioNode node = ScenarioNodePool.Instance.GetScenarioNode();
+            ScenarioNode node = ScenarioNodePool.Instance.GetPool().Alloc();
             node.Init(info.from[i].time, info.from[i].type);
             scenarioFrom.Enqueue(node);
         }
 
         for(int i = 0; i < info.to.Count; i++) {
-            ScenarioNode node = ScenarioNodePool.Instance.GetScenarioNode();
+            ScenarioNode node = ScenarioNodePool.Instance.GetPool().Alloc();
             node.Init(info.to[i].time, info.to[i].type);
             scenarioTo.Enqueue(node);
         }
 
-        //미리 결과를 알고 진행
+        //GameControl에서 follow actor가 to 인지 확인
+        //아니면 미리 결과를 알고 진행
         result = to.mActor.Loop_Decide();
     }
     public bool IsFinished() {
@@ -118,6 +96,7 @@ public class Dialogue {
     }
 
     private void Do(ScenarioNode node) {
+        //Debug.Log(DateTime.Now.ToLongTimeString() + "- " + node.time.ToString() + " " + node.type.ToString() + " " + from.mActor.mUniqueId + "/" + to.mActor.mUniqueId);
         switch(node.type) {
             case SCENARIO_NODE_TYPE.FROM_STOP:
             {
@@ -166,49 +145,26 @@ public class Dialogue {
             {
                 if(result)
                     to.mActor.Loop_AutoDoTask(feedbackTaskId);
-                else
-                    to.mActor.Loop_Release();
             }                           
+            break;
+            case SCENARIO_NODE_TYPE.TO_RELEASE:
+            {
+                to.mActor.Loop_Release();
+            }
             break;
         }
 
         //pooling
-        ScenarioNodePool.Instance.ReleaeScenarioNode(node);
+        ScenarioNodePool.Instance.GetPool().Release(node);
     }    
-}
-//Dialogue 인스턴스를 관리하기 위한 pool
-public class DialoguePool {
-    private Stack<Dialogue> mPool = new Stack<Dialogue>();
-    public DialoguePool(int initInstances = 3) {
-        for(int i = 0; i < initInstances; i++) {
-            ReleaeDialogue(AllocDialogue());
-        }
-    }
-    public Dialogue GetDialogue(ActorController from ,ActorController to, string taskId) {        
-        Dialogue p = GetDialogue();
-        p.Init(from, to, taskId);
-        return p;
-    }
-
-    private Dialogue GetDialogue() {
-        if(mPool.Count > 0)
-            return mPool.Pop();
-        
-        return AllocDialogue();
-    }
-    public void ReleaeDialogue(Dialogue p) {
-        mPool.Push(p);
-    }
-
-    private Dialogue AllocDialogue() {
-        return new Dialogue();
-    }
 }
 //ActorController 에서 호출하는 singleton
 public class DialogueHandler { 
     private Dictionary<string, Dialogue> mDialogues = new Dictionary<string, Dialogue>();
     private Queue<Dialogue> mReleaseQ = new Queue<Dialogue>();
-    private DialoguePool mDialoguePool = new DialoguePool();
+    private ObjectPool<Dialogue> mDialoguePool = new ObjectPool<Dialogue>();
+    private Hud mHud;
+    private GamePlayController mGamePlayController;
     private static readonly Lazy<DialogueHandler> instance =
                         new Lazy<DialogueHandler>(() => new DialogueHandler());
     public static DialogueHandler Instance {
@@ -217,6 +173,10 @@ public class DialogueHandler {
         }
     }
     private DialogueHandler() { }
+    public void Init(Hud hudInstance, GamePlayController gamePlayController) {
+        mHud = hudInstance;
+        mGamePlayController = gamePlayController;
+    }
     public void Update(float deltaTime) {        
         foreach(var p in mDialogues) {
             Dialogue dialogue = p.Value;
@@ -230,11 +190,12 @@ public class DialogueHandler {
         while(mReleaseQ.Count > 0) {
             var p = mReleaseQ.Dequeue();
             mDialogues.Remove(p.uniqueId);
-            mDialoguePool.ReleaeDialogue(p);
+            mDialoguePool.Release(p);
         }
     }
     public void Handover(ActorController from ,ActorController to, string taskId) {        
-        Dialogue p = mDialoguePool.GetDialogue(from, to, taskId);
+        Dialogue p = mDialoguePool.Alloc();
+        p.Init(from, to, taskId);
         mDialogues.Add(p.uniqueId, p);
     }   
 }
