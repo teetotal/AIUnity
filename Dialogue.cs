@@ -30,9 +30,8 @@ public class Dialogue {
     private ActorController to;
     private string taskId, feedbackTaskId;
     private FnTask task, taskFeedback;
-    private DateTime startTime;
-    private Queue<ScenarioNode> scenarioFrom = new Queue<ScenarioNode>();
-    private Queue<ScenarioNode> scenarioTo = new Queue<ScenarioNode>();
+    private DateTime lastTime;
+    private Queue<ScenarioNode> scenario = new Queue<ScenarioNode>();
     private const string DEFAULT = "default";
     private const string SEP = "-";
     public void Init(ActorController from ,ActorController to, string taskId) {
@@ -48,7 +47,7 @@ public class Dialogue {
         if(fnTaskFeedback == null)
             throw new Exception("Invalid Task. " + this.feedbackTaskId);
         taskFeedback = fnTaskFeedback;
-        this.startTime = DateTime.Now;
+        this.lastTime = DateTime.Now;
 
         sb.Clear();
         sb.Append(taskId);
@@ -59,17 +58,11 @@ public class Dialogue {
         this.uniqueId = sb.ToString();
 
         //시나리오 만들기
-        ConfigScenario_Detail info = ScenarioInfoHandler.Instance.mInfo.ContainsKey(taskId) ? ScenarioInfoHandler.Instance.mInfo[taskId] : ScenarioInfoHandler.Instance.mInfo[DEFAULT];
-        for(int i = 0; i < info.from.Count; i++) {
+        List<ConfigScenario_Node> info = ScenarioInfoHandler.Instance.mInfo.ContainsKey(taskId) ? ScenarioInfoHandler.Instance.mInfo[taskId] : ScenarioInfoHandler.Instance.mInfo[DEFAULT];
+        for(int i = 0; i < info.Count; i++) {
             ScenarioNode node = ScenarioNodePool.Instance.GetPool().Alloc();
-            node.Init(info.from[i].time, info.from[i].type);
-            scenarioFrom.Enqueue(node);
-        }
-
-        for(int i = 0; i < info.to.Count; i++) {
-            ScenarioNode node = ScenarioNodePool.Instance.GetPool().Alloc();
-            node.Init(info.to[i].time, info.to[i].type);
-            scenarioTo.Enqueue(node);
+            node.Init(info[i].time, info[i].type);
+            scenario.Enqueue(node);
         }
 
         //GameControl에서 follow actor가 to 인지 확인
@@ -77,21 +70,16 @@ public class Dialogue {
         result = to.mActor.Loop_Decide();
     }
     public bool IsFinished() {
-         if(scenarioFrom.Count == 0 && scenarioTo.Count == 0) {
+         if(scenario.Count == 0) {
             return true;   
         }
         return false;
     }
     public void Do() {
-        double t = (DateTime.Now - startTime).TotalMilliseconds;
-        //to
-        if(scenarioTo.Count > 0 && t >= scenarioTo.Peek().time) {            
-            Do(scenarioTo.Dequeue());            
-        }
-
-        //from
-        if(scenarioFrom.Count > 0 &&  t >= scenarioFrom.Peek().time) {            
-            Do(scenarioFrom.Dequeue());            
+        double t = (DateTime.Now - lastTime).TotalMilliseconds;
+        if(scenario.Count > 0 && t >= scenario.Peek().time) {            
+            Do(scenario.Dequeue());    
+            lastTime = DateTime.Now;        
         }
     }
 
@@ -134,7 +122,8 @@ public class Dialogue {
             }                  
             break;
             case SCENARIO_NODE_TYPE.TO_FEEDBACK:
-            {                
+            {     
+                //여기서 UI pause           
                 to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
                 if(result)
                     to.SetAnimation(taskFeedback.mInfo.animation);
