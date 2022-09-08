@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using ENGINE.GAMEPLAY;
 using ENGINE.GAMEPLAY.MOTIVATION;
-#nullable enable
+//#nullable enable
 public class GamePlayController : MonoBehaviour
 {
     public enum ANIMATION_ID : int {
@@ -51,7 +51,7 @@ public class GamePlayController : MonoBehaviour
 
     public string FollowActorId = string.Empty;
     public Actor FollowActor;
-    private ActorController? mFollowActorObject;
+    private ActorController mFollowActorObject;
     private Hud HudInstance;
     
     // Start is called before the first frame update
@@ -245,6 +245,7 @@ public class GamePlayController : MonoBehaviour
         }
         return true;
     }
+    #nullable enable
     public ActorController? GetFollowActor() {
         return mFollowActorObject;
     }

@@ -6,7 +6,37 @@ using ENGINE.GAMEPLAY.MOTIVATION;
 using TMPro;
 using System.Text;
 using System;
-using UnityEngine.SceneManagement;
+
+#nullable enable
+public class HUDAskContext {
+    public bool enable = false;
+    public Dialogue? dialogue;
+    public void Set(Dialogue p) {
+        dialogue = p;
+        enable = true;
+    }
+    public void SetAskBox(TextMeshProUGUI askTitle, TextMeshProUGUI askDesc) {
+        if(dialogue == null)
+            throw new Exception("dialogue is not assigned");
+        var task = TaskHandler.Instance.GetTask(dialogue.taskId);
+        if(task == null)
+            throw new Exception("Task must be allocated");
+        askTitle.text   = ScriptHandler.Instance.GetReplacedString(task.mInfo.askTitle, dialogue.from.mActor, dialogue.to.mActor);
+        askDesc.text    = ScriptHandler.Instance.GetReplacedString(task.mInfo.askDesc, dialogue.from.mActor, dialogue.to.mActor);
+    }
+    public void Accept() {
+        if(dialogue == null)
+            throw new Exception("dialogue is not assigned");
+        dialogue.Accept();
+        enable = false;
+    }
+    public void Decline() {
+        if(dialogue == null)
+            throw new Exception("dialogue is not assigned");
+        dialogue.Decline();
+        enable = false;
+    }
+}
 
 public class HUDStateContext {
     public List<string> queue = new List<string>();
@@ -28,6 +58,7 @@ public class HUDStateContext {
         return sz.ToString();
     }
 }
+#nullable disable
 public class Hud : MonoBehaviour
 {
     public bool HideQuest = false;
@@ -67,14 +98,15 @@ public class Hud : MonoBehaviour
     private GameObject ContentSatisfaction, ContentTask, TaskPool;
     private GameObject TopLeft, TopCenter, TopRight, Left, Right, Bottom, Ask, Task, InventoryPanel, ItemAcquisitionPanel, ItemAcquisitionImage;
     private Animator ItemAcquisitionAnimator;
-    private Button Btn_1, BtnOpenGallery, BtnOpenInventory, BtnAuto;
+    private Button Btn_1, BtnOpenGallery, BtnOpenInventory, BtnAuto, BtnAskAccept, BtnAskDecline;
     private bool mIsAuto = false;
     private bool mItemAcquisitionEnable = false;
     private float mItemAcquisitionTimer = 0;
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
-    private TextMeshProUGUI mTimer;
+    private HUDAskContext mHUDAskContext = new HUDAskContext();
+    private TextMeshProUGUI mTimer, AskTitle, AskDesc;
 
     public UI_Inventory Inven;
     private string[] InvenTapKeys = { "Item", "Resource", "Installation" };
@@ -122,11 +154,16 @@ public class Hud : MonoBehaviour
         ItemAcquisitionImage = GameObject.Find("HUD_Item_Acquisition_Image");
         ItemAcquisitionAnimator = ItemAcquisitionImage.GetComponent<Animator>();
         ItemAcquisitionText  = GameObject.Find("HUD_Item_Acquisition_Text").GetComponent<TextMeshProUGUI>();
+        ItemAcquisitionPanel.SetActive(false);
         //Timer
         mTimer  = GameObject.Find("HUD_Timer").GetComponent<TextMeshProUGUI>();
-
-        ItemAcquisitionPanel.SetActive(false);
-
+        //Ask
+        AskTitle            = GameObject.Find("HUD_Ask_Title").GetComponent<TextMeshProUGUI>();
+        AskDesc             = GameObject.Find("HUD_Ask_Desc").GetComponent<TextMeshProUGUI>();
+        BtnAskAccept        = GameObject.Find("HUD_Ask_Accept").GetComponent<Button>();
+        BtnAskDecline       = GameObject.Find("HUD_Ask_Decline").GetComponent<Button>();
+        BtnAskAccept.onClick.AddListener(OnAskAccept);
+        BtnAskDecline.onClick.AddListener(OnAskDecline);
         //Auto
         SetAutoBtnColor();
         BtnAuto.onClick.AddListener(SetAuto);
@@ -269,7 +306,7 @@ public class Hud : MonoBehaviour
         AskSize.x : AskSize.y = x : y
         y = (AskSize.y / AskSize.x) * x
         */
-        RectTransform askRT = Ask.GetComponent<RectTransform>();
+        RectTransform askRT = Ask.transform.Find("HUD_Ask").gameObject.GetComponent<RectTransform>();
         x = Scale.GetScaledWidth(AskSize.x);
         askRT.sizeDelta = new Vector2(x, ((AskSize.y / AskSize.x) * x));
         Ask.SetActive(false);
@@ -549,4 +586,19 @@ public class Hud : MonoBehaviour
         mItemAcquisitionEnable = true;
         mItemAcquisitionTimer = 0;
     }
+    //Ask
+    public void OpenAsk(Dialogue dialog) {
+        Ask.SetActive(true);
+        mHUDAskContext.Set(dialog);
+        mHUDAskContext.SetAskBox(AskTitle, AskDesc);
+    }
+    private void OnAskAccept() {
+        Ask.SetActive(false);
+        mHUDAskContext.Accept();
+    }
+    private void OnAskDecline() {
+        Ask.SetActive(false);
+        mHUDAskContext.Decline();
+    }
+
 }

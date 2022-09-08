@@ -24,12 +24,13 @@ public class ScenarioNodePool : Singleton<ScenarioNodePool> {
 //Dialogue를 실행하는 본체
 public class Dialogue {
     public string uniqueId { get; set; }
+    private bool pause = false;
     private bool result;
     private StringBuilder sb = new StringBuilder();      
-    private ActorController from;
-    private ActorController to;
-    private string taskId, feedbackTaskId;
-    private FnTask task, taskFeedback;
+    public ActorController from;
+    public ActorController to;
+    public string taskId, feedbackTaskId;
+    public FnTask task, taskFeedback;
     private DateTime lastTime;
     private Queue<ScenarioNode> scenario = new Queue<ScenarioNode>();
     private const string DEFAULT = "default";
@@ -76,11 +77,25 @@ public class Dialogue {
         return false;
     }
     public void Do() {
+        if(pause) 
+            return;
+
         double t = (DateTime.Now - lastTime).TotalMilliseconds;
         if(scenario.Count > 0 && t >= scenario.Peek().time) {            
             Do(scenario.Dequeue());    
             lastTime = DateTime.Now;        
         }
+    }
+    public void Accept() {
+        pause = false;
+        /* 여기 꼬이것들 풀어줘야함
+        result = true;
+        to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
+        to.SetAnimation(taskFeedback.mInfo.animation);
+        */
+    }
+    public void Decline() {
+        pause = false;
     }
 
     private void Do(ScenarioNode node) {
@@ -123,7 +138,8 @@ public class Dialogue {
             break;
             case SCENARIO_NODE_TYPE.TO_FEEDBACK:
             {     
-                //여기서 UI pause           
+                //여기서 UI pause      
+                DialogueHandler.Instance.GetHud().OpenAsk(this); 
                 to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
                 if(result)
                     to.SetAnimation(taskFeedback.mInfo.animation);
@@ -187,4 +203,7 @@ public class DialogueHandler {
         p.Init(from, to, taskId);
         mDialogues.Add(p.uniqueId, p);
     }   
+    public Hud GetHud() {
+        return mHud;
+    }
 }
