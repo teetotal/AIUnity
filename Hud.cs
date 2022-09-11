@@ -12,14 +12,10 @@ public class HUDAskContext {
     public bool enable = false;
     public bool reopenTask = false;
     public Dialogue? dialogue;
-    private Hud mHud;
-    public HUDAskContext(Hud hud) {
-        mHud = hud;
-    }
+    public HUDAskContext() {}
     public void Set(Dialogue dialogue) {
         this.dialogue = dialogue;
         this.enable = true;
-        mHud.ReleaseTask();
     }
     public void SetAskBox(TextMeshProUGUI askTitle, TextMeshProUGUI askDesc) {
         if(dialogue == null)
@@ -120,7 +116,7 @@ public class Hud : MonoBehaviour
     public string InventoryDescFormat = "{0}<br><br><size=70%>{1}</size>";
 
     private void Awake() {
-        mHUDAskContext = new HUDAskContext(this);
+        mHUDAskContext = new HUDAskContext();
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
 
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;

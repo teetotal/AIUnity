@@ -65,6 +65,9 @@ public class Dialogue {
             node.Init(info[i].time, info[i].type);
             scenario.Enqueue(node);
         }
+        if(DialogueHandler.Instance.GetGamePlayController().FollowActorId == to.mActor.mUniqueId) {
+            DialogueHandler.Instance.GetHud().ReleaseTask();
+        }
     }
     public bool IsFinished() {
          if(scenario.Count == 0) {
