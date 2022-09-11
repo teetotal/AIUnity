@@ -10,10 +10,16 @@ using System;
 #nullable enable
 public class HUDAskContext {
     public bool enable = false;
+    public bool reopenTask = false;
     public Dialogue? dialogue;
-    public void Set(Dialogue p) {
-        dialogue = p;
-        enable = true;
+    private Hud mHud;
+    public HUDAskContext(Hud hud) {
+        mHud = hud;
+    }
+    public void Set(Dialogue dialogue) {
+        this.dialogue = dialogue;
+        this.enable = true;
+        mHud.ReleaseTask();
     }
     public void SetAskBox(TextMeshProUGUI askTitle, TextMeshProUGUI askDesc) {
         if(dialogue == null)
@@ -105,7 +111,7 @@ public class Hud : MonoBehaviour
     public Color ColorBtnOn, ColorBtnOff;
     private GamePlayController mGamePlayController;
     private HUDStateContext mHUDStateContext = new HUDStateContext();
-    private HUDAskContext mHUDAskContext = new HUDAskContext();
+    private HUDAskContext mHUDAskContext;
     private TextMeshProUGUI mTimer, AskTitle, AskDesc;
 
     public UI_Inventory Inven;
@@ -114,6 +120,7 @@ public class Hud : MonoBehaviour
     public string InventoryDescFormat = "{0}<br><br><size=70%>{1}</size>";
 
     private void Awake() {
+        mHUDAskContext = new HUDAskContext(this);
         mGamePlayController = this.gameObject.GetComponent<GamePlayController>();
 
         TopLeft     = this.transform.Find("Panel_Top_Left").gameObject;
@@ -315,7 +322,7 @@ public class Hud : MonoBehaviour
         RectTransform taskRT = Task.GetComponent<RectTransform>();
         x = Scale.GetScaledWidth(TaskSize.x);
         taskRT.sizeDelta = new Vector2(x, ((TaskSize.y / TaskSize.x) * x));
-        Task.SetActive(false);
+        DeactiveTask();
 
         //Item Acquisition
         Vector2 itemAcquisitionSize = Scale.GetScaledSize(new Vector2(ItemAcquisitionImageSize, ItemAcquisitionImageSize));
@@ -423,6 +430,12 @@ public class Hud : MonoBehaviour
         SetSatisfaction(satisfaction);
     }
     // Task ---------------------------------------------------------------------------------------------
+    public void ActiveTask() {
+        Task.SetActive(true);
+    }
+    public void DeactiveTask() {
+        Task.SetActive(false);
+    }
     public void SetTask(Dictionary<string, FnTask> tasks) {
         float width = ScrollViewTask.gameObject.GetComponent<RectTransform>().sizeDelta.x;
         float height = Scale.GetScaledHeight(100);
@@ -433,7 +446,7 @@ public class Hud : MonoBehaviour
         foreach(var p in tasks) {
             GameObject obj = AllocTask(contentRect.sizeDelta.x, height, p.Value);
         }
-        Task.SetActive(true);
+        ActiveTask();
     }
     private GameObject AllocTask(float width, float height, FnTask fn) {
         GameObject obj;
@@ -461,7 +474,7 @@ public class Hud : MonoBehaviour
             mTaskObjectList[i].SetParent(TaskPool.transform);
         }
         mTaskObjectList.Clear();
-        Task.SetActive(false);
+        DeactiveTask();
     }
     // Quest ---------------------------------------------------------------------------------------------
     public void SetQuest(Actor actor, List<string> quests) {

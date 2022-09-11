@@ -65,10 +65,6 @@ public class Dialogue {
             node.Init(info[i].time, info[i].type);
             scenario.Enqueue(node);
         }
-
-        //GameControl에서 follow actor가 to 인지 확인
-        //아니면 미리 결과를 알고 진행
-        result = to.mActor.Loop_Decide();
     }
     public bool IsFinished() {
          if(scenario.Count == 0) {
@@ -88,14 +84,13 @@ public class Dialogue {
     }
     public void Accept() {
         pause = false;
-        /* 여기 꼬이것들 풀어줘야함
         result = true;
-        to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
-        to.SetAnimation(taskFeedback.mInfo.animation);
-        */
+        Feedback();
     }
     public void Decline() {
         pause = false;
+        result = false;
+        Feedback();
     }
 
     private void Do(ScenarioNode node) {
@@ -138,12 +133,14 @@ public class Dialogue {
             break;
             case SCENARIO_NODE_TYPE.TO_FEEDBACK:
             {     
-                //여기서 UI pause      
-                DialogueHandler.Instance.GetHud().OpenAsk(this); 
-                to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
-                if(result)
-                    to.SetAnimation(taskFeedback.mInfo.animation);
-                    
+                //Hud task가 열린 상태에서의 문제 해결해야 함
+                if(DialogueHandler.Instance.GetGamePlayController().FollowActorId == to.mActor.mUniqueId) {
+                    pause = true;
+                    DialogueHandler.Instance.GetHud().OpenAsk(this); 
+                } else {
+                    result = to.mActor.Loop_Decide();
+                    Feedback();
+                }
             }            
             break;
             case SCENARIO_NODE_TYPE.TO_DECIDE:    
@@ -162,6 +159,11 @@ public class Dialogue {
         //pooling
         ScenarioNodePool.Instance.GetPool().Release(node);
     }    
+    private void Feedback() {
+        to.SetMessage(to.GetScript(from.mActor, feedbackTaskId, !result));
+        if(result)
+            to.SetAnimation(taskFeedback.mInfo.animation);
+    }
 }
 //ActorController 에서 호출하는 singleton
 public class DialogueHandler { 
@@ -181,6 +183,9 @@ public class DialogueHandler {
     public void Init(Hud hudInstance, GamePlayController gamePlayController) {
         mHud = hudInstance;
         mGamePlayController = gamePlayController;
+    }
+    public GamePlayController GetGamePlayController() {
+        return mGamePlayController;
     }
     public void Update(float deltaTime) {        
         foreach(var p in mDialogues) {
