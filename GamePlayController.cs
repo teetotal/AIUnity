@@ -233,6 +233,9 @@ public class GamePlayController : MonoBehaviour
                     throw new System.Exception("ActorController Init Failure. " + actorName);
 
                 actor.SetCallback(actorController.Callback);
+                //scene을 돌아왔을때 하던걸 완료 할 수 없으니 다 리셋시켜 버린다.
+                actor.Loop_Release();
+                actor.GetTaskContext().lastCount = 0;
                 
                 //나중에 캐릭터 생성에 대한 부분 처리할때 옮겨갈 코드
                 if(actorName == FollowActorId) {
