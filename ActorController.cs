@@ -379,6 +379,8 @@ public class ActorController : MonoBehaviour
                     mVehicleController.GetIn(this.gameObject, dest);
                 } else {
                     AddHudState(L10nHandler.Instance.Get(L10nCode.GET_IN_VEHICLE_FAILURE));
+                    VehicleHandler.Instance.CancelReserve(actor.mUniqueId);
+                    actor.Loop_Release();
                 }
             }
             break;

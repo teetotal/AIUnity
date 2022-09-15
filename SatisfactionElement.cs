@@ -21,7 +21,7 @@ public class SatisfactionElement : MonoBehaviour
     public void SetSatisfaction(Satisfaction satisfaction) {
         string title = SatisfactionDefine.Instance.Get(satisfaction.SatisfactionId).title;
         SatisfactionName.text = title; 
-        SatisfactionProgressText.text = string.Format("{1} / {2}", title, satisfaction.Value, satisfaction.Max);
+        SatisfactionProgressText.text = string.Format("{0} / {1}", satisfaction.Value, satisfaction.Max);
         SatisfactionProgress.value = satisfaction.Value / satisfaction.Max;
 
         if(satisfaction.Value <= satisfaction.Min) SatisfactionName.color = colorYellow;
