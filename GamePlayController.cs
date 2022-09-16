@@ -322,18 +322,7 @@ public class GamePlayController : MonoBehaviour
     public void ChangeScene(Actor actor, string scene) {
         var followActor = GetFollowActor();
         if(followActor != null && followActor.mActor.mUniqueId == actor.mUniqueId) {
-            StartCoroutine(LoadAsyncScene(scene));
-        }
-    }
-    IEnumerator LoadAsyncScene(string scene)
-    {
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
-
-        // Wait until the asynchronous scene fully loads
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-            //Debug.Log(asyncLoad.progress);
+            LoadingScene.LoadScene(scene);
         }
     }
     private bool Load() {

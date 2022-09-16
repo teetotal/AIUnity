@@ -16,17 +16,6 @@ public class Gallery : MonoBehaviour
 
     void CloseScene()
     {
-        StartCoroutine(LoadAsyncScene(MainSceneName));
-    }
-    IEnumerator LoadAsyncScene(string scene)
-    {
-        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(scene);
-
-        // Wait until the asynchronous scene fully loads
-        while (!asyncLoad.isDone)
-        {
-            yield return null;
-            Debug.Log("Comeback " + asyncLoad.progress.ToString());
-        }
+        LoadingScene.LoadScene(MainSceneName);
     }
 }
