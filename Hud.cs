@@ -357,7 +357,7 @@ public class Hud : MonoBehaviour
     private string GetTimerString() {
         long count = CounterHandler.Instance.GetCount();
         DateTime dt = new DateTime(1000,01,01);
-        dt = dt.AddMinutes(count);
+        dt = dt.AddSeconds(count * 343);
         return dt.ToLongTimeString();
     }
     public void SetName(string name) {
