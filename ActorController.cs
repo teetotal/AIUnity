@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using ENGINE.GAMEPLAY;
+using ENGINE;
 using ENGINE.GAMEPLAY.MOTIVATION;
 #nullable enable
 public class ActorControllerApproching {
