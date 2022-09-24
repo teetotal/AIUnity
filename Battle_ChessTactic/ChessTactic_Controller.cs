@@ -12,7 +12,7 @@ public class ChessTactic_Controller : MonoBehaviour
     [SerializeField]
     private float Interval = 1;
 
-    private bool mIsReady = false;
+    private bool mIsReady = true;
     private Battle mBattle;
     private Map mMap;
     private float mTimer = 0;
@@ -86,10 +86,12 @@ public class ChessTactic_Controller : MonoBehaviour
         for(int x = 0; x < MapSize.x; x++) {
             mTiles.Add(new List<Vector3>());
             for(int y = 0; y < MapSize.y; y++) {
-                mTiles[x].Add(GameObject.Find(string.Format("m{0}-{1}", x, y)).transform.position);
+                string name = string.Format("m{0}-{1}", x, y);
+                mTiles[x].Add(GameObject.Find(name).transform.position + new Vector3(-2.5f, 0, -2.5f));
             }
         }
         m.AddObstacle(1,1);
+        m.AddObstacle(3,3);
         return m;
     }
     private List<Soldier> CreateSolidiers(bool isHome, Map map) {
@@ -97,6 +99,7 @@ public class ChessTactic_Controller : MonoBehaviour
         if(isHome) {
             SoldierAbility ability = new SoldierAbility();
             ability.distance = 2;
+            ability.attackRange = 2;
             Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.CROSS, ability, new ENGINE.Position(2, 0, 0), map);
             list.Add(soldier);
             mHomeSoldiers.Add(InstantiateSoldier(soldier));
@@ -104,6 +107,7 @@ public class ChessTactic_Controller : MonoBehaviour
         } else {
             SoldierAbility ability = new SoldierAbility();
             ability.distance = 1;
+            ability.attackRange = 2;
             Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.STRAIGHT, ability, new ENGINE.Position(2, 5, 0), map);
             list.Add(soldier);
             mAwaySoldiers.Add(InstantiateSoldier(soldier));
@@ -125,6 +129,8 @@ public class ChessTactic_Controller : MonoBehaviour
         obj.GetComponent<ChessTactic_SoldierController>().Init(this, soldier);
         obj.GetComponent<ActorController>().enabled = false;
         obj.GetComponent<NavMeshAgent>().enabled = false;
+
+        obj.GetComponent<Animator>().runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Animation/Battle_ChessTactic");
         return obj;
     }
     private Tactic CreateTactic(bool isHome) {
