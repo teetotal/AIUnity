@@ -100,6 +100,7 @@ public class ChessTactic_Controller : MonoBehaviour
             SoldierAbility ability = new SoldierAbility();
             ability.distance = 2;
             ability.attackRange = 2;
+            ability.teamwork = 3;
             Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.CROSS, ability, new ENGINE.Position(2, 0, 0), map);
             list.Add(soldier);
             mHomeSoldiers.Add(InstantiateSoldier(soldier));
@@ -108,6 +109,7 @@ public class ChessTactic_Controller : MonoBehaviour
             SoldierAbility ability = new SoldierAbility();
             ability.distance = 1;
             ability.attackRange = 2;
+            ability.teamwork = 3;
             Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.STRAIGHT, ability, new ENGINE.Position(2, 5, 0), map);
             list.Add(soldier);
             mAwaySoldiers.Add(InstantiateSoldier(soldier));
