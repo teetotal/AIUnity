@@ -97,22 +97,25 @@ public class ChessTactic_Controller : MonoBehaviour
     private List<Soldier> CreateSolidiers(bool isHome, Map map) {
         List<Soldier> list = new List<Soldier>();
         if(isHome) {
-            SoldierAbility ability = new SoldierAbility();
-            ability.distance = 2;
-            ability.attackRange = 2;
-            ability.teamwork = 3;
-            Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.CROSS, ability, new ENGINE.Position(2, 0, 0), map);
-            list.Add(soldier);
-            mHomeSoldiers.Add(InstantiateSoldier(soldier));
-
+            for(int i = 0; i < 3; i++) {
+                SoldierAbility ability = new SoldierAbility();
+                ability.distance = 2;
+                ability.attackRange = 2;
+                ability.teamwork = 3;
+                Soldier soldier = new Soldier(isHome, i, MOVING_TYPE.CROSS, ability, new ENGINE.Position(i+1, 0, 0), map);
+                list.Add(soldier);
+                mHomeSoldiers.Add(InstantiateSoldier(soldier));
+            }
         } else {
-            SoldierAbility ability = new SoldierAbility();
-            ability.distance = 1;
-            ability.attackRange = 2;
-            ability.teamwork = 3;
-            Soldier soldier = new Soldier(isHome, 0, MOVING_TYPE.STRAIGHT, ability, new ENGINE.Position(2, 5, 0), map);
-            list.Add(soldier);
-            mAwaySoldiers.Add(InstantiateSoldier(soldier));
+            for(int i = 0; i < 3; i++) {
+                SoldierAbility ability = new SoldierAbility();
+                ability.distance = 1;
+                ability.attackRange = 2;
+                ability.teamwork = 3;
+                Soldier soldier = new Soldier(isHome, i, MOVING_TYPE.STRAIGHT, ability, new ENGINE.Position(i+2, 5, 0), map);
+                list.Add(soldier);
+                mAwaySoldiers.Add(InstantiateSoldier(soldier));
+            }
         }
         return list;
     }
@@ -122,15 +125,15 @@ public class ChessTactic_Controller : MonoBehaviour
         Vector3 position = mTiles[(int)pos.x][(int)pos.y];
         //Quaternion rotation = Quaternion.Euler(actor.rotation.x, actor.rotation.y, actor.rotation.z);
         Quaternion rotation = Quaternion.identity;
-        GameObject prefab = Resources.Load<GameObject>("Actors/actor1");
+        GameObject prefab = Resources.Load<GameObject>("Actors/battle/Soldier1");
         if(prefab == null) 
             throw new System.Exception("Invalid prefab");
 
         GameObject obj = Instantiate(prefab, position, rotation);
         obj.name = string.Format("Soldier-{0}-{1}", soldier.IsHome(), soldier.GetID());
         obj.GetComponent<ChessTactic_SoldierController>().Init(this, soldier);
-        obj.GetComponent<ActorController>().enabled = false;
-        obj.GetComponent<NavMeshAgent>().enabled = false;
+        //obj.GetComponent<ActorController>().enabled = false;
+        //obj.GetComponent<NavMeshAgent>().enabled = false;
 
         obj.GetComponent<Animator>().runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Animation/Battle_ChessTactic");
         return obj;
