@@ -23,8 +23,17 @@ public class ChessTactic_Controller : MonoBehaviour
     void Start()
     {
         mMap = CreateMap();
-        mBattle = new Battle(mMap, CreateSolidiers(true, mMap), CreateSolidiers(false, mMap), CreateTactic(true), CreateTactic(false));
+        TextAsset sz = Resources.Load<TextAsset>("Config/battle_chesstactic");
+        if(sz == null)
+            throw new System.Exception("Loading Config Failure. battle_chesstactic");
+        var info = new Loader().Load(sz.text);
+        
+        List<Soldier> home = CreateSolidiers(true, mMap, info["my"].soldiers);
+        List<Soldier> away = CreateSolidiers(false, mMap, info["opp"].soldiers);
+        Tactic homeTactic = info["my"].tactic;
+        Tactic awayTactic = info["opp"].tactic;
 
+        mBattle = new Battle(mMap, home, away, homeTactic, awayTactic);
         GameObject.Find("BtnStart").GetComponent<Button>().onClick.AddListener(OnStart);
     }
 
@@ -94,6 +103,19 @@ public class ChessTactic_Controller : MonoBehaviour
         m.AddObstacle(3,3);
         return m;
     }
+    private List<Soldier> CreateSolidiers(bool isHome, Map map, List<SoldierInfo> info) {
+        List<Soldier> list = new List<Soldier>();
+        for(int i = 0; i < info.Count; i++) {
+            Soldier soldier = new Soldier(info[i], map, isHome);
+            list.Add(soldier);
+            if(isHome)
+                mHomeSoldiers.Add(InstantiateSoldier(soldier));
+            else
+                mAwaySoldiers.Add(InstantiateSoldier(soldier));
+        }
+        return list;
+    }
+    /*
     private List<Soldier> CreateSolidiers(bool isHome, Map map) {
         List<Soldier> list = new List<Soldier>();
         if(isHome) {
@@ -119,6 +141,7 @@ public class ChessTactic_Controller : MonoBehaviour
         }
         return list;
     }
+    */
     private GameObject InstantiateSoldier(Soldier soldier) {
         Position pos = soldier.GetPosition();
         
