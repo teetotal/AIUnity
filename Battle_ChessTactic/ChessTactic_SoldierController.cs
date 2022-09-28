@@ -6,7 +6,7 @@ using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
 
 public class ChessTactic_SoldierController : MonoBehaviour
 {
-    public bool IsInit = false;
+    public bool IsReady = false;
     private Soldier mSoldier;
     private ChessTactic_Controller mController;
     private Vector3 mStartPosition, mEndPosition;
@@ -22,55 +22,58 @@ public class ChessTactic_SoldierController : MonoBehaviour
         Walk
     }
     private const string AnimationId = "AnimationId";
+    private BattleActorUI mUI;
+    private GameObject mUIObject;
     public void Init(ChessTactic_Controller controller, Soldier soldier) {
         mController = controller;
         mSoldier = soldier;
     }
     public void ActionStart(Rating rating) {
         mStartPosition = transform.position;
-
-        if(rating.targetId == -1) {
-            Position pos = mSoldier.GetPosition();
-            mEndPosition = mController.GetTilePosition(pos.x, pos.y);
-        } else {
-            Position pos = mSoldier.GetMap().GetPosition(rating.targetId);
-            mEndPosition = mController.GetTilePosition(pos.x, pos.y);
-            if(rating.type == BehaviourType.MOVE)
-                mEndPosition += new Vector3(Random.Range(-2.5f, 2.5f), 0 , Random.Range(-2.5f, 2.5f));
-        }
-        
         mCurrentActionType = rating.type;
         mCurrentActionTarget = rating.targetId;
-        IsInit = true;
-
-        float distance = Vector3.Distance(mStartPosition, mEndPosition);
-        //Debug.Log(distance);
+        IsReady = true;
 
         switch(rating.type) {
+            //Move
             case BehaviourType.MOVE:{
-                if(distance < 5)
+                Position pos = mSoldier.GetMap().GetPosition(rating.targetId);
+                mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-2.5f, 2.5f), 0 , Random.Range(-2.5f, 2.5f));
+
+                if(Vector3.Distance(mStartPosition, mEndPosition) < 5)
                     mAnimator.SetInteger(AnimationId, (int)AnimationCode.Walk);
                 else
                     mAnimator.SetInteger(AnimationId, (int)AnimationCode.Run);
             }
             break;
-            case BehaviourType.ATTACK:
-            mAnimator.SetInteger(AnimationId, (int)AnimationCode.Fire);
+            //Attack
+            case BehaviourType.ATTACK: {
+                GameObject target = mController.GetSoldierObject(!rating.isHome, mCurrentActionTarget);
+                mEndPosition = target.transform.position;
+                mAnimator.SetInteger(AnimationId, (int)AnimationCode.Fire);
+            }
             break;
-            case BehaviourType.KEEP:
-            mAnimator.SetInteger(AnimationId, (int)AnimationCode.Idle);
+            //Keep
+            case BehaviourType.KEEP: {
+                Position pos = mSoldier.GetPosition();
+                mEndPosition = mController.GetTilePosition(pos.x, pos.y);
+                mAnimator.SetInteger(AnimationId, (int)AnimationCode.Idle);
+
+            }
             break;
         }
 
         //Debug.Log(string.Format("home: {0}, id: {1}, target: {2}", mSoldier.IsHome(), mSoldier.GetID(), mCurrentActionTarget));
     }
     public void ActionUpdate(float process) {
-        if(!IsInit)
+        if(!IsReady)
             return;
 
         switch(mCurrentActionType) {
             case BehaviourType.ATTACK: 
                 transform.LookAt(mEndPosition);
+                Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
+                transform.rotation = Quaternion.Euler(rot);
             break;
             case BehaviourType.MOVE: 
                 transform.position = Vector3.Lerp(mStartPosition, mEndPosition, process);
@@ -80,33 +83,52 @@ public class ChessTactic_SoldierController : MonoBehaviour
             break;
         }
     }
-    public void ActionFinish() {
-        if(!IsInit)
+    public void ActionFinish(Soldier.State state) {
+        if(!IsReady)
             return;
 
         switch(mCurrentActionType) {
             case BehaviourType.ATTACK: 
-               
             break;
             case BehaviourType.MOVE: {
                 transform.position = mEndPosition;
             }
             break;
         }
+
+        string sz = string.Empty;
+        if(state.attack > 0) {
+            sz += "+" + state.attack.ToString();
+        }
+        if(state.damage > 0) {
+            sz += " -" + state.damage.ToString();
+            sz += " =" + mSoldier.GetHP().ToString();
+        }
+        if(state.isDie) {
+            mAnimator.SetInteger(AnimationId, (int)AnimationCode.Death);
+            mSoldier.SetDie();
+            IsReady = false;
+        }
+
+        if(sz.Length > 0)
+            mUI.SetMessage(sz);
+        mUI.SetHP(mSoldier.GetHP());
+
     }
     void Start()
     {
         mAnimator = GetComponent<Animator>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        switch(mCurrentActionType) {
-            case BehaviourType.ATTACK: 
-                Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
-                transform.rotation = Quaternion.Euler(rot);
-            break;
+        //UI 
+        var prefab = Resources.Load<GameObject>("ActorUI");
+        var canvas = GameObject.Find("Canvas");
+        if(prefab != null && canvas != null) {
+            mUIObject = Instantiate<GameObject>(prefab, Vector3.zero, Quaternion.identity);
+            mUIObject.name = "ActorUI_" + name;
+            mUIObject.transform.SetParent(canvas.transform);
+            mUI = mUIObject.GetComponent<BattleActorUI>();
+            mUI.targetName = name;
+            mUI.SetName(mSoldier.GetName());
+            mUI.SetHP(mSoldier.GetHP());
         }
     }
 }

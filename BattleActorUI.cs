@@ -38,6 +38,15 @@ public class BattleActorUI : MonoBehaviour
         //_panel.sizeDelta.x : 1366 = x : Screen.safeArea.width
         _panel.sizeDelta = Scale.GetScaledSize(_panel.sizeDelta);
         _canvas.enabled = false;
+
+        if(target == null) {
+            target = GameObject.Find(targetName);
+            NavMeshAgent nav = target.GetComponent<NavMeshAgent>();     
+            if(nav != null)
+                height = nav.height;
+            else
+                height = 2.5f;
+        }
     }
 	public void SetHP(float value)
 	{
@@ -67,11 +76,6 @@ public class BattleActorUI : MonoBehaviour
         }
     }
     private void Update() {
-        if(target == null) {
-            target = GameObject.Find(targetName);
-            NavMeshAgent nav = target.GetComponent<NavMeshAgent>();     
-            height = nav.height;
-        }
         if(mIseSetMSG) {
             double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
             if(msgQ.Count > 0 && interval <= endTime) {                                

@@ -18,8 +18,8 @@ public class ChessTactic_Controller : MonoBehaviour
     private float mTimer = 0;
     private List<Rating> ret = new List<Rating>();
     private List<List<Vector3>> mTiles = new List<List<Vector3>>();
-    private List<GameObject> mHomeSoldiers = new List<GameObject>();
-    private List<GameObject> mAwaySoldiers = new List<GameObject>();
+    private Dictionary<int, GameObject> mHomeSoldiers = new Dictionary<int, GameObject>();
+    private Dictionary<int, GameObject> mAwaySoldiers = new Dictionary<int, GameObject>();
     void Start()
     {
         mMap = CreateMap();
@@ -58,12 +58,17 @@ public class ChessTactic_Controller : MonoBehaviour
 
         mTimer = 0;
         //반영
+        mBattle.ResetState();
         for(int i = 0; i < ret.Count; i++) {
             mBattle.Action(ret[i]);
-            if(ret[i].isHome) {
-                mHomeSoldiers[ret[i].soldierId].GetComponent<ChessTactic_SoldierController>().ActionFinish();
+        }
+        List<Soldier.State> states = mBattle.GetActionResult();
+        for(int i = 0; i < states.Count; i++) {
+            SoldierInfo info = states[i].mSoldier.GetInfo();
+            if(info.isHome) {
+                mHomeSoldiers[info.id].GetComponent<ChessTactic_SoldierController>().ActionFinish(states[i]);
             } else {
-                mAwaySoldiers[ret[i].soldierId].GetComponent<ChessTactic_SoldierController>().ActionFinish();
+                mAwaySoldiers[info.id].GetComponent<ChessTactic_SoldierController>().ActionFinish(states[i]);
             }
         }
 
@@ -82,7 +87,12 @@ public class ChessTactic_Controller : MonoBehaviour
             }
         }
     }
-
+    public GameObject GetSoldierObject(bool isHome, int id) {
+        if(isHome)
+            return mHomeSoldiers[id];
+        else 
+            return mAwaySoldiers[id];
+    }
     private void OnFinish() {
         mIsReady = false;
     }
@@ -109,39 +119,12 @@ public class ChessTactic_Controller : MonoBehaviour
             Soldier soldier = new Soldier(info[i], map, isHome);
             list.Add(soldier);
             if(isHome)
-                mHomeSoldiers.Add(InstantiateSoldier(soldier));
+                mHomeSoldiers.Add(soldier.GetID(), InstantiateSoldier(soldier));
             else
-                mAwaySoldiers.Add(InstantiateSoldier(soldier));
+                mAwaySoldiers.Add(soldier.GetID(), InstantiateSoldier(soldier));
         }
         return list;
     }
-    /*
-    private List<Soldier> CreateSolidiers(bool isHome, Map map) {
-        List<Soldier> list = new List<Soldier>();
-        if(isHome) {
-            for(int i = 0; i < 3; i++) {
-                SoldierAbility ability = new SoldierAbility();
-                ability.distance = 2;
-                ability.attackRange = 2;
-                ability.teamwork = 3;
-                Soldier soldier = new Soldier(isHome, i, MOVING_TYPE.CROSS, ability, new ENGINE.Position(i+1, 0, 0), map);
-                list.Add(soldier);
-                mHomeSoldiers.Add(InstantiateSoldier(soldier));
-            }
-        } else {
-            for(int i = 0; i < 3; i++) {
-                SoldierAbility ability = new SoldierAbility();
-                ability.distance = 1;
-                ability.attackRange = 2;
-                ability.teamwork = 3;
-                Soldier soldier = new Soldier(isHome, i, MOVING_TYPE.STRAIGHT, ability, new ENGINE.Position(i+2, 5, 0), map);
-                list.Add(soldier);
-                mAwaySoldiers.Add(InstantiateSoldier(soldier));
-            }
-        }
-        return list;
-    }
-    */
     private GameObject InstantiateSoldier(Soldier soldier) {
         Position pos = soldier.GetPosition();
         
