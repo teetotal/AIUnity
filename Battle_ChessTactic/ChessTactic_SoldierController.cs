@@ -8,7 +8,11 @@ public class ChessTactic_SoldierController : MonoBehaviour
 {
     [SerializeField]
     private Transform bullet;
+    [SerializeField]
+    private GameObject particleHit;
+
     private Vector3 bulletStartPoint, bulletInitLocalPosition;
+    private ParticleSystem mParticleHit;
 
     private bool IsReady = false;
     private Soldier mSoldier;
@@ -27,7 +31,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
         Recovery
     }
     private const string AnimationId = "AnimationId";
-    private BattleActorUI mUI;
+    private const string UIPrefab = "ChessTactic_SoldierUI";
+    private ChessTactic_SoldierUI mUI;
     private GameObject mUIObject;
     public void Init(ChessTactic_Controller controller, Soldier soldier) {
         mController = controller;
@@ -93,8 +98,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
                 transform.rotation = Quaternion.Euler(rot);
                 //bulet
-                // process % 0.1
-                bullet.position = Vector3.Lerp(bulletStartPoint, mEndPosition + new Vector3(0, 0.5f, 0), (process % 0.3f) * 3.3f);
+                float rate = (process % 0.3f) * 3.3f;
+                bullet.position = Vector3.Lerp(bulletStartPoint, mEndPosition + new Vector3(0, 0.5f, 0), rate);
             break;
             case BehaviourType.MOVE: 
                 transform.position = Vector3.Lerp(mStartPosition, mEndPosition, process);
@@ -121,18 +126,18 @@ public class ChessTactic_SoldierController : MonoBehaviour
         // ---------------------------------
         string sz = string.Empty;
         if(state.attack > 0) {
-            if(state.isHit)
-                sz += "!";
             sz += state.attack.ToString();
         }
         if(state.damage > 0) {
             sz += " -" + state.damage.ToString();
             sz += " =" + mSoldier.GetHP().ToString();
+            mParticleHit.Play();
         }
-        if(sz.Length > 0)
-            mUI.SetMessage(sz);
+        //if(sz.Length > 0) mUI.SetMessage(sz);
         // -------------------------------------
+        if(state.isHit) mUI.SetMessage("명중");
         if(state.isDie) {
+            mUI.Hide();
             SetAnimation(AnimationCode.Death);
             mSoldier.SetDie();
             IsReady = false;
@@ -144,19 +149,21 @@ public class ChessTactic_SoldierController : MonoBehaviour
     {
         mAnimator = GetComponent<Animator>();
         //UI 
-        var prefab = Resources.Load<GameObject>("ActorUI");
+        var prefab = Resources.Load<GameObject>(UIPrefab);
         var canvas = GameObject.Find("Canvas");
         if(prefab != null && canvas != null) {
             mUIObject = Instantiate<GameObject>(prefab, Vector3.zero, Quaternion.identity);
-            mUIObject.name = "ActorUI_" + name;
+            mUIObject.name = UIPrefab + "_" + name;
             mUIObject.transform.SetParent(canvas.transform);
-            mUI = mUIObject.GetComponent<BattleActorUI>();
-            mUI.targetName = name;
+            mUI = mUIObject.GetComponent<ChessTactic_SoldierUI>();
+            mUI.targetName = this.name;
             mUI.SetName(mSoldier.GetName());
             mUI.SetHP(mSoldier.GetHP());
         }
         //bullet
         bulletInitLocalPosition = bullet.localPosition;
         bulletStartPoint = bullet.position;
+        //particle
+        mParticleHit = particleHit.GetComponent<ParticleSystem>();
     }
 }
