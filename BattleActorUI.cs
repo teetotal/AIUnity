@@ -45,7 +45,7 @@ public class BattleActorUI : MonoBehaviour
             if(nav != null)
                 height = nav.height;
             else
-                height = 2.5f;
+                height = 2f;
         }
     }
 	public void SetHP(float value)

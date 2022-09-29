@@ -34,7 +34,7 @@ public class ChessTactic_Controller : MonoBehaviour
         Tactic awayTactic = info["opp"].tactic;
 
         mBattle = new Battle(mMap, home, away, homeTactic, awayTactic);
-        GameObject.Find("BtnStart").GetComponent<Button>().onClick.AddListener(OnStart);
+        //GameObject.Find("BtnStart").GetComponent<Button>().onClick.AddListener(OnStart);
     }
 
     // Update is called once per frame
