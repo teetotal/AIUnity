@@ -19,7 +19,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
         Run,
         Fire,
         Death,
-        Walk
+        Walk,
+        Recovery
     }
     private const string AnimationId = "AnimationId";
     private BattleActorUI mUI;
@@ -98,7 +99,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
 
         string sz = string.Empty;
         if(state.attack > 0) {
-            sz += "+" + state.attack.ToString();
+            if(state.isHit)
+                sz += "!";
+            sz += state.attack.ToString();
         }
         if(state.damage > 0) {
             sz += " -" + state.damage.ToString();
