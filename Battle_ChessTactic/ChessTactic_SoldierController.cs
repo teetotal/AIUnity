@@ -43,6 +43,10 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private void SetAnimation(AnimationCode code) {
         mAnimator.SetInteger(AnimationId, (int)code);
     }
+    public void OnFinish() {
+        if(!mSoldier.IsDie())
+            SetAnimation(AnimationCode.Idle);
+    }
     public void ActionStart(Rating rating) {
         mStartPosition = transform.position;
         mCurrentActionType = rating.type;
@@ -55,10 +59,12 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 SetAnimation(AnimationCode.Recovery);
             }
             break;
+            //Avoidance
+            case BehaviourType.AVOIDANCE:
             //Move
             case BehaviourType.MOVE: {
                 Position pos = mSoldier.GetMap().GetPosition(rating.targetId);
-                mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-2.5f, 2.5f), 0 , Random.Range(-2.5f, 2.5f));
+                mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-1.5f, 1.5f), 0 , Random.Range(-1.5f, 1.5f));
 
                 if(Vector3.Distance(mStartPosition, mEndPosition) < 5)
                     SetAnimation(AnimationCode.Walk);
@@ -103,6 +109,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 float rate = (process % 0.3f) * 3.3f;
                 bullet.position = Vector3.Lerp(bulletStartPoint, mEndPosition + new Vector3(0, 0.5f, 0), rate);
             break;
+            case BehaviourType.AVOIDANCE:
             case BehaviourType.MOVE: 
                 transform.position = Vector3.Lerp(mStartPosition, mEndPosition, process);
                 transform.LookAt(mEndPosition);
@@ -120,6 +127,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
         switch(mCurrentActionType) {
             case BehaviourType.ATTACK: 
             break;
+            case BehaviourType.AVOIDANCE:
             case BehaviourType.MOVE: {
                 transform.position = mEndPosition;
             }
@@ -137,7 +145,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
         }
         //if(sz.Length > 0) mUI.SetMessage(sz);
         // -------------------------------------
-        if(state.isHit) mUI.SetMessage("명중");
+        //if(state.isHit) mUI.SetMessage("명중");
+        if(state.isRetreat) mUI.SetMessage("회피");
         if(state.isDie) {
             mUI.Hide();
             SetAnimation(AnimationCode.Death);
@@ -157,6 +166,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 characters[i].SetActive(false);
             }
         }
+        //rotation. home team
+        if(mSoldier.IsHome())
+            transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
         mAnimator = GetComponent<Animator>();
         //UI 
         var prefab = Resources.Load<GameObject>(UIPrefab);
@@ -167,7 +179,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             mUIObject.transform.SetParent(canvas.transform);
             mUI = mUIObject.GetComponent<ChessTactic_SoldierUI>();
             mUI.targetName = this.name;
-            mUI.SetName(mSoldier.GetName());
+            mUI.Init(mSoldier.GetName(), mSoldier.GetInfo().isHome);
             mUI.SetHP(mSoldier.GetHP());
         }
         //bullet

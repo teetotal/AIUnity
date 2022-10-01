@@ -5,25 +5,30 @@ using UnityEngine;
 public class ChessTactic_Camera : MonoBehaviour
 {
     [SerializeField]
-    private string TargetObject;
+    private List<string> TargetObjectNames;
     [SerializeField]
     private float SmoothRotation = 4.0f;
     public float Angle = 0;
     public float Distance = 10.0f;
     public float Height = 1.0f;
     private Transform mTargetTransform;
-    
+    private string targetName = string.Empty;
+    private int targetIdx = 0;
+    private float time = 0;
     // Start is called before the first frame update
     void Start()
     { 
+        SetTarget();
     }
 
     // Update is called once per frame
     void LateUpdate()
     {
-        if(mTargetTransform == null) {
+        time += Time.deltaTime;
+        if(time > 10 || mTargetTransform == null ) {
             SetTarget();
-            return;
+            targetIdx++;
+            time = 0;
         }
 
         //전면을 보게 하고 싶으면 180 + mTargetObject.transform.eulerAngles.y
@@ -34,7 +39,7 @@ public class ChessTactic_Camera : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, position, SmoothRotation * Time.deltaTime);
         transform.LookAt(mTargetTransform);
     }
-    void SetTarget() {
-        mTargetTransform = GameObject.Find(TargetObject).transform;
+    void SetTarget() { 
+        mTargetTransform = GameObject.Find(TargetObjectNames[targetIdx % TargetObjectNames.Count]).transform;
     }
 }

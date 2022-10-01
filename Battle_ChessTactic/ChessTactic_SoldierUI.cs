@@ -22,11 +22,18 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     private TextMeshProUGUI _name;
     [SerializeField]
     private TextMeshProUGUI _message;
+    [SerializeField]
+    private Image HPFill;
+    [SerializeField]
+    private Color homeColor;
+    [SerializeField]
+    private Color awayColor;
+
     private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
     bool mIseSetMSG = false;    
     DateTime mStartTime;
     int startTime = 1000;
-    int endTime = 5500;
+    int endTime = 3000;
     
     [SerializeField]
     private GameObject _messagePanel;
@@ -55,9 +62,13 @@ public class ChessTactic_SoldierUI : MonoBehaviour
 	{
 		_slider.value = value;
 	}
-    public void SetName(string name) 
+    public void Init(string name, bool isHome) 
     {
         _name.text = name;
+        if(isHome)
+            HPFill.color = homeColor;
+        else
+            HPFill.color = awayColor;
     }
     public void SetMessage(string msg, bool isOverlap = true) 
     {
@@ -65,7 +76,7 @@ public class ChessTactic_SoldierUI : MonoBehaviour
             return;
             
         //_canvas.sortingOrder = order;
-        _messagePanel.SetActive(true);
+        //_messagePanel.SetActive(true);
         mIseSetMSG = true;        
         mStartTime = DateTime.Now;
         

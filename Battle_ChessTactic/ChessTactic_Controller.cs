@@ -95,6 +95,13 @@ public class ChessTactic_Controller : MonoBehaviour
     }
     private void OnFinish() {
         mIsReady = false;
+
+        for(int i = 0; i < mHomeSoldiers.Count; i++) {
+            mHomeSoldiers[i].GetComponent<ChessTactic_SoldierController>().OnFinish();
+        }
+        for(int i = 0; i < mAwaySoldiers.Count; i++) {
+            mAwaySoldiers[i].GetComponent<ChessTactic_SoldierController>().OnFinish();
+        }
     }
     public Vector3 GetTilePosition(float x, float y) {
         return mTiles[(int)x][(int)y];
