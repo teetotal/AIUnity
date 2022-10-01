@@ -10,6 +10,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private Transform bullet;
     [SerializeField]
     private GameObject particleHit;
+    [SerializeField]
+    private List<GameObject> characters;
 
     private Vector3 bulletStartPoint, bulletInitLocalPosition;
     private ParticleSystem mParticleHit;
@@ -147,6 +149,14 @@ public class ChessTactic_SoldierController : MonoBehaviour
     }
     void Start()
     {
+        for(int i = 0; i < characters.Count; i++)
+        {
+            if((int)mSoldier.GetInfo().movingType == i) {
+                characters[i].SetActive(true);
+            } else {
+                characters[i].SetActive(false);
+            }
+        }
         mAnimator = GetComponent<Animator>();
         //UI 
         var prefab = Resources.Load<GameObject>(UIPrefab);
