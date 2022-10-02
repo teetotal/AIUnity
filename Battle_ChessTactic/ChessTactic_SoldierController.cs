@@ -26,7 +26,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private Vector3 ADJUST_ROTATION_VECTOR = new Vector3(0, 45, 0);
     private enum AnimationCode {
         Idle = 0,
-        Run,
+        Reload,
         Fire,
         Death,
         Walk,
@@ -65,11 +65,13 @@ public class ChessTactic_SoldierController : MonoBehaviour
             case BehaviourType.MOVE: {
                 Position pos = mSoldier.GetMap().GetPosition(rating.targetId);
                 mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-1.5f, 1.5f), 0 , Random.Range(-1.5f, 1.5f));
-
+                /*
                 if(Vector3.Distance(mStartPosition, mEndPosition) < 5)
                     SetAnimation(AnimationCode.Walk);
                 else
                     SetAnimation(AnimationCode.Run);
+                */
+                SetAnimation(AnimationCode.Walk);
             }
             break;
             //Attack
@@ -88,7 +90,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             case BehaviourType.KEEP: {
                 Position pos = mSoldier.GetPosition();
                 mEndPosition = mController.GetTilePosition(pos.x, pos.y);
-                SetAnimation(AnimationCode.Idle);
+                SetAnimation(AnimationCode.Reload);
 
             }
             break;

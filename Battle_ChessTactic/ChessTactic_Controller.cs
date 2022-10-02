@@ -11,6 +11,8 @@ public class ChessTactic_Controller : MonoBehaviour
     private Vector2Int MapSize;
     [SerializeField]
     private float Interval = 1;
+    [SerializeField]
+    private List<Vector2Int> Obstacles;
 
     private bool mIsReady = true;
     private Battle mBattle;
@@ -116,8 +118,9 @@ public class ChessTactic_Controller : MonoBehaviour
                 mTiles[x].Add(GameObject.Find(name).transform.position + new Vector3(-2.5f, 0, -2.5f));
             }
         }
-        m.AddObstacle(1,1);
-        m.AddObstacle(3,3);
+        for(int i = 0; i < Obstacles.Count; i++) {
+            m.AddObstacle(Obstacles[i].x, Obstacles[i].y);
+        }
         return m;
     }
     private List<Soldier> CreateSolidiers(bool isHome, Map map, List<SoldierInfo> info) {
