@@ -13,13 +13,19 @@ public class ChessTactic_Controller : MonoBehaviour
     private float Interval = 1;
     [SerializeField]
     private List<Vector2Int> Obstacles;
+    [SerializeField]
+    private int LayerId = 7;
 
     private bool mIsReady = true;
     private Battle mBattle;
     private Map mMap;
     private float mTimer = 0;
     private List<Rating> ret = new List<Rating>();
-    private List<List<Vector3>> mTiles = new List<List<Vector3>>();
+    private List<List<Transform>> mTiles = new List<List<Transform>>();
+    private List<List<GameObject>> mMovableAreas = new List<List<GameObject>>();
+    private bool mIsSetMovableArea = false;
+    private int mSelectedSoldierId = -1;
+
     private Dictionary<int, GameObject> mHomeSoldiers = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> mAwaySoldiers = new Dictionary<int, GameObject>();
     void Start()
@@ -44,6 +50,13 @@ public class ChessTactic_Controller : MonoBehaviour
     {
         if(!mIsReady)
             return;
+        
+        //raycast
+        if(Input.GetMouseButtonUp(0)) 
+            RaycastByMouse();
+        else if(Input.touchCount == 1)
+            RaycastByTouch();
+
 
         mTimer += Time.deltaTime;
         if(Interval > mTimer) {
@@ -106,16 +119,24 @@ public class ChessTactic_Controller : MonoBehaviour
         }
     }
     public Vector3 GetTilePosition(float x, float y) {
-        return mTiles[(int)x][(int)y];
+        return mTiles[(int)x][(int)y].position;
     }
 
     private Map CreateMap() {
         Map m = new Map(MapSize.x, MapSize.y);
         for(int x = 0; x < MapSize.x; x++) {
-            mTiles.Add(new List<Vector3>());
+            mTiles.Add(new List<Transform>());
+            mMovableAreas.Add(new List<GameObject>());
+
             for(int y = 0; y < MapSize.y; y++) {
-                string name = string.Format("m{0}-{1}", x, y);
-                mTiles[x].Add(GameObject.Find(name).transform.position + new Vector3(-2.5f, 0, -2.5f));
+                string name = string.Format("t{0}-{1}", x, y);
+                GameObject obj = GameObject.Find(name);
+                if(obj != null) {
+                    Transform tr = GameObject.Find(name).transform;
+                    mTiles[x].Add(tr);
+                    mMovableAreas[x].Add(AllocMovalbleArea(tr, x, y));
+                }
+                
             }
         }
         for(int i = 0; i < Obstacles.Count; i++) {
@@ -138,7 +159,7 @@ public class ChessTactic_Controller : MonoBehaviour
     private GameObject InstantiateSoldier(Soldier soldier) {
         Position pos = soldier.GetPosition();
         
-        Vector3 position = mTiles[(int)pos.x][(int)pos.y];
+        Vector3 position = mTiles[(int)pos.x][(int)pos.y].position + new Vector3(0, 0.2f, 0);
         //Quaternion rotation = Quaternion.Euler(actor.rotation.x, actor.rotation.y, actor.rotation.z);
         Quaternion rotation = Quaternion.identity;
         GameObject prefab = Resources.Load<GameObject>("Actors/battle/Soldier1");
@@ -146,8 +167,16 @@ public class ChessTactic_Controller : MonoBehaviour
             throw new System.Exception("Invalid prefab");
 
         GameObject obj = Instantiate(prefab, position, rotation);
-        obj.name = string.Format("Soldier-{0}-{1}", soldier.IsHome(), soldier.GetID());
+        if(soldier.IsHome()) {
+            obj.layer = LayerId;
+            obj.name = string.Format("h{0}", soldier.GetID());
+        } else {
+            obj.name = string.Format("a{0}", soldier.GetID());
+        }
+        
+        
         obj.GetComponent<ChessTactic_SoldierController>().Init(this, soldier);
+        
         //obj.GetComponent<ActorController>().enabled = false;
         //obj.GetComponent<NavMeshAgent>().enabled = false;
 
@@ -160,5 +189,71 @@ public class ChessTactic_Controller : MonoBehaviour
     }
     private void OnStart() {
         mIsReady = true;
+    }
+    private void Raycast(Vector3 pos) {
+        //Debug.Log(pos);
+        int layerMask = 1 << LayerId;
+        Ray ray = Camera.main.ScreenPointToRay(pos);
+        RaycastHit hit = new RaycastHit();
+        if (Physics.Raycast(ray.origin, ray.direction, out hit, Mathf.Infinity, layerMask))
+        {
+            switch(hit.collider.name.ToCharArray()[0]) {
+                case 'h': {
+                    mSelectedSoldierId= int.Parse(hit.collider.name.Substring(1));
+                    List<MapNode> list = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>().GetMovalbleArea();
+                    SetMovableArea(list);
+                }
+                break;
+                case 'A': {
+                    Debug.Log(hit.collider.name);
+                    HideMovableAreas();
+                }
+                break;
+            }
+        } else {
+            HideMovableAreas();
+        }
+    }
+    private void RaycastByMouse() {
+        Raycast(Input.mousePosition);
+    }
+    private void RaycastByTouch() {
+        Touch touch = Input.GetTouch(0);
+        Raycast(new Vector3(touch.position.x, touch.position.y, 100));
+    }
+    private GameObject AllocMovalbleArea(Transform tr, int x, int y) {
+        GameObject prefab = Resources.Load<GameObject>("BattleMovableArea");
+        if(prefab == null) 
+            throw new System.Exception("Invalid prefab");
+
+        GameObject obj = Instantiate(prefab, tr.position, tr.rotation);
+        obj.name = string.Format("A{0}-{1}", x, y);
+        obj.layer = LayerId;
+        obj.SetActive(false);
+        return obj;
+    }
+    public void HideMovableAreas(int soldierId) {
+        if(soldierId == mSelectedSoldierId)
+            HideMovableAreas();
+    }
+    private void HideMovableAreas() {
+        if(!mIsSetMovableArea)
+            return;
+
+        for(int x =0; x < mMovableAreas.Count; x ++) {
+            for(int y = 0; y < mMovableAreas[0].Count; y++) {
+                mMovableAreas[x][y].SetActive(false);
+            }
+        }
+    }
+    private void SetMovableArea(List<MapNode> list) {
+        HideMovableAreas();
+        
+        for(int i = 0 ; i < list.Count; i ++) {
+            Position pos = list[i].position;
+            mMovableAreas[(int)pos.x][(int)pos.y].SetActive(true);
+        }
+
+        mIsSetMovableArea = true;
     }
 }

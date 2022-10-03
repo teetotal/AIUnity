@@ -15,14 +15,68 @@ public class ChessTactic_Camera : MonoBehaviour
     private string targetName = string.Empty;
     private int targetIdx = 0;
     private float time = 0;
+    //----------------------
+    private Camera mCamera;
+    private float Speed = 0.25f, speedMouse = 80.0f;
+    private Vector2 nowPos, prePos;
+    private Vector3 movePos;
     // Start is called before the first frame update
     void Start()
     { 
-        SetTarget();
+        mCamera = this.gameObject.GetComponent<Camera>();
+        //SetTarget();
     }
+    void Update() {
+        float mouseWheel = Input.mouseScrollDelta.y;
+        if(Input.GetMouseButton(0)) 
+            MoveByMouse();
+        else if(mouseWheel != 0)
+            ZoomByMouse(mouseWheel);
+        else if(Input.touchCount == 1)
+            MoveByTouch();
+    }
+    void MoveByMouse() {
+        if (Input.GetMouseButtonDown(0)) {
+            prePos = Input.mousePosition;
+        } 
 
-    // Update is called once per frame
-    void LateUpdate()
+        Vector3 position
+            = Camera.main.ScreenToViewportPoint(prePos - (Vector2)Input.mousePosition);
+
+        position.z = position.y;
+        position.y = .0f;
+
+        Vector3 move = position * (Time.deltaTime * speedMouse);
+
+        float y = transform.position.y;
+
+        transform.Translate(move);
+        transform.transform.position = new Vector3(transform.position.x, y, transform.position.z);
+    }
+    void ZoomByMouse(float amount) {
+        if(mCamera.fieldOfView <= 10 && amount > 0)
+            mCamera.fieldOfView = 10;
+        else if(mCamera.fieldOfView >= 60 && amount < 0)
+            mCamera.fieldOfView = 60;
+        else {
+            mCamera.fieldOfView -= amount;
+        }
+    }
+    void MoveByTouch() {
+        Touch touch = Input.GetTouch (0);
+        if(touch.phase == TouchPhase.Began)
+        {
+            prePos = touch.position - touch.deltaPosition;
+        }
+        else if(touch.phase == TouchPhase.Moved)
+        {
+            nowPos = touch.position - touch.deltaPosition;
+            movePos = (Vector3)(prePos - nowPos) * Time.deltaTime * Speed;
+            this.transform.Translate(movePos); 
+            prePos = touch.position - touch.deltaPosition;
+        }
+    }
+    void _LateUpdate()
     {
         time += Time.deltaTime;
         if(time > 10 || mTargetTransform == null ) {

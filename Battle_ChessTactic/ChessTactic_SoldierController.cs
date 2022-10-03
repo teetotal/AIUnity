@@ -30,7 +30,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
         Fire,
         Death,
         Walk,
-        Recovery
+        Recovery,
+        Reaction1,
+        Reaction2
     }
     private const string AnimationId = "AnimationId";
     private const string UIPrefab = "ChessTactic_SoldierUI";
@@ -46,6 +48,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
     public void OnFinish() {
         if(!mSoldier.IsDie())
             SetAnimation(AnimationCode.Idle);
+    }
+    public List<MapNode> GetMovalbleArea() {
+        return mSoldier.GetMovableAreaList();
     }
     public void ActionStart(Rating rating) {
         mStartPosition = transform.position;
@@ -122,6 +127,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
     }
     public void ActionFinish(Soldier.State state) {
         bullet.gameObject.SetActive(false);
+        mController.HideMovableAreas(mSoldier.GetID());
 
         if(!IsReady)
             return;
@@ -154,6 +160,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             SetAnimation(AnimationCode.Death);
             mSoldier.SetDie();
             IsReady = false;
+            gameObject.layer = 0;
         }
         mUI.SetHP(mSoldier.GetHP());
 
