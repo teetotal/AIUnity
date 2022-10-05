@@ -4,9 +4,8 @@ using UnityEngine;
 using ENGINE;
 using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
 /*
-to do list. 작성일. 2022 10 3
+to do list. 작성일. 2022 10 6
 1. update 중에 총에 맞는 animation 적용. animation은 다운 받아서 animator에 넣어 놨음
-2. Movable Area 표시 끌때 다음 액션 위치가 같으면 끄지 않기 
 */
 public class ChessTactic_SoldierController : MonoBehaviour
 {
@@ -46,6 +45,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
         mController = controller;
         mSoldier = soldier;
     }
+    public Soldier GetSoldier() {
+        return mSoldier;
+    }
     private void SetAnimation(AnimationCode code) {
         mAnimator.SetInteger(AnimationId, (int)code);
     }
@@ -61,6 +63,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
         mCurrentActionType = rating.type;
         mCurrentActionTarget = rating.targetId;
         IsReady = true;
+
+        if(!mSoldier.IsEqualPreTargetPosition())
+            mController.HideMovableAreas(mSoldier.GetID());
 
         switch(rating.type) {
             //Recovery
@@ -131,7 +136,6 @@ public class ChessTactic_SoldierController : MonoBehaviour
     }
     public void ActionFinish(Soldier.State state) {
         bullet.gameObject.SetActive(false);
-        mController.HideMovableAreas(mSoldier.GetID());
 
         if(!IsReady)
             return;

@@ -233,8 +233,12 @@ public class ChessTactic_Controller : MonoBehaviour
         return obj;
     }
     public void HideMovableAreas(int soldierId) {
-        if(soldierId == mSelectedSoldierId)
-            HideMovableAreas();
+        if(soldierId == mSelectedSoldierId) {
+            if(!mHomeSoldiers[soldierId].GetComponent<ChessTactic_SoldierController>().GetSoldier().IsEqualPreTargetPosition()) {
+                HideMovableAreas();
+            }
+        }
+            
     }
     private void HideMovableAreas() {
         if(!mIsSetMovableArea)
