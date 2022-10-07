@@ -200,10 +200,7 @@ public class ChessTactic_Controller : MonoBehaviour
             switch(hit.collider.name.ToCharArray()[0]) {
                 case 'h': {
                     mSelectedSoldierId= int.Parse(hit.collider.name.Substring(1));
-                    ChessTactic_SoldierController soldier = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
-                    SetMovableArea(soldier.GetMovalbleArea());
-                    soldier.ShowHold();
-
+                    OnSelectedSoldier();
                 }
                 break;
                 case 'A': {
@@ -252,9 +249,21 @@ public class ChessTactic_Controller : MonoBehaviour
             }
         }
     }
-    private void SetMovableArea(List<MapNode> list) {
+    private void OnSelectedSoldier() {
+        //hold
+        foreach(var s in mHomeSoldiers) {
+            ChessTactic_SoldierController p = s.Value.GetComponent<ChessTactic_SoldierController>();
+            if(!p.GetSoldier().IsHold())
+                p.HideHold();
+        }
+
+        ChessTactic_SoldierController soldier = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
+        soldier.ShowHold();
+
+        //area
         HideMovableAreas();
-        
+    
+        List<MapNode> list = soldier.GetMovalbleArea();
         for(int i = 0 ; i < list.Count; i ++) {
             Position pos = list[i].position;
             mMovableAreas[(int)pos.x][(int)pos.y].SetActive(true);

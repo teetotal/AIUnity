@@ -51,6 +51,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
     public void ShowHold() {
         mUI.ShowHold();
     }
+    public void HideHold() {
+        mUI.HideHold();
+    }
     private void SetAnimation(AnimationCode code) {
         mAnimator.SetInteger(AnimationId, (int)code);
     }
