@@ -48,6 +48,9 @@ public class ChessTactic_SoldierController : MonoBehaviour
     public Soldier GetSoldier() {
         return mSoldier;
     }
+    public void ShowHold() {
+        mUI.ShowHold();
+    }
     private void SetAnimation(AnimationCode code) {
         mAnimator.SetInteger(AnimationId, (int)code);
     }
@@ -64,8 +67,10 @@ public class ChessTactic_SoldierController : MonoBehaviour
         mCurrentActionTarget = rating.targetId;
         IsReady = true;
 
-        if(!mSoldier.IsEqualPreTargetPosition())
+        if(!mSoldier.IsEqualPreTargetPosition()) {
             mController.HideMovableAreas(mSoldier.GetID());
+            mUI.HideHold();
+        }
 
         switch(rating.type) {
             //Recovery

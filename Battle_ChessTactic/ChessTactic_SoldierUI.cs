@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
 public class ChessTactic_SoldierUI : MonoBehaviour
 {	
     public class ScriptNode {
@@ -15,6 +16,7 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     }
     public string targetName = string.Empty;
 	private GameObject target;
+    private ChessTactic_SoldierController mSoldierController;
     private float height;
     [SerializeField]
     private Slider _slider;
@@ -28,6 +30,10 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     private Color homeColor;
     [SerializeField]
     private Color awayColor;
+    [SerializeField]
+    private Color holdColor;
+    [SerializeField]
+    private Color holdedColor;
 
     private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
     bool mIseSetMSG = false;    
@@ -37,6 +43,10 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     
     [SerializeField]
     private GameObject _messagePanel;
+    [SerializeField]
+    private GameObject _buttonPanel;
+    [SerializeField]
+    private Button _buttonHold;
     [SerializeField]
     private GameObject _infoPanel;
 
@@ -48,15 +58,23 @@ public class ChessTactic_SoldierUI : MonoBehaviour
         RectTransform rt = _infoPanel.GetComponent<RectTransform>();
         rt.sizeDelta =  Scale.GetScaledSize(rt.sizeDelta);
 
+        rt = _buttonPanel.GetComponent<RectTransform>();
+        rt.sizeDelta =  Scale.GetScaledSize(rt.sizeDelta);
+        ReleaseHold();
+        HideHold();
 
         if(target == null) {
             target = GameObject.Find(targetName);
+            mSoldierController = target.GetComponent<ChessTactic_SoldierController>();
             height = 2.2f;
         }
+
+        _buttonHold.onClick.AddListener(OnHold);
     }
     public void Hide() {
         _messagePanel.SetActive(false);
         _infoPanel.SetActive(false);
+        _buttonPanel.SetActive(false);
     }
 	public void SetHP(float value)
 	{
@@ -88,6 +106,23 @@ public class ChessTactic_SoldierUI : MonoBehaviour
             msgQ.Enqueue(new ScriptNode(startTime + (time * i), arr[i]));
         }
     }
+    public void ShowHold() {
+        _buttonPanel.SetActive(true);
+        if(mSoldierController.GetSoldier().IsHold()) {
+            SetHold();
+        } else {
+            ReleaseHold();
+        }
+    }
+    public void HideHold() {
+        _buttonPanel.SetActive(false);
+    }
+    public void SetHold() {
+        _buttonHold.GetComponent<Image>().color = holdedColor;
+    }
+    public void ReleaseHold() {
+        _buttonHold.GetComponent<Image>().color = holdColor;
+    }
     private void Update() {
         if(mIseSetMSG) {
             double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
@@ -113,4 +148,12 @@ public class ChessTactic_SoldierUI : MonoBehaviour
 		    
     }
 
+    void OnHold() {
+        Soldier soldier = mSoldierController.GetSoldier();
+        soldier.ToggleHold();
+        if(soldier.IsHold())
+            SetHold();
+        else
+            ReleaseHold();
+    }
 }

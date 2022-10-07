@@ -200,8 +200,10 @@ public class ChessTactic_Controller : MonoBehaviour
             switch(hit.collider.name.ToCharArray()[0]) {
                 case 'h': {
                     mSelectedSoldierId= int.Parse(hit.collider.name.Substring(1));
-                    List<MapNode> list = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>().GetMovalbleArea();
-                    SetMovableArea(list);
+                    ChessTactic_SoldierController soldier = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
+                    SetMovableArea(soldier.GetMovalbleArea());
+                    soldier.ShowHold();
+
                 }
                 break;
                 case 'A': {
