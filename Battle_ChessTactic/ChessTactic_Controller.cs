@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,22 +26,18 @@ public class ChessTactic_Controller : MonoBehaviour
     private bool mIsSetMovableArea = false;
     private int mSelectedSoldierId = -1;
 
-    private Dictionary<int, GameObject> mHomeSoldiers = new Dictionary<int, GameObject>();
-    private Dictionary<int, GameObject> mAwaySoldiers = new Dictionary<int, GameObject>();
+    private Dictionary<int, Dictionary<int, GameObject>> mSoldierObjects = new Dictionary<int, Dictionary<int, GameObject>>();
     void Start()
     {
         mMap = CreateMap();
         TextAsset sz = Resources.Load<TextAsset>("Config/battle_chesstactic");
         if(sz == null)
             throw new System.Exception("Loading Config Failure. battle_chesstactic");
-        var info = new Loader().Load(sz.text);
         
-        List<Soldier> home = CreateSolidiers(true, mMap, info["my"].soldiers);
-        List<Soldier> away = CreateSolidiers(false, mMap, info["opp"].soldiers);
-        Tactic homeTactic = info["my"].tactic;
-        Tactic awayTactic = info["opp"].tactic;
+        var info = new Loader().Load(sz.text);
+        mBattle = new Battle(mMap, info);
 
-        mBattle = new Battle(mMap, home, away, homeTactic, awayTactic);
+        CreateSolidiers();
         //GameObject.Find("BtnStart").GetComponent<Button>().onClick.AddListener(OnStart);
     }
 
@@ -61,11 +57,10 @@ public class ChessTactic_Controller : MonoBehaviour
         mTimer += Time.deltaTime;
         if(Interval > mTimer) {
             float process = Mathf.Min(mTimer / Interval, 1.0f);
-            for(int i = 0; i < mHomeSoldiers.Count; i++) {
-                mHomeSoldiers[i].GetComponent<ChessTactic_SoldierController>().ActionUpdate(process);
-            }
-            for(int i = 0; i < mAwaySoldiers.Count; i++) {
-                mAwaySoldiers[i].GetComponent<ChessTactic_SoldierController>().ActionUpdate(process);
+            foreach(var side in mSoldierObjects) {
+                foreach(var soldier in side.Value) {
+                    soldier.Value.GetComponent<ChessTactic_SoldierController>().ActionUpdate(process);
+                }
             }
             
             return;
@@ -79,12 +74,8 @@ public class ChessTactic_Controller : MonoBehaviour
         }
         List<Soldier.State> states = mBattle.GetActionResult();
         for(int i = 0; i < states.Count; i++) {
-            SoldierInfo info = states[i].mSoldier.GetInfo();
-            if(info.isHome) {
-                mHomeSoldiers[info.id].GetComponent<ChessTactic_SoldierController>().ActionFinish(states[i]);
-            } else {
-                mAwaySoldiers[info.id].GetComponent<ChessTactic_SoldierController>().ActionFinish(states[i]);
-            }
+            Soldier soldier = states[i].mSoldier;
+            GetSoldierController(soldier.GetSide(), soldier.GetID()).ActionFinish(states[i]);
         }
 
         if(mBattle.IsFinish()) {
@@ -95,27 +86,22 @@ public class ChessTactic_Controller : MonoBehaviour
         ret = mBattle.Update();   
         //Action 
         for(int i = 0; i < ret.Count; i++) {
-            if(ret[i].isHome) {
-                mHomeSoldiers[ret[i].soldierId].GetComponent<ChessTactic_SoldierController>().ActionStart(ret[i]);
-            } else {
-                mAwaySoldiers[ret[i].soldierId].GetComponent<ChessTactic_SoldierController>().ActionStart(ret[i]);
-            }
+            Rating rating = ret[i];
+            GetSoldierController(rating.side, rating.soldierId).ActionStart(rating);
         }
     }
-    public GameObject GetSoldierObject(bool isHome, int id) {
-        if(isHome)
-            return mHomeSoldiers[id];
-        else 
-            return mAwaySoldiers[id];
+    public GameObject GetSoldierObject(int side, int id) {
+        return mSoldierObjects[side][id];
+    }
+    public ChessTactic_SoldierController GetSoldierController(int side, int id) {
+        return GetSoldierObject(side, id).GetComponent<ChessTactic_SoldierController>();
     }
     private void OnFinish() {
         mIsReady = false;
-
-        for(int i = 0; i < mHomeSoldiers.Count; i++) {
-            mHomeSoldiers[i].GetComponent<ChessTactic_SoldierController>().OnFinish();
-        }
-        for(int i = 0; i < mAwaySoldiers.Count; i++) {
-            mAwaySoldiers[i].GetComponent<ChessTactic_SoldierController>().OnFinish();
+        foreach(var side in mSoldierObjects) {
+            foreach(var soldier in side.Value) {
+                soldier.Value.GetComponent<ChessTactic_SoldierController>().OnFinish();
+            }
         }
     }
     public Vector3 GetTilePosition(float x, float y) {
@@ -144,17 +130,15 @@ public class ChessTactic_Controller : MonoBehaviour
         }
         return m;
     }
-    private List<Soldier> CreateSolidiers(bool isHome, Map map, List<SoldierInfo> info) {
-        List<Soldier> list = new List<Soldier>();
-        for(int i = 0; i < info.Count; i++) {
-            Soldier soldier = new Soldier(info[i], map, isHome);
-            list.Add(soldier);
-            if(isHome)
-                mHomeSoldiers.Add(soldier.GetID(), InstantiateSoldier(soldier));
-            else
-                mAwaySoldiers.Add(soldier.GetID(), InstantiateSoldier(soldier));
+    private void CreateSolidiers() {
+        var sides = mBattle.GetSoldiers();
+        foreach(var side in sides) {
+            foreach(var soldier in side.Value) {
+                if(!mSoldierObjects.ContainsKey(side.Key))
+                    mSoldierObjects.Add(side.Key, new Dictionary<int, GameObject>());
+                mSoldierObjects[side.Key].Add(soldier.Key, InstantiateSoldier(soldier.Value));
+            }
         }
-        return list;
     }
     private GameObject InstantiateSoldier(Soldier soldier) {
         Position pos = soldier.GetPosition();
@@ -167,11 +151,11 @@ public class ChessTactic_Controller : MonoBehaviour
             throw new System.Exception("Invalid prefab");
 
         GameObject obj = Instantiate(prefab, position, rotation);
-        if(soldier.IsHome()) {
+        if(soldier.GetSide() == 0) {
             obj.layer = LayerId;
             obj.name = string.Format("h{0}", soldier.GetID());
         } else {
-            obj.name = string.Format("a{0}", soldier.GetID());
+            obj.name = string.Format("a{0}-{1}", soldier.GetSide(), soldier.GetID());
         }
         
         
@@ -182,10 +166,6 @@ public class ChessTactic_Controller : MonoBehaviour
 
         obj.GetComponent<Animator>().runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("Animation/Battle_ChessTactic");
         return obj;
-    }
-    private Tactic CreateTactic(bool isHome) {
-        Tactic tactic = new Tactic();
-        return tactic;
     }
     private void OnStart() {
         mIsReady = true;
@@ -233,7 +213,7 @@ public class ChessTactic_Controller : MonoBehaviour
     }
     public void HideMovableAreas(int soldierId) {
         if(soldierId == mSelectedSoldierId) {
-            if(!mHomeSoldiers[soldierId].GetComponent<ChessTactic_SoldierController>().GetSoldier().IsEqualPreTargetPosition()) {
+            if(!mSoldierObjects[0][soldierId].GetComponent<ChessTactic_SoldierController>().GetSoldier().IsEqualPreTargetPosition()) {
                 HideMovableAreas();
             }
         }
@@ -250,14 +230,14 @@ public class ChessTactic_Controller : MonoBehaviour
         }
     }
     private void OnSelectedSoldier() {
-        //hold
-        foreach(var s in mHomeSoldiers) {
+        //hold 가리기
+        foreach(var s in mSoldierObjects[0]) {
             ChessTactic_SoldierController p = s.Value.GetComponent<ChessTactic_SoldierController>();
             if(!p.GetSoldier().IsHold())
                 p.HideHold();
         }
 
-        ChessTactic_SoldierController soldier = mHomeSoldiers[mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
+        ChessTactic_SoldierController soldier = mSoldierObjects[0][mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
         soldier.ShowHold();
 
         //area

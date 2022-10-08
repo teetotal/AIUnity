@@ -27,9 +27,7 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     [SerializeField]
     private Image HPFill;
     [SerializeField]
-    private Color homeColor;
-    [SerializeField]
-    private Color awayColor;
+    private List<Color> teamColors;
     [SerializeField]
     private Color holdColor;
     [SerializeField]
@@ -80,13 +78,10 @@ public class ChessTactic_SoldierUI : MonoBehaviour
 	{
 		_slider.value = value;
 	}
-    public void Init(string name, bool isHome) 
+    public void Init(string name, int teamColorIdx) 
     {
         _name.text = name;
-        if(isHome)
-            HPFill.color = homeColor;
-        else
-            HPFill.color = awayColor;
+        HPFill.color = teamColors[teamColorIdx];
     }
     public void SetMessage(string msg, bool isOverlap = true) 
     {

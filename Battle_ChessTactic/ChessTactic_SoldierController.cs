@@ -23,8 +23,11 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private Soldier mSoldier;
     private ChessTactic_Controller mController;
     private Vector3 mStartPosition, mEndPosition;
+    // ---------------------------------------
     private BehaviourType mCurrentActionType;
-    private int mCurrentActionTarget;
+    private int mCurrentActionTargetSide;
+    private int mCurrentActionTargetId;
+    // ---------------------------------------
     private Animator mAnimator;
     private Vector3 ADJUST_ROTATION_VECTOR = new Vector3(0, 45, 0);
     private enum AnimationCode {
@@ -67,7 +70,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
     public void ActionStart(Rating rating) {
         mStartPosition = transform.position;
         mCurrentActionType = rating.type;
-        mCurrentActionTarget = rating.targetId;
+        mCurrentActionTargetSide = rating.targetSide;
+        mCurrentActionTargetId = rating.targetId;
         IsReady = true;
 
         if(!mSoldier.IsEqualPreTargetPosition()) {
@@ -103,9 +107,10 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 bullet.localPosition = bulletInitLocalPosition;
                 bulletStartPoint = bullet.position;
 
-                GameObject target = mController.GetSoldierObject(!rating.isHome, mCurrentActionTarget);
+                GameObject target = mController.GetSoldierObject(mCurrentActionTargetSide, mCurrentActionTargetId);
                 mEndPosition = target.transform.position;
                 SetAnimation(AnimationCode.Fire);
+                //over는 서서 쏘는걸로 액션 해야함
             }
             break;
             //Keep
@@ -192,8 +197,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             }
         }
         //rotation. home team
-        if(mSoldier.IsHome())
-            transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
+        //if(mSoldier.IsHome()) transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));
         mAnimator = GetComponent<Animator>();
         //UI 
         var prefab = Resources.Load<GameObject>(UIPrefab);
@@ -204,7 +208,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             mUIObject.transform.SetParent(canvas.transform);
             mUI = mUIObject.GetComponent<ChessTactic_SoldierUI>();
             mUI.targetName = this.name;
-            mUI.Init(mSoldier.GetName(), mSoldier.GetInfo().isHome);
+            mUI.Init(mSoldier.GetName(), mSoldier.GetSide());
             mUI.SetHP(mSoldier.GetHP());
         }
         //bullet
