@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ENGINE;
 using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
-/*
-to do list. 작성일. 2022 10 6
-1. update 중에 총에 맞는 animation 적용. animation은 다운 받아서 animator에 넣어 놨음
-*/
+
 public class ChessTactic_SoldierController : MonoBehaviour
 {
     [SerializeField]
