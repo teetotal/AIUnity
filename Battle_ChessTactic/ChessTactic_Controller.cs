@@ -40,6 +40,9 @@ public class ChessTactic_Controller : MonoBehaviour
         CreateSolidiers();
         //GameObject.Find("BtnStart").GetComponent<Button>().onClick.AddListener(OnStart);
     }
+    public float GetInterval() {
+        return Interval;
+    }
 
     // Update is called once per frame
     void Update()
@@ -105,7 +108,7 @@ public class ChessTactic_Controller : MonoBehaviour
         }
     }
     public Vector3 GetTilePosition(float x, float y) {
-        return mTiles[(int)x][(int)y].position;
+        return mTiles[(int)x][(int)y].position + new Vector3(Random.Range(-1.5f, 1.5f), 0.2f , Random.Range(-1.5f, 1.5f));
     }
 
     private Map CreateMap() {
@@ -132,19 +135,20 @@ public class ChessTactic_Controller : MonoBehaviour
     }
     private void CreateSolidiers() {
         var sides = mBattle.GetSoldiers();
+        Vector3 center = GetTilePosition((mMap.GetWidth() / 2), (mMap.GetHeight() / 2));
+
         foreach(var side in sides) {
             foreach(var soldier in side.Value) {
                 if(!mSoldierObjects.ContainsKey(side.Key))
                     mSoldierObjects.Add(side.Key, new Dictionary<int, GameObject>());
-                mSoldierObjects[side.Key].Add(soldier.Key, InstantiateSoldier(soldier.Value));
+                mSoldierObjects[side.Key].Add(soldier.Key, InstantiateSoldier(soldier.Value, center));
             }
         }
     }
-    private GameObject InstantiateSoldier(Soldier soldier) {
+    private GameObject InstantiateSoldier(Soldier soldier, Vector3 center) {
         Position pos = soldier.GetPosition();
         
-        Vector3 position = mTiles[(int)pos.x][(int)pos.y].position + new Vector3(0, 0.2f, 0);
-        //Quaternion rotation = Quaternion.Euler(actor.rotation.x, actor.rotation.y, actor.rotation.z);
+        Vector3 position = GetTilePosition(pos.x, pos.y);
         Quaternion rotation = Quaternion.identity;
         GameObject prefab = Resources.Load<GameObject>("Actors/battle/Soldier1");
         if(prefab == null) 
@@ -157,7 +161,8 @@ public class ChessTactic_Controller : MonoBehaviour
         } else {
             obj.name = string.Format("a{0}-{1}", soldier.GetSide(), soldier.GetID());
         }
-        
+        //map 중앙 바라보기
+        obj.transform.LookAt(center);
         
         obj.GetComponent<ChessTactic_SoldierController>().Init(this, soldier);
         

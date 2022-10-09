@@ -12,6 +12,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
     [SerializeField]
     private Transform bullet;
     [SerializeField]
+    private GameObject firstAid;
+    [SerializeField]
     private GameObject particleHit;
     [SerializeField]
     private List<GameObject> characters;
@@ -33,11 +35,12 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private enum AnimationCode {
         Idle = 0,
         Reload,
-        Fire,
+        Recovery,
         Death,
         Walk,
-        Recovery,
-        Reaction1,
+        
+        Fire = 10,
+        Reaction1=20,
         Reaction2
     }
     private const string AnimationId = "AnimationId";
@@ -90,7 +93,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
             //Move
             case BehaviourType.MOVE: {
                 Position pos = mSoldier.GetMap().GetPosition(rating.targetId);
-                mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-1.5f, 1.5f), 0 , Random.Range(-1.5f, 1.5f));
+                mEndPosition = mController.GetTilePosition(pos.x, pos.y) + new Vector3(Random.Range(-1.5f, 1.5f), 0.2f , Random.Range(-1.5f, 1.5f));
                 /*
                 if(Vector3.Distance(mStartPosition, mEndPosition) < 5)
                     SetAnimation(AnimationCode.Walk);
@@ -131,12 +134,24 @@ public class ChessTactic_SoldierController : MonoBehaviour
 
         switch(mCurrentActionType) {
             case BehaviourType.ATTACK: 
-                transform.LookAt(mEndPosition);
-                Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
-                transform.rotation = Quaternion.Euler(rot);
-                //bulet
-                float rate = (process % 0.3f) * 3.3f;
-                bullet.position = Vector3.Lerp(bulletStartPoint, mEndPosition + new Vector3(0, 0.5f, 0), rate);
+            {
+                Soldier.State state = mSoldier.GetState();
+                if(process > 0.3f && process < 0.6f && state.damagePre > 0) {
+                    SetAnimation(AnimationCode.Reaction1);
+                } else {
+                    transform.LookAt(mEndPosition);
+                    Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
+                    transform.rotation = Quaternion.Euler(rot);
+                    //bulet
+                    Vector3 bulletTarget = mEndPosition + new Vector3(0, 0.5f, 0);
+                    float distance = Vector3.Distance(bulletStartPoint, bulletTarget);
+                    //알파값(0.07)을 작게 할 수록 빨라짐
+                    float p =  (distance / mSoldier.GetAbility().attackRange) * 0.07f;
+                    float b = 1 / p;
+                    float rate = (process % p) * b;
+                    bullet.position = Vector3.Lerp(bulletStartPoint, bulletTarget, rate);
+                }
+            }
             break;
             case BehaviourType.AVOIDANCE:
             case BehaviourType.MOVE: 
@@ -154,7 +169,13 @@ public class ChessTactic_SoldierController : MonoBehaviour
             return;
 
         switch(mCurrentActionType) {
-            case BehaviourType.ATTACK: 
+            case BehaviourType.ATTACK: {
+            }
+            break;
+            case BehaviourType.RECOVERY: {
+                if(mSoldier.GetItem().firstAid <= 0)
+                    firstAid.SetActive(false);
+            }
             break;
             case BehaviourType.AVOIDANCE:
             case BehaviourType.MOVE: {
