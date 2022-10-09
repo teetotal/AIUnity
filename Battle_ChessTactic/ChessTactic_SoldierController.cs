@@ -40,6 +40,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
         Walk,
         
         Fire = 10,
+        FireStanding,
         Reaction1=20,
         Reaction2
     }
@@ -100,6 +101,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
                 else
                     SetAnimation(AnimationCode.Run);
                 */
+                
                 SetAnimation(AnimationCode.Walk);
             }
             break;
@@ -112,8 +114,15 @@ public class ChessTactic_SoldierController : MonoBehaviour
 
                 GameObject target = mController.GetSoldierObject(mCurrentActionTargetSide, mCurrentActionTargetId);
                 mEndPosition = target.transform.position;
-                SetAnimation(AnimationCode.Fire);
-                //over는 서서 쏘는걸로 액션 해야함
+                switch(mSoldier.GetInfo().movingType) {
+                    case MOVING_TYPE.OVER_CROSS:
+                    case MOVING_TYPE.OVER_STRAIGHT:
+                    SetAnimation(AnimationCode.FireStanding);
+                    break;
+                    default:
+                    SetAnimation(AnimationCode.Fire);
+                    break;
+                }
             }
             break;
             //Keep
@@ -137,13 +146,30 @@ public class ChessTactic_SoldierController : MonoBehaviour
             {
                 Soldier.State state = mSoldier.GetState();
                 if(process > 0.3f && process < 0.6f && state.damagePre > 0) {
-                    SetAnimation(AnimationCode.Reaction1);
+                    switch(mSoldier.GetInfo().movingType) {
+                        case MOVING_TYPE.OVER_CROSS:
+                        case MOVING_TYPE.OVER_STRAIGHT:
+                        SetAnimation(AnimationCode.Reaction2);
+                        break;
+                        default:
+                        SetAnimation(AnimationCode.Reaction1);
+                        break;
+                    }
                 } else {
                     transform.LookAt(mEndPosition);
                     Vector3 rot = transform.rotation.eulerAngles + ADJUST_ROTATION_VECTOR;
                     transform.rotation = Quaternion.Euler(rot);
                     //bulet
-                    Vector3 bulletTarget = mEndPosition + new Vector3(0, 0.5f, 0);
+                    Vector3 bulletTarget = mEndPosition;
+                    switch(mSoldier.GetInfo().movingType) {
+                        case MOVING_TYPE.OVER_CROSS:
+                        case MOVING_TYPE.OVER_STRAIGHT:
+                        bulletTarget += new Vector3(0, 1.5f, 0);
+                        break;
+                        default:
+                        bulletTarget += new Vector3(0, 1f, 0);
+                        break;
+                    }
                     float distance = Vector3.Distance(bulletStartPoint, bulletTarget);
                     //알파값(0.07)을 작게 할 수록 빨라짐
                     float p =  (distance / mSoldier.GetAbility().attackRange) * 0.07f;
@@ -196,7 +222,7 @@ public class ChessTactic_SoldierController : MonoBehaviour
         //if(sz.Length > 0) mUI.SetMessage(sz);
         // -------------------------------------
         //if(state.isHit) mUI.SetMessage("명중");
-        if(state.isRetreat) mUI.SetMessage("회피");
+        //if(state.isRetreat) mUI.SetMessage("회피");
         if(state.isDie) {
             mUI.Hide();
             SetAnimation(AnimationCode.Death);

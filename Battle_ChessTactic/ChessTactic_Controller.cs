@@ -8,6 +8,14 @@ using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
 public class ChessTactic_Controller : MonoBehaviour
 {
     [SerializeField]
+    private Vector3 StartMapPosition;
+    [SerializeField]
+    private Vector2 Dimension = new Vector2(5,5);
+    [SerializeField]
+    private bool MinusIncreasementX = false;
+    [SerializeField]
+    private bool MinusIncreasementY = false;
+    [SerializeField]
     private Vector2Int MapSize;
     [SerializeField]
     private float Interval = 1;
@@ -21,7 +29,7 @@ public class ChessTactic_Controller : MonoBehaviour
     private Map mMap;
     private float mTimer = 0;
     private List<Rating> ret = new List<Rating>();
-    private List<List<Transform>> mTiles = new List<List<Transform>>();
+    private List<List<Vector3>> mTiles = new List<List<Vector3>>();
     private List<List<GameObject>> mMovableAreas = new List<List<GameObject>>();
     private bool mIsSetMovableArea = false;
     private int mSelectedSoldierId = -1;
@@ -108,24 +116,31 @@ public class ChessTactic_Controller : MonoBehaviour
         }
     }
     public Vector3 GetTilePosition(float x, float y) {
-        return mTiles[(int)x][(int)y].position + new Vector3(Random.Range(-1.5f, 1.5f), 0.2f , Random.Range(-1.5f, 1.5f));
+        return mTiles[(int)x][(int)y] + new Vector3(Random.Range(-1.0f, 1.0f), 0.2f , Random.Range(-1.0f, 1.0f));
     }
 
     private Map CreateMap() {
         Map m = new Map(MapSize.x, MapSize.y);
         for(int x = 0; x < MapSize.x; x++) {
-            mTiles.Add(new List<Transform>());
+            mTiles.Add(new List<Vector3>());
             mMovableAreas.Add(new List<GameObject>());
 
             for(int y = 0; y < MapSize.y; y++) {
+                /*
                 string name = string.Format("t{0}-{1}", x, y);
                 GameObject obj = GameObject.Find(name);
                 if(obj != null) {
                     Transform tr = GameObject.Find(name).transform;
-                    mTiles[x].Add(tr);
-                    mMovableAreas[x].Add(AllocMovalbleArea(tr, x, y));
+                    mTiles[x].Add(tr.position);
+                    mMovableAreas[x].Add(AllocMovalbleArea(tr.position, x, y));
                 }
-                
+                */
+                float xIncreasement = MinusIncreasementX ? -1 : 1;
+                float yIncreasement = MinusIncreasementY ? -1 : 1;
+                Vector3 position = StartMapPosition + new Vector3(x * Dimension.x * xIncreasement, 0, y * Dimension.y * yIncreasement);
+                mTiles[x].Add(position);
+                mMovableAreas[x].Add(AllocMovalbleArea(position, x, y));
+                //Debug.Log(string.Format("{0}, {1} - {2}", x, y, position));
             }
         }
         for(int i = 0; i < Obstacles.Count; i++) {
@@ -196,6 +211,7 @@ public class ChessTactic_Controller : MonoBehaviour
             }
         } else {
             HideMovableAreas();
+            HideHold();
         }
     }
     private void RaycastByMouse() {
@@ -205,12 +221,12 @@ public class ChessTactic_Controller : MonoBehaviour
         Touch touch = Input.GetTouch(0);
         Raycast(new Vector3(touch.position.x, touch.position.y, 100));
     }
-    private GameObject AllocMovalbleArea(Transform tr, int x, int y) {
+    private GameObject AllocMovalbleArea(Vector3 position, int x, int y) {
         GameObject prefab = Resources.Load<GameObject>("BattleMovableArea");
         if(prefab == null) 
             throw new System.Exception("Invalid prefab");
 
-        GameObject obj = Instantiate(prefab, tr.position, tr.rotation);
+        GameObject obj = Instantiate(prefab, position, Quaternion.identity);
         obj.name = string.Format("A{0}-{1}", x, y);
         obj.layer = LayerId;
         obj.SetActive(false);
@@ -236,11 +252,7 @@ public class ChessTactic_Controller : MonoBehaviour
     }
     private void OnSelectedSoldier() {
         //hold 가리기
-        foreach(var s in mSoldierObjects[0]) {
-            ChessTactic_SoldierController p = s.Value.GetComponent<ChessTactic_SoldierController>();
-            if(!p.GetSoldier().IsHold())
-                p.HideHold();
-        }
+        HideHold();
 
         ChessTactic_SoldierController soldier = mSoldierObjects[0][mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
         soldier.ShowHold();
@@ -255,5 +267,12 @@ public class ChessTactic_Controller : MonoBehaviour
         }
 
         mIsSetMovableArea = true;
+    }
+    private void HideHold() {
+        foreach(var s in mSoldierObjects[0]) {
+            ChessTactic_SoldierController p = s.Value.GetComponent<ChessTactic_SoldierController>();
+            if(!p.GetSoldier().IsHold())
+                p.HideHold();
+        }
     }
 }
