@@ -14,6 +14,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
     private GameObject particleHit;
     [SerializeField]
     private List<GameObject> characters;
+    [SerializeField]
+    private List<GameObject> weapons;
 
     private Vector3 bulletStartPoint, bulletInitLocalPosition;
     private ParticleSystem mParticleHit;
@@ -236,9 +238,8 @@ public class ChessTactic_SoldierController : MonoBehaviour
         {
             if((int)mSoldier.GetInfo().movingType == i) {
                 characters[i].SetActive(true);
-            } else {
-                characters[i].SetActive(false);
-            }
+                weapons[i].SetActive(true);
+            } 
         }
         //rotation. home team
         //if(mSoldier.IsHome()) transform.rotation = Quaternion.Euler(new Vector3(0, 180, 0));

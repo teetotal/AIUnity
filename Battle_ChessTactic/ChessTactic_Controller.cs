@@ -37,7 +37,7 @@ public class ChessTactic_Controller : MonoBehaviour
     private Dictionary<int, Dictionary<int, GameObject>> mSoldierObjects = new Dictionary<int, Dictionary<int, GameObject>>();
     void Start()
     {
-        mMap = CreateMap();
+        CreateMap();
         TextAsset sz = Resources.Load<TextAsset>("Config/battle_chesstactic");
         if(sz == null)
             throw new System.Exception("Loading Config Failure. battle_chesstactic");
@@ -119,8 +119,8 @@ public class ChessTactic_Controller : MonoBehaviour
         return mTiles[(int)x][(int)y] + new Vector3(Random.Range(-1.0f, 1.0f), 0.2f , Random.Range(-1.0f, 1.0f));
     }
 
-    private Map CreateMap() {
-        Map m = new Map(MapSize.x, MapSize.y);
+    private void CreateMap() {
+        mMap = new Map(MapSize.x, MapSize.y);
         for(int x = 0; x < MapSize.x; x++) {
             mTiles.Add(new List<Vector3>());
             mMovableAreas.Add(new List<GameObject>());
@@ -143,10 +143,10 @@ public class ChessTactic_Controller : MonoBehaviour
                 //Debug.Log(string.Format("{0}, {1} - {2}", x, y, position));
             }
         }
+
         for(int i = 0; i < Obstacles.Count; i++) {
-            m.AddObstacle(Obstacles[i].x, Obstacles[i].y);
+            mMap.AddObstacle(Obstacles[i].x, Obstacles[i].y);
         }
-        return m;
     }
     private void CreateSolidiers() {
         var sides = mBattle.GetSoldiers();
@@ -174,7 +174,7 @@ public class ChessTactic_Controller : MonoBehaviour
             obj.layer = LayerId;
             obj.name = string.Format("h{0}", soldier.GetID());
         } else {
-            obj.name = string.Format("a{0}-{1}", soldier.GetSide(), soldier.GetID());
+            obj.name = string.Format("e{0}-{1}", soldier.GetSide(), soldier.GetID());
         }
         //map 중앙 바라보기
         obj.transform.LookAt(center);
@@ -204,8 +204,10 @@ public class ChessTactic_Controller : MonoBehaviour
                 }
                 break;
                 case 'A': {
-                    Debug.Log(hit.collider.name);
+                    //Debug.Log(hit.collider.name);
+                    GetSoldierController(0, mSelectedSoldierId).GetSoldier().SetReserve(BehaviourType.MOVE, 0, int.Parse(hit.collider.name.Substring(1)));
                     HideMovableAreas();
+                    HideHold();
                 }
                 break;
             }
@@ -227,7 +229,7 @@ public class ChessTactic_Controller : MonoBehaviour
             throw new System.Exception("Invalid prefab");
 
         GameObject obj = Instantiate(prefab, position, Quaternion.identity);
-        obj.name = string.Format("A{0}-{1}", x, y);
+        obj.name = string.Format("A{0}", mMap.GetPositionId(x, y));
         obj.layer = LayerId;
         obj.SetActive(false);
         return obj;
@@ -254,7 +256,7 @@ public class ChessTactic_Controller : MonoBehaviour
         //hold 가리기
         HideHold();
 
-        ChessTactic_SoldierController soldier = mSoldierObjects[0][mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
+        ChessTactic_SoldierController soldier = GetSoldierController(0, mSelectedSoldierId);// mSoldierObjects[0][mSelectedSoldierId].GetComponent<ChessTactic_SoldierController>();
         soldier.ShowHold();
 
         //area

@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using ENGINE.GAMEPLAY.BATTLE_CHESS_TACTIC;
+/*
+hold 보이는 타이밍 정리해야함
+*/
 public class ChessTactic_SoldierUI : MonoBehaviour
 {	
     public class ScriptNode {
@@ -32,13 +35,6 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     private Color holdColor;
     [SerializeField]
     private Color holdedColor;
-
-    private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
-    bool mIseSetMSG = false;    
-    DateTime mStartTime;
-    int startTime = 1000;
-    int endTime = 3000;
-    
     [SerializeField]
     private GameObject _messagePanel;
     [SerializeField]
@@ -47,6 +43,13 @@ public class ChessTactic_SoldierUI : MonoBehaviour
     private Button _buttonHold;
     [SerializeField]
     private GameObject _infoPanel;
+
+    private Queue<ScriptNode> msgQ = new Queue<ScriptNode>();
+    bool mIseSetMSG = false;    
+    DateTime mStartTime;
+    int startTime = 1000;
+    int endTime = 3000;
+    bool holdFlag = false; // 인터랙션 없이 hold가 풀릴 수 있으므로 flag로 체크
 
     void Start() {    
         RectTransform rtMSG = _messagePanel.GetComponent<RectTransform>();
@@ -119,6 +122,14 @@ public class ChessTactic_SoldierUI : MonoBehaviour
         _buttonHold.GetComponent<Image>().color = holdColor;
     }
     private void Update() {
+        if(mSoldierController.GetSoldier().IsHold() != holdFlag) {
+            holdFlag = !holdFlag;
+            if(holdFlag) {
+                ShowHold();
+            }
+            else
+                ReleaseHold();
+        }
         if(mIseSetMSG) {
             double interval = (DateTime.Now - mStartTime).TotalMilliseconds;
             if(msgQ.Count > 0 && interval <= endTime) {                                
